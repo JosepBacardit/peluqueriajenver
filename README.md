@@ -1,58 +1,172 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Peluquería Jenver
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplicación web moderna para la gestión y administración de la peluquería Jenver, desarrollada con Laravel.
 
-## About Laravel
+## Acerca del Proyecto
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Peluquería Jenver es una plataforma integral diseñada para optimizar la experiencia tanto de clientes como del personal administrativo del salón de belleza. La aplicación facilita la gestión de citas, clientes, servicios y más.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Requisitos del Sistema
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **PHP**: 8.3 o superior
+- **Composer**: Última versión
+- **Node.js**: 18+ (para compilar assets)
+- **npm**: 9+ (incluido con Node.js)
+- **Base de datos**: SQLite, MySQL o PostgreSQL
 
-## Learning Laravel
+## Características Principales
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- 📅 Gestión de citas y reservas
+- 👥 Administración de clientes
+- 💇 Catálogo de servicios y precios
+- 👨‍💼 Gestión de empleados y especialistas
+- 💰 Control de ingresos y reportes
+- 🎯 Sistema de notificaciones
+- 📱 Interfaz responsive para dispositivos móviles
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Instalación
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+### 1. Clonar o descargar el proyecto
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+cd peluqueriajenver
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### 2. Ejecutar el setup automático
 
-## Contributing
+```bash
+composer setup
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Este comando ejecutará automáticamente:
+- Instalación de dependencias PHP
+- Creación del archivo `.env`
+- Generación de la clave de aplicación
+- Migración de la base de datos
+- Instalación de dependencias npm
+- Compilación de assets
 
-## Code of Conduct
+### 3. Instalación Manual (si prefieres)
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Si no deseas usar el comando `setup`, sigue estos pasos:
 
-## Security Vulnerabilities
+```bash
+# Instalar dependencias PHP
+composer install
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# Copiar archivo de configuración
+cp .env.example .env
 
-## License
+# Generar clave de aplicación
+php artisan key:generate
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+# Ejecutar migraciones
+php artisan migrate
+
+# Instalar dependencias JavaScript
+npm install
+
+# Compilar assets
+npm run build
+```
+
+## Desarrollo
+
+Para ejecutar el servidor de desarrollo con todos los servicios necesarios:
+
+```bash
+composer run dev
+```
+
+Este comando inicia simultáneamente:
+- 🖥️ Servidor Laravel (http://localhost:8000)
+- 📦 Worker de colas
+- ⚡ Vite (compilación de assets)
+
+## Estructura del Proyecto
+
+```
+├── app/                 # Código de la aplicación (Controllers, Models, etc.)
+├── database/           # Migraciones y seeders
+├── resources/          # Vistas Blade, CSS y JavaScript
+├── routes/             # Definición de rutas
+├── public/             # Archivos públicos (CSS, JS compilados)
+├── storage/            # Almacenamiento de archivos (logs, uploads)
+├── tests/              # Pruebas unitarias e integración
+└── config/             # Archivos de configuración
+```
+
+## Testing
+
+Para ejecutar las pruebas automatizadas:
+
+```bash
+composer test
+```
+
+## Variables de Entorno
+
+Configura el archivo `.env` con los siguientes datos importantes:
+
+```env
+APP_NAME=PeluqueriaJenver
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://localhost:8000
+
+DB_CONNECTION=sqlite
+# O usar MySQL:
+# DB_CONNECTION=mysql
+# DB_HOST=127.0.0.1
+# DB_PORT=3306
+# DB_DATABASE=peluqueria_jenver
+# DB_USERNAME=root
+# DB_PASSWORD=
+
+MAIL_MAILER=log
+# Configura tu proveedor de email si necesitas notificaciones
+```
+
+## Solución de Problemas
+
+### Error de permisos en `storage/`
+
+```bash
+chmod -R 775 storage bootstrap/cache
+```
+
+### La base de datos SQLite no se crea
+
+```bash
+php artisan migrate --force
+```
+
+### Assets no se compilan
+
+```bash
+npm run build
+```
+
+## Contribución
+
+Si deseas contribuir al desarrollo de Peluquería Jenver, por favor:
+
+1. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+2. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+3. Push a la rama (`git push origin feature/AmazingFeature`)
+4. Abre un Pull Request
+
+## Licencia
+
+Este proyecto está bajo la licencia MIT. Ver el archivo `LICENSE` para más detalles.
+
+## Contacto
+
+**Peluquería Jenver**
+- 📧 Email: [tu-email@peluqueriajenver.com]
+- 📱 Teléfono: [tu-teléfono]
+- 🌐 Sitio Web: [tu-sitio-web]
+
+---
+
+Desarrollado con ❤️ usando [Laravel](https://laravel.com) | Última actualización: 2026
