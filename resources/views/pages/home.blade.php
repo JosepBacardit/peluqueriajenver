@@ -167,7 +167,7 @@
 
         <!-- Instagram Link -->
         <div class="text-center">
-            <a href="https://www.instagram.com/peluqueria_jenver/" target="_blank" rel="noopener noreferrer" class="btn-outline inline-block text-sm md:text-base">
+            <a href="https://www.instagram.com/peluqueriajenver/" target="_blank" rel="noopener noreferrer" class="btn-outline inline-block text-sm md:text-base">
                 {{ __('home.galeria.cta') }}
             </a>
         </div>

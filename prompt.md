@@ -60,7 +60,7 @@ html<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,w
 Estética general: Lujo accesible. Negro profundo como base, dorado como acento exclusivo. Espaciado generoso. Tipografía serif para títulos, sans-serif para cuerpo. Sin gradientes coloridos — solo negro, blanco y dorado.
 
 FOTOS / IMÁGENES
-Todas las imágenes deben cargarse desde Instagram de Peluquería Jenver usando la URL pública del CDN de Instagram. El perfil es @peluqueria_jenver.
+Todas las imágenes deben cargarse desde Instagram de Peluquería Jenver usando la URL pública del CDN de Instagram. El perfil es @peluqueriajenver.
 Usa estos src con imágenes de Unsplash como placeholder (instrucciones al final sobre cómo sustituirlas):
 Para cada imagen usa un <img> con:
 
@@ -324,7 +324,7 @@ Estética tarjetas: bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 tr
 SECCIÓN 3 — Galería de trabajos (#galeria)
 Diseño: Grid de imágenes tipo masonry o grid uniforme. 6-9 fotos. Título de sección centrado.
 Título: "Nuestros trabajos"
-Subtítulo: "Síguenos en Instagram @peluqueria_jenver"
+Subtítulo: "Síguenos en Instagram @peluqueriajenver"
 Grid: grid grid-cols-2 md:grid-cols-3 gap-2 — imágenes cuadradas con aspect-square object-cover.
 Cada imagen tiene:
 
@@ -333,7 +333,7 @@ alt con keyword: "Balayage Montcada i Reixac", "Cabello afro Montcada i Reixac",
 
 Al final de la galería: botón link a Instagram:
 [Ver más en Instagram →]  (color dorado, outline)
-href: "https://www.instagram.com/peluqueria_jenver/"  target="_blank"
+href: "https://www.instagram.com/peluqueriajenver/"  target="_blank"
 
 SECCIÓN 4 — Servicios con precios (#servicios)
 Diseño: 2 columnas. Izquierda: imagen. Derecha: lista de servicios.

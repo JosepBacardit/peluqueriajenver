@@ -42,7 +42,7 @@ $schema = [
     "areaServed" => ["Montcada i Reixac", "Ripollet", "Cerdanyola del Vallès", "Santa Coloma de Gramenet"],
     "hasMap" => "https://maps.google.com/?q=Peluquería+Jenver+Carrer+Lleida+21+Montcada+i+Reixac",
     "sameAs" => [
-        "https://www.instagram.com/peluqueria_jenver/",
+        "https://www.instagram.com/peluqueriajenver/",
         "https://www.tiktok.com/@peluqueriajenver"
     ],
     "makesOffer" => [
