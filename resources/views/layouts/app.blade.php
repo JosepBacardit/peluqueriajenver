@@ -8,6 +8,7 @@
     <title>@yield('title', 'Peluquería Jenver | Montcada i Reixac')</title>
     <meta name="description" content="@yield('description', 'Peluquería unisex en Montcada i Reixac. Especialistas en balayage, cabello afro y rizos. Corte, color y extensiones. Reserva tu cita: 633 912 050.')">
     <meta name="keywords" content="@yield('keywords', 'peluquería Montcada i Reixac, balayage, cabello afro, rizos, peluquería unisex')">
+    <meta name="robots" content="noindex, nofollow">
 
     <!-- Open Graph -->
     <meta property="og:title" content="@yield('og_title', 'Peluquería Jenver | Montcada i Reixac')">
