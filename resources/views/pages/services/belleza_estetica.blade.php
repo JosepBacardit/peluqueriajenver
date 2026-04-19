@@ -131,7 +131,7 @@
 </section>
 
 <!-- SECTION 6: CTA Final -->
-<section class="relative py-20 md:py-32 bg-cover bg-center flex items-center justify-center" style="background-image: url('https://images.unsplash.com/photo-1596462502278-af0226e1019e?w=1920&q=80');">
+<section class="relative py-20 md:py-32 bg-cover bg-center flex items-center justify-center" style="background-image: url('https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=1920&q=80');">
     <div class="absolute inset-0 bg-black/70"></div>
 
     <div class="relative z-10 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">

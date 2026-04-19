@@ -124,7 +124,7 @@
 </section>
 
 <!-- SECTION 5: CTA Final -->
-<section class="relative py-20 md:py-32 bg-cover bg-center flex items-center justify-center" style="background-image: url('https://images.unsplash.com/photo-1559599810-46d1c41f1d3d?w=1920&q=80');">
+<section class="relative py-20 md:py-32 bg-cover bg-center flex items-center justify-center" style="background-image: url('https://images.unsplash.com/photo-1490391859672-8d37adf6550d?w=1920&q=80');">
     <div class="absolute inset-0 bg-black/70"></div>
 
     <div class="relative z-10 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
