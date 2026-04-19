@@ -136,7 +136,7 @@
         <!-- 4 Cards Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
             @foreach(__('home.servicios_intro.cards') as $key => $card)
-            <div class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8 group">
+            <a href="{{ $card['url'] }}" class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8 group block">
                 <div class="flex items-start gap-4 mb-4">
                     <div class="text-3xl">{{ $card['icon'] }}</div>
                     @if(isset($card['label']))
@@ -156,7 +156,7 @@
                     </li>
                     @endforeach
                 </ul>
-            </div>
+            </a>
             @endforeach
         </div>
     </div>

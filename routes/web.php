@@ -6,32 +6,19 @@ Route::get('/', function () {
     return view('pages.home');
 })->name('home');
 
-// Servicios principales (destacados)
-Route::get('/mechas', function () {
-    return view('pages.services.balayage_mechas');
-})->name('mechas');
+// Servicios principales (por categoría)
+Route::get('/color-y-mechas', function () {
+    return view('pages.services.color_mechas');
+})->name('color-mechas');
 
-Route::get('/color', function () {
-    return view('pages.services.color');
-})->name('color');
-
-Route::get('/alisados', function () {
-    return view('pages.services.alisados');
-})->name('alisados');
+Route::get('/corte-y-tratamientos', function () {
+    return view('pages.services.corte_tratamientos');
+})->name('corte-tratamientos');
 
 Route::get('/peinados-eventos', function () {
-    return view('pages.services.peinados_eventos');
-})->name('peinados');
+    return view('pages.services.peinado_eventos');
+})->name('peinados-eventos');
 
-// Otros servicios
-Route::get('/corte-de-pelo', function () {
-    return view('pages.services.corte');
-})->name('corte');
-
-Route::get('/cabello-afro', function () {
-    return view('pages.services.afro_rizos');
-})->name('afro');
-
-Route::get('/servicios-complementarios', function () {
-    return view('pages.services.servicios_complementarios');
-})->name('complementarios');
+Route::get('/belleza-estetica', function () {
+    return view('pages.services.belleza_estetica');
+})->name('belleza-estetica');
