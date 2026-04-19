@@ -27,13 +27,10 @@
                         </svg>
                     </button>
                     <div class="absolute left-0 mt-0 w-56 bg-black/95 border border-[#2A2A2A] rounded-sm shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-40">
-                        <a href="{{ route('mechas') }}" class="block px-4 py-3 text-gray-300 hover:text-gold hover:bg-[#1A1A1A] text-sm">{{ __('navigation.footer.services.items.balayage') }}</a>
-                        <a href="{{ route('color') }}" class="block px-4 py-3 text-gray-300 hover:text-gold hover:bg-[#1A1A1A] text-sm border-t border-[#2A2A2A]">{{ __('navigation.footer.services.items.coloring') }}</a>
-                        <a href="{{ route('alisados') }}" class="block px-4 py-3 text-gray-300 hover:text-gold hover:bg-[#1A1A1A] text-sm border-t border-[#2A2A2A]">{{ __('navigation.footer.services.items.alisados') }}</a>
-                        <a href="{{ route('peinados') }}" class="block px-4 py-3 text-gray-300 hover:text-gold hover:bg-[#1A1A1A] text-sm border-t border-[#2A2A2A]">{{ __('navigation.footer.services.items.peinados') }}</a>
-                        <a href="{{ route('corte') }}" class="block px-4 py-3 text-gray-300 hover:text-gold hover:bg-[#1A1A1A] text-sm border-t border-[#2A2A2A]">{{ __('navigation.footer.services.items.cut') }}</a>
-                        <a href="{{ route('afro') }}" class="block px-4 py-3 text-gray-300 hover:text-gold hover:bg-[#1A1A1A] text-sm border-t border-[#2A2A2A]">{{ __('navigation.footer.services.items.afro') }}</a>
-                        <a href="{{ route('complementarios') }}" class="block px-4 py-3 text-gray-300 hover:text-gold hover:bg-[#1A1A1A] text-sm border-t border-[#2A2A2A]">{{ __('navigation.footer.services.items.complementarios') }}</a>
+                        <a href="{{ route('color-mechas') }}" class="block px-4 py-3 text-gray-300 hover:text-gold hover:bg-[#1A1A1A] text-sm">{{ __('navigation.footer.services.items.balayage') }}</a>
+                        <a href="{{ route('corte-tratamientos') }}" class="block px-4 py-3 text-gray-300 hover:text-gold hover:bg-[#1A1A1A] text-sm border-t border-[#2A2A2A]">{{ __('navigation.footer.services.items.cut') }}</a>
+                        <a href="{{ route('peinados-eventos') }}" class="block px-4 py-3 text-gray-300 hover:text-gold hover:bg-[#1A1A1A] text-sm border-t border-[#2A2A2A]">{{ __('navigation.footer.services.items.peinados') }}</a>
+                        <a href="{{ route('belleza-estetica') }}" class="block px-4 py-3 text-gray-300 hover:text-gold hover:bg-[#1A1A1A] text-sm border-t border-[#2A2A2A]">{{ __('navigation.footer.services.items.complementarios') }}</a>
                     </div>
                 </div>
 
@@ -70,13 +67,10 @@
                 </svg>
             </button>
             <div id="mobile-services-menu" class="hidden bg-[#1A1A1A] border-t border-[#2A2A2A]">
-                <a href="{{ route('mechas') }}" class="block px-6 py-2 text-gray-400 hover:text-gold transition-colors text-sm">{{ __('navigation.footer.services.items.balayage') }}</a>
-                <a href="{{ route('color') }}" class="block px-6 py-2 text-gray-400 hover:text-gold transition-colors text-sm">{{ __('navigation.footer.services.items.coloring') }}</a>
-                <a href="{{ route('alisados') }}" class="block px-6 py-2 text-gray-400 hover:text-gold transition-colors text-sm">{{ __('navigation.footer.services.items.alisados') }}</a>
-                <a href="{{ route('peinados') }}" class="block px-6 py-2 text-gray-400 hover:text-gold transition-colors text-sm">{{ __('navigation.footer.services.items.peinados') }}</a>
-                <a href="{{ route('corte') }}" class="block px-6 py-2 text-gray-400 hover:text-gold transition-colors text-sm">{{ __('navigation.footer.services.items.cut') }}</a>
-                <a href="{{ route('afro') }}" class="block px-6 py-2 text-gray-400 hover:text-gold transition-colors text-sm">{{ __('navigation.footer.services.items.afro') }}</a>
-                <a href="{{ route('complementarios') }}" class="block px-6 py-2 text-gray-400 hover:text-gold transition-colors text-sm">{{ __('navigation.footer.services.items.complementarios') }}</a>
+                <a href="{{ route('color-mechas') }}" class="block px-6 py-2 text-gray-400 hover:text-gold transition-colors text-sm">{{ __('navigation.footer.services.items.balayage') }}</a>
+                <a href="{{ route('corte-tratamientos') }}" class="block px-6 py-2 text-gray-400 hover:text-gold transition-colors text-sm">{{ __('navigation.footer.services.items.cut') }}</a>
+                <a href="{{ route('peinados-eventos') }}" class="block px-6 py-2 text-gray-400 hover:text-gold transition-colors text-sm">{{ __('navigation.footer.services.items.peinados') }}</a>
+                <a href="{{ route('belleza-estetica') }}" class="block px-6 py-2 text-gray-400 hover:text-gold transition-colors text-sm">{{ __('navigation.footer.services.items.complementarios') }}</a>
             </div>
 
             <a href="#nosotros" class="block px-3 py-2 text-gray-300 hover:text-gold transition-colors">{{ __('navigation.navbar.menu.about') }}</a>

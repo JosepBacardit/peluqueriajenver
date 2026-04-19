@@ -26,13 +26,10 @@
             <div>
                 <h3 class="text-gold font-serif text-lg font-semibold mb-4">{{ __('navigation.footer.services.title') }}</h3>
                 <ul class="space-y-3 text-gray-400 text-sm">
-                    <li><a href="{{ route('mechas') }}" class="hover:text-gold transition-colors">{{ __('navigation.footer.services.items.balayage') }}</a></li>
-                    <li><a href="{{ route('color') }}" class="hover:text-gold transition-colors">{{ __('navigation.footer.services.items.coloring') }}</a></li>
-                    <li><a href="{{ route('alisados') }}" class="hover:text-gold transition-colors">{{ __('navigation.footer.services.items.alisados') }}</a></li>
-                    <li><a href="{{ route('peinados') }}" class="hover:text-gold transition-colors">{{ __('navigation.footer.services.items.peinados') }}</a></li>
-                    <li><a href="{{ route('corte') }}" class="hover:text-gold transition-colors">{{ __('navigation.footer.services.items.cut') }}</a></li>
-                    <li><a href="{{ route('afro') }}" class="hover:text-gold transition-colors">{{ __('navigation.footer.services.items.afro') }}</a></li>
-                    <li><a href="{{ route('complementarios') }}" class="hover:text-gold transition-colors">{{ __('navigation.footer.services.items.complementarios') }}</a></li>
+                    <li><a href="{{ route('color-mechas') }}" class="hover:text-gold transition-colors">{{ __('navigation.footer.services.items.balayage') }}</a></li>
+                    <li><a href="{{ route('corte-tratamientos') }}" class="hover:text-gold transition-colors">{{ __('navigation.footer.services.items.cut') }}</a></li>
+                    <li><a href="{{ route('peinados-eventos') }}" class="hover:text-gold transition-colors">{{ __('navigation.footer.services.items.peinados') }}</a></li>
+                    <li><a href="{{ route('belleza-estetica') }}" class="hover:text-gold transition-colors">{{ __('navigation.footer.services.items.complementarios') }}</a></li>
                 </ul>
             </div>
 
