@@ -7,7 +7,7 @@
 @section('content')
 
 <!-- SECTION 1: Hero -->
-<section class="relative w-full h-screen md:h-[90vh] bg-cover bg-center flex items-center justify-center" style="background-image: url('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1920&q=80');">
+<section class="relative w-full h-screen md:h-[90vh] bg-cover bg-center flex items-center justify-center" style="background-image: url('https://images.unsplash.com/photo-1599351431202-924373718620?w=1920&q=80');">
     <div class="absolute inset-0 bg-black/60"></div>
 
     <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -124,7 +124,7 @@
 </section>
 
 <!-- SECTION 5: CTA Final -->
-<section class="relative py-20 md:py-32 bg-cover bg-center flex items-center justify-center" style="background-image: url('https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=1920&q=80');">
+<section class="relative py-20 md:py-32 bg-cover bg-center flex items-center justify-center" style="background-image: url('https://images.unsplash.com/photo-1534639446674-ce2a6375cd51?w=1920&q=80');">
     <div class="absolute inset-0 bg-black/70"></div>
 
     <div class="relative z-10 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
