@@ -7,74 +7,70 @@
 @section('content')
 
 <!-- SECTION 1: Hero -->
-<section class="relative w-full h-screen md:h-[90vh] bg-cover bg-center flex items-center justify-center" style="background-image: url('https://images.unsplash.com/photo-1634449571010-02389ed0f9b0?w=1920&q=80');">
+<section class="relative w-full h-screen md:h-[90vh] bg-cover bg-center flex items-center justify-center" style="background-image: url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80');">
     <div class="absolute inset-0 bg-black/60"></div>
 
     <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div class="inline-block mb-6">
+            <span class="text-gold text-xs font-semibold tracking-widest uppercase">{{ __('servicios.peinados_eventos.hero.subtitle') }}</span>
+        </div>
+
         <h1 class="font-serif text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
             {{ __('servicios.peinados_eventos.hero.title') }}
         </h1>
 
         <p class="text-gray-300 text-lg md:text-xl mb-8 leading-relaxed">
-            {{ __('servicios.peinados_eventos.hero.subtitle') }}
+            {{ __('servicios.peinados_eventos.hero.description') }}
         </p>
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <a href="tel:+34633912050" class="btn-gold text-sm md:text-base">
-                Reservar cita →
+                {{ __('home.hero.cta_primary') }}
+            </a>
+            <a href="https://wa.me/34633912050?text=Hola!%20Quería%20pedir%20cita%20para%20un%20peinado%20de%20evento%20en%20Peluquería%20Jenver" target="_blank" rel="noopener noreferrer" class="btn-outline text-sm md:text-base">
+                WhatsApp →
             </a>
         </div>
     </div>
 </section>
 
-<!-- SECTION 2: Tu peinado perfecto -->
+<!-- SECTION 2: Introducción -->
 <section class="bg-[#111111] py-16 md:py-24">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 class="section-title text-center mb-8">{{ __('servicios.peinados_eventos.sections.que_es.title') }}</h2>
-        <p class="text-gray-400 text-lg leading-relaxed text-center">
+        <p class="text-gray-400 text-lg leading-relaxed text-center mb-12">
             {{ __('servicios.peinados_eventos.sections.que_es.content') }}
         </p>
-    </div>
-</section>
-
-<!-- SECTION 3: Tipos de eventos -->
-<section class="bg-[#0A0A0A] py-16 md:py-24">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="section-title text-center mb-12">{{ __('servicios.peinados_eventos.sections.tipos.title') }}</h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <!-- Peinado de Novia -->
-            <div class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8">
-                <div class="text-4xl mb-4">👰</div>
-                <h3 class="font-serif text-2xl font-bold text-white mb-4">{{ __('servicios.peinados_eventos.sections.tipos.items.boda.name') }}</h3>
-                <p class="text-gray-400 leading-relaxed">{{ __('servicios.peinados_eventos.sections.tipos.items.boda.description') }}</p>
+            @foreach(__('servicios.peinados_eventos.sections.ventajas.items') as $ventaja)
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8 rounded">
+                <div class="text-4xl text-gold mb-4">{{ $ventaja['icon'] }}</div>
+                <h3 class="font-serif text-xl font-bold text-white mb-3">{{ $ventaja['title'] }}</h3>
+                <p class="text-gray-400">{{ $ventaja['description'] }}</p>
             </div>
-
-            <!-- Peinado Comunión -->
-            <div class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8">
-                <div class="text-4xl mb-4">✨</div>
-                <h3 class="font-serif text-2xl font-bold text-white mb-4">{{ __('servicios.peinados_eventos.sections.tipos.items.comunion.name') }}</h3>
-                <p class="text-gray-400 leading-relaxed">{{ __('servicios.peinados_eventos.sections.tipos.items.comunion.description') }}</p>
-            </div>
-
-            <!-- Peinado para Eventos -->
-            <div class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8">
-                <div class="text-4xl mb-4">🎉</div>
-                <h3 class="font-serif text-2xl font-bold text-white mb-4">{{ __('servicios.peinados_eventos.sections.tipos.items.evento.name') }}</h3>
-                <p class="text-gray-400 leading-relaxed">{{ __('servicios.peinados_eventos.sections.tipos.items.evento.description') }}</p>
-            </div>
-
-            <!-- Peinado Fiesta -->
-            <div class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8">
-                <div class="text-4xl mb-4">💃</div>
-                <h3 class="font-serif text-2xl font-bold text-white mb-4">{{ __('servicios.peinados_eventos.sections.tipos.items.fiesta.name') }}</h3>
-                <p class="text-gray-400 leading-relaxed">{{ __('servicios.peinados_eventos.sections.tipos.items.fiesta.description') }}</p>
-            </div>
+            @endforeach
         </div>
     </div>
 </section>
 
-<!-- SECTION 4: Nuestro proceso -->
+<!-- SECTION 3: Servicios incluidos -->
+<section class="bg-[#0A0A0A] py-16 md:py-24">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="section-title text-center mb-12">{{ __('servicios.peinados_eventos.sections.tipos.title') }}</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            @foreach(__('servicios.peinados_eventos.sections.tipos.items') as $tipo)
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8">
+                <h3 class="font-serif text-2xl font-bold text-white mb-4">{{ $tipo['name'] }}</h3>
+                <p class="text-gray-400 leading-relaxed mb-4">{{ $tipo['description'] }}</p>
+            </div>
+            @endforeach
+        </div>
+    </div>
+</section>
+
+<!-- SECTION 4: Proceso -->
 <section class="bg-[#111111] py-16 md:py-24">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 class="section-title text-center mb-12">{{ __('servicios.peinados_eventos.sections.proceso.title') }}</h2>
@@ -82,72 +78,55 @@
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
             @php $pasos = __('servicios.peinados_eventos.sections.proceso.pasos'); @endphp
             @foreach($pasos as $paso)
-                <div class="text-center">
-                    <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gold text-black font-bold mb-4 mx-auto">
-                        {{ $loop->iteration }}
-                    </div>
-                    <p class="text-gray-300 text-sm font-semibold">{{ $paso }}</p>
+            <div class="text-center">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gold text-black font-bold mb-4 mx-auto">
+                    {{ $loop->iteration }}
                 </div>
+                <p class="text-gray-300 text-sm font-semibold">{{ $paso }}</p>
+            </div>
             @endforeach
         </div>
     </div>
 </section>
 
-<!-- SECTION 5: Lo que incluye -->
+<!-- SECTION 5: Precios -->
 <section class="bg-[#0A0A0A] py-16 md:py-24">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="section-title text-center mb-12">Lo que ofrecemos</h2>
+        <h2 class="section-title text-center mb-12">Precios</h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="bg-[#1A1A1A] border border-[#2A2A2A] p-6 rounded">
-                <h3 class="text-gold font-bold mb-3 flex items-center gap-2">
-                    <span class="text-xl">💇‍♀️</span> Peinado Personalizado
-                </h3>
-                <p class="text-gray-400 text-sm">Diseño exclusivo adaptado a tu rostro y estilo personal.</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            @foreach(__('servicios.peinados_eventos.precios') as $servicio => $precio)
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] p-6 flex items-center justify-between">
+                <h4 class="font-serif text-lg font-bold text-white capitalize">{{ str_replace('_', ' ', $servicio) }}</h4>
+                <p class="text-gold font-bold text-lg">{{ $precio }}</p>
             </div>
+            @endforeach
+        </div>
 
-            <div class="bg-[#1A1A1A] border border-[#2A2A2A] p-6 rounded">
-                <h3 class="text-gold font-bold mb-3 flex items-center gap-2">
-                    <span class="text-xl">👰</span> Prueba Previa
-                </h3>
-                <p class="text-gray-400 text-sm">Realizamos una prueba antes del evento para asegurar tu satisfacción.</p>
-            </div>
-
-            <div class="bg-[#1A1A1A] border border-[#2A2A2A] p-6 rounded">
-                <h3 class="text-gold font-bold mb-3 flex items-center gap-2">
-                    <span class="text-xl">💄</span> Maquillaje Complementario
-                </h3>
-                <p class="text-gray-400 text-sm">Ofrecemos servicios de maquillaje para completar tu look.</p>
-            </div>
-
-            <div class="bg-[#1A1A1A] border border-[#2A2A2A] p-6 rounded">
-                <h3 class="text-gold font-bold mb-3 flex items-center gap-2">
-                    <span class="text-xl">⏱️</span> Duración Todo el Día
-                </h3>
-                <p class="text-gray-400 text-sm">Utilizamos productos profesionales para que tu peinado aguante toda la jornada.</p>
-            </div>
+        <div class="text-center">
+            <p class="text-gray-400">{!! __('home.servicios.help_text') !!}</p>
         </div>
     </div>
 </section>
 
-<!-- SECTION 6: CTA Reserva -->
-<section class="relative py-20 md:py-32 bg-cover bg-center flex items-center justify-center" style="background-image: url('https://images.unsplash.com/photo-1634449571010-02389ed0f9b0?w=1920&q=80');">
+<!-- SECTION 6: CTA Final -->
+<section class="relative py-20 md:py-32 bg-cover bg-center flex items-center justify-center" style="background-image: url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80');">
     <div class="absolute inset-0 bg-black/70"></div>
 
     <div class="relative z-10 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h2 class="font-serif text-4xl md:text-5xl font-bold text-white mb-6">
-            Tu día especial comienza aquí
+            Tu día especial merece un peinado perfecto
         </h2>
         <p class="text-gray-300 text-lg mb-8">
-            Contacta con nosotros para agendar tu cita y planificar tu peinado perfecto.
+            Diseñamos un look único que complemente tu belleza y perdure toda la jornada.
         </p>
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
             <a href="tel:+34633912050" class="btn-gold text-sm md:text-base font-semibold px-8 py-3">
-                Llamar: 633 912 050
+                {{ __('home.reserva.phone_cta') }}
             </a>
-            <a href="https://wa.me/34633912050?text=Hola!%20Quería%20consultar%20sobre%20peinados%20para%20eventos%20en%20Peluquería%20Jenver" target="_blank" rel="noopener noreferrer" class="btn-outline text-sm md:text-base font-semibold px-8 py-3">
-                WhatsApp →
+            <a href="https://wa.me/34633912050?text=Hola!%20Quería%20pedir%20cita%20para%20un%20peinado%20de%20evento%20en%20Peluquería%20Jenver" target="_blank" rel="noopener noreferrer" class="btn-outline text-sm md:text-base font-semibold px-8 py-3">
+                {{ __('home.reserva.whatsapp_cta') }}
             </a>
         </div>
     </div>

@@ -59,6 +59,30 @@ return [
                     'retoque' => 'Realiza retoques cada 6-8 semanas',
                 ],
             ],
+            'ventajas' => [
+                'items' => [
+                    'natural' => [
+                        'icon' => '✨',
+                        'title' => 'Resultado Natural',
+                        'description' => 'Nuestras técnicas crean un efecto degradado que parece natural y armonioso con tu tono base.'
+                    ],
+                    'flexible' => [
+                        'icon' => '🎨',
+                        'title' => 'Infinitas Posibilidades',
+                        'description' => 'Desde cambios sutiles hasta efectos impactantes. Adaptamos el diseño a tu personalidad y estilo.'
+                    ],
+                    'mantenimiento' => [
+                        'icon' => '⏰',
+                        'title' => 'Fácil Mantenimiento',
+                        'description' => 'Las mechas requieren menos mantenimiento que la coloración completa. Retoques cada 6-8 semanas.'
+                    ],
+                    'protegido' => [
+                        'icon' => '💪',
+                        'title' => 'Cabello Protegido',
+                        'description' => 'Solo coloreamos las partes selectas, protegiendo el resto de tu cabello de la química.'
+                    ],
+                ],
+            ],
         ],
         'precios' => [
             'balayage' => 'Desde €60',
@@ -116,6 +140,30 @@ return [
                     'paso5' => 'Tratamientos hidratantes post-color',
                 ],
             ],
+            'ventajas' => [
+                'items' => [
+                    'tonalidad' => [
+                        'icon' => '🎨',
+                        'title' => 'Tonalidad Perfecta',
+                        'description' => 'Encontramos el color que mejor complemente tu tono de piel y realce tus facciones.'
+                    ],
+                    'calidad' => [
+                        'icon' => '✨',
+                        'title' => 'Productos Premium',
+                        'description' => 'Utilizamos tintes profesionales que cuidan tu cabello mientras lo transforman.'
+                    ],
+                    'cobertura' => [
+                        'icon' => '💫',
+                        'title' => 'Cobertura Total',
+                        'description' => 'Cobertura completa de canas y resultados uniformes en todo el cabello.'
+                    ],
+                    'asesoramiento' => [
+                        'icon' => '💇‍♀️',
+                        'title' => 'Expertos en Color',
+                        'description' => 'Nuestros coloristas asesoran sobre el tono más favorecedero para ti.'
+                    ],
+                ],
+            ],
         ],
         'precios' => [
             'coloracion_completa' => 'Desde €40',
@@ -166,6 +214,40 @@ return [
                     'champu' => 'Usa champú y acondicionador sin sulfatos',
                     'frecuencia' => 'Espaciar lavados para mantener el efecto más tiempo',
                     'planchado' => 'Evita el planchado frecuente las primeras semanas',
+                ],
+            ],
+            'proceso' => [
+                'title' => 'Proceso de alisado',
+                'pasos' => [
+                    'paso1' => 'Análisis y diagnóstico del cabello',
+                    'paso2' => 'Aplicación del producto alisador',
+                    'paso3' => 'Tiempo de procesamiento',
+                    'paso4' => 'Aclarado y neutralizado',
+                    'paso5' => 'Secado y cuidados finales',
+                ],
+            ],
+            'ventajas' => [
+                'items' => [
+                    'duracion' => [
+                        'icon' => '⏱',
+                        'title' => 'Duradero',
+                        'description' => 'Resultados que duran de 3 a 4 meses dependiendo del tipo de tratamiento.'
+                    ],
+                    'facilidad' => [
+                        'icon' => '✨',
+                        'title' => 'Fácil Mantenimiento',
+                        'description' => 'Tu cabello será mucho más fácil de peinar y mantener en casa.'
+                    ],
+                    'sedoso' => [
+                        'icon' => '💪',
+                        'title' => 'Cabello Sedoso',
+                        'description' => 'Recupera la suavidad y brillo natural de tu cabello con keratina.'
+                    ],
+                    'salud' => [
+                        'icon' => '🌟',
+                        'title' => 'Cuidado Profesional',
+                        'description' => 'Reparamos daños y fortalecemus tu cabello mientras lo alisamos.'
+                    ],
                 ],
             ],
         ],
@@ -223,6 +305,30 @@ return [
                     'paso5' => 'Maquillaje complementario si lo deseas',
                 ],
             ],
+            'ventajas' => [
+                'items' => [
+                    'diseño' => [
+                        'icon' => '👑',
+                        'title' => 'Diseño Exclusivo',
+                        'description' => 'Creamos un estilo único pensado solo para ti y tu ocasión especial.'
+                    ],
+                    'prueba' => [
+                        'icon' => '✨',
+                        'title' => 'Prueba Previa',
+                        'description' => 'Realizamos una prueba completa antes del evento para tu tranquilidad.'
+                    ],
+                    'duracion' => [
+                        'icon' => '⏰',
+                        'title' => 'Larga Duración',
+                        'description' => 'Nuestros peinados aguantan toda la jornada sin perder forma ni estilo.'
+                    ],
+                    'profesional' => [
+                        'icon' => '💇‍♀️',
+                        'title' => 'Manos Expertas',
+                        'description' => 'Nuestros peluqueros tienen años de experiencia en eventos especiales.'
+                    ],
+                ],
+            ],
         ],
         'precios' => [
             'peinado_simple' => 'Desde €40',
@@ -266,6 +372,40 @@ return [
                     'combinado' => [
                         'name' => 'Corte + Color',
                         'description' => 'Combina corte con color o mechas en la misma sesión.'
+                    ],
+                ],
+            ],
+            'proceso' => [
+                'title' => 'Nuestro proceso de corte',
+                'pasos' => [
+                    'paso1' => 'Consulta sobre tu estilo y tipo de cabello',
+                    'paso2' => 'Análisis de la forma de tu cara',
+                    'paso3' => 'Proposición y acuerdo del corte',
+                    'paso4' => 'Corte profesional con técnica experta',
+                    'paso5' => 'Consejos de cuidado y mantenimiento',
+                ],
+            ],
+            'ventajas' => [
+                'items' => [
+                    'experto' => [
+                        'icon' => '✂️',
+                        'title' => 'Técnica Profesional',
+                        'description' => 'Nuestros barberos y estilistas dominan todas las técnicas de corte modernas.'
+                    ],
+                    'personalizado' => [
+                        'icon' => '👤',
+                        'title' => 'Personalizado',
+                        'description' => 'Cada corte se adapta a tu forma de cara, tipo de cabello y estilo personal.'
+                    ],
+                    'mantenimiento' => [
+                        'icon' => '💇‍♂️',
+                        'title' => 'Fácil Mantenimiento',
+                        'description' => 'Un buen corte hará que tu cabello sea mucho más fácil de peinar en casa.'
+                    ],
+                    'versatil' => [
+                        'icon' => '🎯',
+                        'title' => 'Para Toda la Familia',
+                        'description' => 'Contamos con especialistas para mujer, hombre y niños.'
                     ],
                 ],
             ],
@@ -324,6 +464,40 @@ return [
                     'proteccion' => 'Usa gorros de seda para dormir',
                 ],
             ],
+            'proceso' => [
+                'title' => 'Proceso de servicio',
+                'pasos' => [
+                    'paso1' => 'Diagnóstico de tu tipo de cabello y textura',
+                    'paso2' => 'Análisis de salud y condición actual',
+                    'paso3' => 'Consulta sobre tus objetivos y preferencias',
+                    'paso4' => 'Tratamiento profesional especializado',
+                    'paso5' => 'Consejos personalizados de cuidado',
+                ],
+            ],
+            'ventajas' => [
+                'items' => [
+                    'especialista' => [
+                        'icon' => '👑',
+                        'title' => 'Especialistas Reales',
+                        'description' => 'Años de experiencia cuidando cabello afro, rizado y texturizado.'
+                    ],
+                    'tecnicas' => [
+                        'icon' => '✨',
+                        'title' => 'Técnicas Profesionales',
+                        'description' => 'Dominamos todas las técnicas modernas para realzar tu belleza natural.'
+                    ],
+                    'productos' => [
+                        'icon' => '🌿',
+                        'title' => 'Productos Adecuados',
+                        'description' => 'Usamos productos específicos para tu tipo de cabello que lo cuidan y protegen.'
+                    ],
+                    'natural' => [
+                        'icon' => '💪',
+                        'title' => 'Respeto a lo Natural',
+                        'description' => 'Celebramos y realzamos tu belleza natural sin dañar tu cabello.'
+                    ],
+                ],
+            ],
         ],
         'precios' => [
             'peinado' => 'Consultar',
@@ -369,6 +543,30 @@ return [
             'detalles' => [
                 'title' => 'Los detalles hacen la diferencia',
                 'content' => 'En Jenver sabemos que la belleza está en los detalles. Por eso ofrecemos servicios complementarios que perfeccionen tu look completo. Todos nuestros servicios se realizan con higiene profesional y productos de calidad.',
+            ],
+            'ventajas' => [
+                'items' => [
+                    'higiene' => [
+                        'icon' => '✨',
+                        'title' => 'Higiene Profesional',
+                        'description' => 'Todos nuestros servicios cumplen con los estándares más altos de higiene y desinfección.'
+                    ],
+                    'calidad' => [
+                        'icon' => '💅',
+                        'title' => 'Productos Premium',
+                        'description' => 'Usamos productos de calidad profesional que cuidan tu piel y uñas.'
+                    ],
+                    'especialistas' => [
+                        'icon' => '👥',
+                        'title' => 'Especialistas',
+                        'description' => 'Nuestros profesionales tienen formación específica en cada servicio.'
+                    ],
+                    'completo' => [
+                        'icon' => '🎁',
+                        'title' => 'Belleza Integral',
+                        'description' => 'Todos los servicios que necesitas en un solo lugar. Belleza de cabeza a pies.'
+                    ],
+                ],
             ],
         ],
         'precios' => [

@@ -10,11 +10,48 @@ return [
 
     // Hero Section
     'hero' => [
-        'location' => '✨ Desde 1994 cuidando tu belleza',
-        'title' => 'Peluquería Unisex Jenver',
-        'subtitle' => 'Especialistas en Balayage, Mechas y Cabello Afro<br><span class="text-gold font-semibold">Montcada i Reixac, Barcelona</span>',
+        'location' => '✨ Peluquería Unisex Jenver en Montcada i Reixac',
+        'title' => 'Tu pelo, en manos de confianza.',
+        'subtitle' => 'Atención personalizada, precios honestos y resultados que te gustan de verdad.',
         'cta_primary' => 'Reservar cita →',
         'cta_secondary' => 'Ver servicios',
+    ],
+
+    // Servicios Intro Section (después del hero)
+    'servicios_intro' => [
+        'title' => 'Nuestros servicios',
+        'subtitle' => 'Todo lo que necesita tu pelo — y algo más',
+        'description' => 'Especialistas en color y mechas, con servicio completo para que no tengas que ir a ningún otro sitio.',
+        'cards' => [
+            'color' => [
+                'icon' => '✦',
+                'label' => 'Lo que más hacemos',
+                'title' => 'Color y mechas',
+                'description' => 'Resultados naturales o de impacto, según lo que busques.',
+                'services' => ['Balayage', 'Babylights', 'Mechas clásicas', 'Coloración completa', 'Retoque de raíz', 'Decoloración'],
+            ],
+            'corte' => [
+                'icon' => '✂',
+                'title' => 'Corte y tratamientos',
+                'description' => 'Corte para mujer, caballero y niños. Alisados duraderos.',
+                'services' => ['Corte de mujer', 'Corte de caballero', 'Corte de niños', 'Alisado permanente', 'Keratina', 'Arreglo de barba'],
+            ],
+            'peinado' => [
+                'icon' => '💇',
+                'title' => 'Peinado y eventos',
+                'description' => 'Para el día más especial o cuando simplemente quieres brillar.',
+                'services' => ['Peinado para bodas', 'Peinado para eventos', 'Recogidos', 'Ondas y rizos'],
+            ],
+            'belleza' => [
+                'icon' => '💅',
+                'title' => 'Belleza y estética',
+                'description' => 'Para cuidarte de la cabeza a los pies, sin salir del salón.',
+                'services' => ['Manicura', 'Pedicura', 'Diseño de cejas', 'Depilación facial'],
+            ],
+        ],
+        'diagnostico_title' => 'Diagnóstico personalizado incluido',
+        'diagnostico_description' => 'Antes de empezar, analizamos tu pelo y te decimos exactamente qué te puede quedar mejor. Sin compromiso.',
+        'diagnostico_cta' => 'Gratis en tu primera visita',
     ],
 
     // Especialidades Section
@@ -35,6 +72,104 @@ return [
                 'icon' => '✂',
                 'title' => 'Corte & Estilismo',
                 'description' => 'Corte de pelo para hombre, mujer y niños. Extensiones y tratamientos capilares personalizados.',
+            ],
+        ],
+    ],
+
+    // Todos los Servicios Section
+    'todos_servicios' => [
+        'title' => 'Todos nuestros servicios',
+        'subtitle' => 'Listado completo de servicios y precios',
+        'items' => [
+            [
+                'name' => 'Corte de pelo mujer',
+                'price' => 'Desde €20',
+                'category' => 'Corte',
+            ],
+            [
+                'name' => 'Corte de pelo hombre',
+                'price' => 'Desde €15',
+                'category' => 'Corte',
+            ],
+            [
+                'name' => 'Corte infantil',
+                'price' => 'Desde €12',
+                'category' => 'Corte',
+            ],
+            [
+                'name' => 'Balayage',
+                'price' => 'Desde €60',
+                'category' => 'Color',
+            ],
+            [
+                'name' => 'Mechas / Highlights',
+                'price' => 'Desde €45',
+                'category' => 'Color',
+            ],
+            [
+                'name' => 'Coloración completa',
+                'price' => 'Desde €40',
+                'category' => 'Color',
+            ],
+            [
+                'name' => 'Retoque de raíz',
+                'price' => 'Desde €30',
+                'category' => 'Color',
+            ],
+            [
+                'name' => 'Decoloración',
+                'price' => 'Consultar',
+                'category' => 'Color',
+            ],
+            [
+                'name' => 'Peinado cabello afro',
+                'price' => 'Consultar',
+                'category' => 'Peinado',
+            ],
+            [
+                'name' => 'Definición de rizos',
+                'price' => 'Consultar',
+                'category' => 'Peinado',
+            ],
+            [
+                'name' => 'Peinado para bodas',
+                'price' => 'Consultar',
+                'category' => 'Peinado',
+            ],
+            [
+                'name' => 'Peinado para eventos',
+                'price' => 'Consultar',
+                'category' => 'Peinado',
+            ],
+            [
+                'name' => 'Extensiones de cabello',
+                'price' => 'Consultar',
+                'category' => 'Tratamientos',
+            ],
+            [
+                'name' => 'Tratamiento keratina',
+                'price' => 'Consultar',
+                'category' => 'Tratamientos',
+            ],
+            [
+                'name' => 'Alisado permanente',
+                'price' => 'Consultar',
+                'category' => 'Tratamientos',
+            ],
+            [
+                'name' => 'Manicura',
+                'price' => 'Desde €15',
+                'category' => 'Belleza',
+            ],
+            [
+                'name' => 'Pedicura',
+                'price' => 'Desde €20',
+                'category' => 'Belleza',
+            ],
+            [
+                'name' => 'Diseño de cejas',
+                'price' => 'Desde €10',
+                'category' => 'Belleza',
             ],
         ],
     ],

@@ -11,6 +11,10 @@
     <div class="absolute inset-0 bg-black/60"></div>
 
     <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div class="inline-block mb-6">
+            <span class="text-gold text-xs font-semibold tracking-widest uppercase">{{ __('servicios.afro_rizos.hero.subtitle') }}</span>
+        </div>
+
         <h1 class="font-serif text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
             {{ __('servicios.afro_rizos.hero.title') }}
         </h1>
@@ -21,113 +25,124 @@
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <a href="tel:+34633912050" class="btn-gold text-sm md:text-base">
-                Reservar cita →
+                {{ __('home.hero.cta_primary') }}
+            </a>
+            <a href="https://wa.me/34633912050?text=Hola!%20Quería%20pedir%20cita%20para%20cabello%20afro%20en%20Peluquería%20Jenver" target="_blank" rel="noopener noreferrer" class="btn-outline text-sm md:text-base">
+                WhatsApp →
             </a>
         </div>
     </div>
 </section>
 
-<!-- SECTION 2: Tu belleza natural -->
+<!-- SECTION 2: Introducción -->
 <section class="bg-[#111111] py-16 md:py-24">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 class="section-title text-center mb-8">{{ __('servicios.afro_rizos.sections.que_es.title') }}</h2>
-        <p class="text-gray-400 text-lg leading-relaxed text-center">
+        <p class="text-gray-400 text-lg leading-relaxed text-center mb-12">
             {{ __('servicios.afro_rizos.sections.que_es.content') }}
         </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            @foreach(__('servicios.afro_rizos.sections.ventajas.items') as $ventaja)
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8 rounded">
+                <div class="text-4xl text-gold mb-4">{{ $ventaja['icon'] }}</div>
+                <h3 class="font-serif text-xl font-bold text-white mb-3">{{ $ventaja['title'] }}</h3>
+                <p class="text-gray-400">{{ $ventaja['description'] }}</p>
+            </div>
+            @endforeach
+        </div>
     </div>
 </section>
 
-<!-- SECTION 3: Servicios para cabello afro -->
+<!-- SECTION 3: Servicios incluidos -->
 <section class="bg-[#0A0A0A] py-16 md:py-24">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 class="section-title text-center mb-12">{{ __('servicios.afro_rizos.sections.tipos.title') }}</h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
             @foreach(__('servicios.afro_rizos.sections.tipos.items') as $tipo)
-                <div class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8">
-                    <h3 class="font-serif text-2xl font-bold text-white mb-4">{{ $tipo['name'] }}</h3>
-                    <p class="text-gray-400 leading-relaxed">{{ $tipo['description'] }}</p>
-                </div>
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8">
+                <h3 class="font-serif text-2xl font-bold text-white mb-4">{{ $tipo['name'] }}</h3>
+                <p class="text-gray-400 leading-relaxed mb-4">{{ $tipo['description'] }}</p>
+            </div>
             @endforeach
         </div>
     </div>
 </section>
 
-<!-- SECTION 4: Cuidados para cabello afro y rizos -->
+<!-- SECTION 4: Proceso -->
 <section class="bg-[#111111] py-16 md:py-24">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="section-title text-center mb-12">{{ __('servicios.afro_rizos.sections.proceso.title') }}</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            @php $pasos = __('servicios.afro_rizos.sections.proceso.pasos'); @endphp
+            @foreach($pasos as $paso)
+            <div class="text-center">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gold text-black font-bold mb-4 mx-auto">
+                    {{ $loop->iteration }}
+                </div>
+                <p class="text-gray-300 text-sm font-semibold">{{ $paso }}</p>
+            </div>
+            @endforeach
+        </div>
+    </div>
+</section>
+
+<!-- SECTION 5: Cuidados -->
+<section class="bg-[#0A0A0A] py-16 md:py-24">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 class="section-title text-center mb-12">{{ __('servicios.afro_rizos.sections.cuidados.title') }}</h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            @foreach(__('servicios.afro_rizos.sections.cuidados.items') as $cuidado_key => $cuidado)
-                <div class="bg-[#1A1A1A] border border-[#2A2A2A] p-6 rounded">
-                    <h3 class="text-gold font-bold mb-3 flex items-center gap-2">
-                        <span class="text-xl">💧</span>
-                    </h3>
-                    <p class="text-gray-400 text-sm">{{ $cuidado }}</p>
-                </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            @foreach(__('servicios.afro_rizos.sections.cuidados.items') as $cuidado)
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] p-6 flex gap-4">
+                <span class="text-gold text-2xl flex-shrink-0">✓</span>
+                <p class="text-gray-400 text-sm">{{ $cuidado }}</p>
+            </div>
+            @endforeach
+        </div>
+    </div>
+</section>
+
+<!-- SECTION 6: Precios -->
+<section class="bg-[#111111] py-16 md:py-24">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="section-title text-center mb-12">Precios</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            @foreach(__('servicios.afro_rizos.precios') as $servicio => $precio)
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] p-6 flex items-center justify-between">
+                <h4 class="font-serif text-lg font-bold text-white capitalize">{{ str_replace('_', ' ', $servicio) }}</h4>
+                <p class="text-gold font-bold text-lg">{{ $precio }}</p>
+            </div>
             @endforeach
         </div>
 
-        <div class="mt-8 p-6 bg-gold/10 border border-gold/30 rounded">
-            <p class="text-gray-300 text-center">
-                <strong class="text-gold">Especialistas en cabello afro:</strong> Tenemos años de experiencia cuidando diferentes texturas de cabello. Somos referencia en la zona por nuestro trato especializado.
-            </p>
+        <div class="text-center">
+            <p class="text-gray-400">{!! __('home.servicios.help_text') !!}</p>
         </div>
     </div>
 </section>
 
-<!-- SECTION 5: ¿Por qué somos especialistas? -->
-<section class="bg-[#111111] py-16 md:py-24">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="section-title text-center mb-12">Nuestra experiencia</h2>
-
-        <div class="space-y-4">
-            <div class="flex items-start">
-                <span class="text-gold text-3xl mr-4">✓</span>
-                <div>
-                    <h3 class="text-white font-bold mb-2">Más de 10 años de experiencia</h3>
-                    <p class="text-gray-400">Llevamos años especializándonos en cabello afro y rizado, conocemos cada detalle.</p>
-                </div>
-            </div>
-
-            <div class="flex items-start">
-                <span class="text-gold text-3xl mr-4">✓</span>
-                <div>
-                    <h3 class="text-white font-bold mb-2">Productos de calidad</h3>
-                    <p class="text-gray-400">Usamos productos especializados que cuidan y respetan la naturaleza del cabello afro.</p>
-                </div>
-            </div>
-
-            <div class="flex items-start">
-                <span class="text-gold text-3xl mr-4">✓</span>
-                <div>
-                    <h3 class="text-white font-bold mb-2">Referencia en la zona</h3>
-                    <p class="text-gray-400">Somos la peluquería de referencia para cabello afro en la comarca.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- SECTION 6: CTA Reserva -->
+<!-- SECTION 7: CTA Final -->
 <section class="relative py-20 md:py-32 bg-cover bg-center flex items-center justify-center" style="background-image: url('https://images.unsplash.com/photo-1573166475912-1ed8b4f093d2?w=1920&q=80');">
     <div class="absolute inset-0 bg-black/70"></div>
 
     <div class="relative z-10 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h2 class="font-serif text-4xl md:text-5xl font-bold text-white mb-6">
-            Tu cabello merece lo mejor
+            Tu belleza natural merece expertos
         </h2>
         <p class="text-gray-300 text-lg mb-8">
-            Confía en nuestros especialistas para cuidar y embellecer tu cabello afro.
+            Somos especialistas reales en cabello afro y rizado. Cuidamos, protegemos y realizamos tu belleza natural.
         </p>
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
             <a href="tel:+34633912050" class="btn-gold text-sm md:text-base font-semibold px-8 py-3">
-                Llamar: 633 912 050
+                {{ __('home.reserva.phone_cta') }}
             </a>
             <a href="https://wa.me/34633912050?text=Hola!%20Quería%20pedir%20cita%20para%20cabello%20afro%20en%20Peluquería%20Jenver" target="_blank" rel="noopener noreferrer" class="btn-outline text-sm md:text-base font-semibold px-8 py-3">
-                WhatsApp →
+                {{ __('home.reserva.whatsapp_cta') }}
             </a>
         </div>
     </div>

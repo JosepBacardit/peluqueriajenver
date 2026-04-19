@@ -25,13 +25,16 @@
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <a href="tel:+34633912050" class="btn-gold text-sm md:text-base">
-                Reservar cita →
+                {{ __('home.hero.cta_primary') }}
+            </a>
+            <a href="https://wa.me/34633912050?text=Hola!%20Quería%20pedir%20cita%20para%20coloración%20en%20Peluquería%20Jenver" target="_blank" rel="noopener noreferrer" class="btn-outline text-sm md:text-base">
+                WhatsApp →
             </a>
         </div>
     </div>
 </section>
 
-<!-- SECTION 2: ¿Por qué coloración en Jenver? -->
+<!-- SECTION 2: Introducción -->
 <section class="bg-[#111111] py-16 md:py-24">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 class="section-title text-center mb-8">{{ __('servicios.color.sections.que_es.title') }}</h2>
@@ -40,50 +43,34 @@
         </p>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div class="bg-[#1A1A1A] border border-[#2A2A2A] p-8 rounded">
-                <div class="text-4xl text-gold mb-4">🎨</div>
-                <h3 class="font-serif text-xl font-bold text-white mb-3">Tonalidad Perfecta</h3>
-                <p class="text-gray-400">Encontramos el color que mejor complemente tu tono de piel y estilo personal.</p>
+            @foreach(__('servicios.color.sections.ventajas.items') as $ventaja)
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8 rounded">
+                <div class="text-4xl text-gold mb-4">{{ $ventaja['icon'] }}</div>
+                <h3 class="font-serif text-xl font-bold text-white mb-3">{{ $ventaja['title'] }}</h3>
+                <p class="text-gray-400">{{ $ventaja['description'] }}</p>
             </div>
-
-            <div class="bg-[#1A1A1A] border border-[#2A2A2A] p-8 rounded">
-                <div class="text-4xl text-gold mb-4">✨</div>
-                <h3 class="font-serif text-xl font-bold text-white mb-3">Productos de Calidad</h3>
-                <p class="text-gray-400">Utilizamos tintes profesionales que cuidan tu cabello mientras lo transforman.</p>
-            </div>
-
-            <div class="bg-[#1A1A1A] border border-[#2A2A2A] p-8 rounded">
-                <div class="text-4xl text-gold mb-4">💫</div>
-                <h3 class="font-serif text-xl font-bold text-white mb-3">Cobertura Total</h3>
-                <p class="text-gray-400">Cobertura completa de canas y resultados uniformes en todo el cabello.</p>
-            </div>
-
-            <div class="bg-[#1A1A1A] border border-[#2A2A2A] p-8 rounded">
-                <div class="text-4xl text-gold mb-4">💇‍♀️</div>
-                <h3 class="font-serif text-xl font-bold text-white mb-3">Asesoramiento Experto</h3>
-                <p class="text-gray-400">Nuestros coloristas asesoran sobre el color más favorecedero para ti.</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- SECTION 3: Tipos de coloración -->
-<section class="bg-[#0A0A0A] py-16 md:py-24">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="section-title text-center mb-12">{{ __('servicios.color.sections.tipos.title') }}</h2>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            @foreach(__('servicios.color.sections.tipos.items') as $tipo)
-                <div class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8">
-                    <h3 class="font-serif text-2xl font-bold text-white mb-4">{{ $tipo['name'] }}</h3>
-                    <p class="text-gray-400 leading-relaxed">{{ $tipo['description'] }}</p>
-                </div>
             @endforeach
         </div>
     </div>
 </section>
 
-<!-- SECTION 4: Nuestro proceso -->
+<!-- SECTION 3: Servicios incluidos -->
+<section class="bg-[#0A0A0A] py-16 md:py-24">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="section-title text-center mb-12">{{ __('servicios.color.sections.tipos.title') }}</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            @foreach(__('servicios.color.sections.tipos.items') as $tipo)
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8">
+                <h3 class="font-serif text-2xl font-bold text-white mb-4">{{ $tipo['name'] }}</h3>
+                <p class="text-gray-400 leading-relaxed mb-4">{{ $tipo['description'] }}</p>
+            </div>
+            @endforeach
+        </div>
+    </div>
+</section>
+
+<!-- SECTION 4: Proceso -->
 <section class="bg-[#111111] py-16 md:py-24">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 class="section-title text-center mb-12">{{ __('servicios.color.sections.proceso.title') }}</h2>
@@ -91,55 +78,38 @@
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
             @php $pasos = __('servicios.color.sections.proceso.pasos'); @endphp
             @foreach($pasos as $paso)
-                <div class="text-center">
-                    <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gold text-black font-bold mb-4 mx-auto">
-                        {{ $loop->iteration }}
-                    </div>
-                    <p class="text-gray-300 text-sm font-semibold">{{ $paso }}</p>
+            <div class="text-center">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gold text-black font-bold mb-4 mx-auto">
+                    {{ $loop->iteration }}
                 </div>
+                <p class="text-gray-300 text-sm font-semibold">{{ $paso }}</p>
+            </div>
             @endforeach
         </div>
     </div>
 </section>
 
-<!-- SECTION 5: Cuidados del color -->
+<!-- SECTION 5: Precios -->
 <section class="bg-[#0A0A0A] py-16 md:py-24">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="section-title text-center mb-12">Mantén tu color vibrante</h2>
+        <h2 class="section-title text-center mb-12">Precios</h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div class="bg-[#1A1A1A] border border-[#2A2A2A] p-6">
-                <h3 class="text-gold font-bold mb-3 flex items-center gap-2">
-                    <span class="text-xl">🧴</span> Productos Adecuados
-                </h3>
-                <p class="text-gray-400 text-sm">Usa champú y acondicionador específicos para cabello coloreado. Estos productos ayudan a mantener el color y protegen tu cabello.</p>
+            @foreach(__('servicios.color.precios') as $servicio => $precio)
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] p-6 flex items-center justify-between">
+                <h4 class="font-serif text-lg font-bold text-white capitalize">{{ str_replace('_', ' ', $servicio) }}</h4>
+                <p class="text-gold font-bold text-lg">{{ $precio }}</p>
             </div>
+            @endforeach
+        </div>
 
-            <div class="bg-[#1A1A1A] border border-[#2A2A2A] p-6">
-                <h3 class="text-gold font-bold mb-3 flex items-center gap-2">
-                    <span class="text-xl">☀️</span> Protección Solar
-                </h3>
-                <p class="text-gray-400 text-sm">El sol puede desvanecer el color. Usa productos con protección UV o evita la exposición prolongada.</p>
-            </div>
-
-            <div class="bg-[#1A1A1A] border border-[#2A2A2A] p-6">
-                <h3 class="text-gold font-bold mb-3 flex items-center gap-2">
-                    <span class="text-xl">💧</span> Hidratación
-                </h3>
-                <p class="text-gray-400 text-sm">El cabello coloreado necesita hidratación extra. Aplica mascarillas profundas semanalmente.</p>
-            </div>
-
-            <div class="bg-[#1A1A1A] border border-[#2A2A2A] p-6">
-                <h3 class="text-gold font-bold mb-3 flex items-center gap-2">
-                    <span class="text-xl">✂️</span> Retoques Regulares
-                </h3>
-                <p class="text-gray-400 text-sm">Realiza retoques cada 4-6 semanas para mantener el color uniforme y cubrir las raíces nuevas.</p>
-            </div>
+        <div class="text-center">
+            <p class="text-gray-400">{!! __('home.servicios.help_text') !!}</p>
         </div>
     </div>
 </section>
 
-<!-- SECTION 6: CTA Reserva -->
+<!-- SECTION 6: CTA Final -->
 <section class="relative py-20 md:py-32 bg-cover bg-center flex items-center justify-center" style="background-image: url('https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=1920&q=80');">
     <div class="absolute inset-0 bg-black/70"></div>
 
@@ -153,10 +123,10 @@
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
             <a href="tel:+34633912050" class="btn-gold text-sm md:text-base font-semibold px-8 py-3">
-                Llamar: 633 912 050
+                {{ __('home.reserva.phone_cta') }}
             </a>
             <a href="https://wa.me/34633912050?text=Hola!%20Quería%20pedir%20cita%20para%20coloración%20en%20Peluquería%20Jenver" target="_blank" rel="noopener noreferrer" class="btn-outline text-sm md:text-base font-semibold px-8 py-3">
-                WhatsApp →
+                {{ __('home.reserva.whatsapp_cta') }}
             </a>
         </div>
     </div>

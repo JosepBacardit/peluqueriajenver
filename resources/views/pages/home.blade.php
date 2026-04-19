@@ -47,134 +47,7 @@
     </div>
 </section>
 
-<!-- SECTION 2: Especialidades -->
-<section id="especialidades" class="bg-[#111111] py-16 md:py-24">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="section-title text-center mb-12">{{ __('home.especialidades.title') }}</h2>
-
-        <!-- Servicios principales destacados -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-            <!-- Card 1: Mechas (PRINCIPAL) -->
-            <a href="{{ route('mechas') }}" class="bg-[#1A1A1A] border border-gold/50 hover:border-gold hover:shadow-lg hover:shadow-gold/20 transition-all p-8 group cursor-pointer">
-                <div class="text-4xl mb-4 group-hover:scale-110 transition-transform">{{ __('home.especialidades.cards.balayage.icon') }}</div>
-                <h3 class="font-serif text-2xl font-bold text-white mb-2 group-hover:text-gold transition-colors">Mechas & Balayage</h3>
-                <span class="inline-block text-gold text-xs font-bold mb-3">⭐ LO QUE MÁS HACEMOS</span>
-                <p class="text-gray-400 text-sm leading-relaxed">
-                    Balayage, babylights y mechas clásicas. Técnicas profesionales que crean efectos naturales y personalizados.
-                </p>
-                <div class="mt-4 text-gold text-sm font-semibold">Ver más →</div>
-            </a>
-
-            <!-- Card 2: Color (PRINCIPAL) -->
-            <a href="{{ route('color') }}" class="bg-[#1A1A1A] border border-gold/50 hover:border-gold hover:shadow-lg hover:shadow-gold/20 transition-all p-8 group cursor-pointer">
-                <div class="text-4xl mb-4 group-hover:scale-110 transition-transform">🎨</div>
-                <h3 class="font-serif text-2xl font-bold text-white mb-2 group-hover:text-gold transition-colors">Coloración Capilar</h3>
-                <span class="inline-block text-gold text-xs font-bold mb-3">⭐ LO QUE MÁS HACEMOS</span>
-                <p class="text-gray-400 text-sm leading-relaxed">
-                    Coloración completa, tonalizados y cambios de color. Nuestros coloristas encuentran el tono perfecto para ti.
-                </p>
-                <div class="mt-4 text-gold text-sm font-semibold">Ver más →</div>
-            </a>
-        </div>
-
-        <!-- Otros servicios principales -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Card 3: Afro -->
-            <a href="{{ route('afro') }}" class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8 group cursor-pointer">
-                <div class="text-4xl mb-4 group-hover:scale-110 transition-transform">{{ __('home.especialidades.cards.afro.icon') }}</div>
-                <h3 class="font-serif text-2xl font-bold text-white mb-3 group-hover:text-gold transition-colors">{{ __('home.especialidades.cards.afro.title') }}</h3>
-                <p class="text-gray-400 text-sm leading-relaxed">
-                    {{ __('home.especialidades.cards.afro.description') }}
-                </p>
-                <div class="mt-4 text-gold text-sm font-semibold">Ver más →</div>
-            </a>
-
-            <!-- Card 4: Corte -->
-            <a href="{{ route('corte') }}" class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8 group cursor-pointer">
-                <div class="text-4xl mb-4 group-hover:scale-110 transition-transform">{{ __('home.especialidades.cards.corte.icon') }}</div>
-                <h3 class="font-serif text-2xl font-bold text-white mb-3 group-hover:text-gold transition-colors">{{ __('home.especialidades.cards.corte.title') }}</h3>
-                <p class="text-gray-400 text-sm leading-relaxed">
-                    {{ __('home.especialidades.cards.corte.description') }}
-                </p>
-                <div class="mt-4 text-gold text-sm font-semibold">Ver más →</div>
-            </a>
-
-            <!-- Card 5: Alisados -->
-            <a href="{{ route('alisados') }}" class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8 group cursor-pointer">
-                <div class="text-4xl mb-4 group-hover:scale-110 transition-transform">✨</div>
-                <h3 class="font-serif text-2xl font-bold text-white mb-3 group-hover:text-gold transition-colors">Alisados & Keratina</h3>
-                <p class="text-gray-400 text-sm leading-relaxed">
-                    Tratamientos alisadores profesionales. Cabello liso, sedoso y brillante.
-                </p>
-                <div class="mt-4 text-gold text-sm font-semibold">Ver más →</div>
-            </a>
-        </div>
-
-        <!-- Últimos servicios centrados -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto mt-6">
-            <!-- Card 6: Peinados Eventos -->
-            <a href="{{ route('peinados') }}" class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8 group cursor-pointer">
-                <div class="text-4xl mb-4 group-hover:scale-110 transition-transform">💇</div>
-                <h3 class="font-serif text-2xl font-bold text-white mb-3 group-hover:text-gold transition-colors">Peinados Eventos</h3>
-                <p class="text-gray-400 text-sm leading-relaxed">
-                    Peinados profesionales para bodas y eventos especiales. Tu día perfecto.
-                </p>
-                <div class="mt-4 text-gold text-sm font-semibold">Ver más →</div>
-            </a>
-
-            <!-- Card 7: Servicios Complementarios -->
-            <a href="{{ route('complementarios') }}" class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8 group cursor-pointer">
-                <div class="text-4xl mb-4 group-hover:scale-110 transition-transform">💅</div>
-                <h3 class="font-serif text-2xl font-bold text-white mb-3 group-hover:text-gold transition-colors">Servicios Complementarios</h3>
-                <p class="text-gray-400 text-sm leading-relaxed">
-                    Depilación, manicura, pedicura y diseño de cejas. Belleza integral.
-                </p>
-                <div class="mt-4 text-gold text-sm font-semibold">Ver más →</div>
-            </a>
-        </div>
-    </div>
-</section>
-
-<!-- SECTION 3: Galería -->
-<section id="galeria" class="bg-[#0A0A0A] py-16 md:py-24">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-12">
-            <h2 class="section-title">{{ __('home.galeria.title') }}</h2>
-            <p class="text-gray-400">{{ __('home.galeria.subtitle') }}</p>
-        </div>
-
-        <!-- Image Grid -->
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-8">
-            <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
-                <img src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&q=80" alt="Balayage - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
-            </div>
-            <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
-                <img src="https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=800&q=80" alt="Técnicas de color - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
-            </div>
-            <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
-                <img src="https://images.unsplash.com/photo-1573166475912-1ed8b4f093d2?w=800&q=80" alt="Cabello afro y rizado - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
-            </div>
-            <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
-                <img src="https://images.unsplash.com/photo-1522338242992-e1a54906a8da?w=800&q=80" alt="Peinado de rizos - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
-            </div>
-            <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
-                <img src="https://images.unsplash.com/photo-1634449571010-02389ed0f9b0?w=800&q=80" alt="Corte y estilismo - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
-            </div>
-            <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
-                <img src="https://images.unsplash.com/photo-1559599101-f09722fb4948?w=800&q=80" alt="Corte profesional - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
-            </div>
-        </div>
-
-        <!-- Instagram Link -->
-        <div class="text-center">
-            <a href="https://www.instagram.com/peluqueriajenver/" target="_blank" rel="noopener noreferrer" class="btn-outline inline-block text-sm md:text-base">
-                {{ __('home.galeria.cta') }}
-            </a>
-        </div>
-    </div>
-</section>
-
-<!-- SECTION 4: Diagnóstico Gratuito -->
+<!-- SECTION 2: Diagnóstico Gratuito -->
 <section id="diagnostico" class="bg-[#111111] py-16 md:py-24">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -246,6 +119,84 @@
                     </a>
                 </div>
             </div>
+        </div>
+    </div>
+</section>
+
+<!-- SECTION 3: Servicios Intro -->
+<section id="servicios" class="bg-[#111111] py-16 md:py-24">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="text-center mb-16">
+            <p class="text-gold text-sm font-semibold mb-4 tracking-widest uppercase">{{ __('home.servicios_intro.title') }}</p>
+            <h2 class="font-serif text-4xl md:text-5xl font-bold text-white mb-6">{{ __('home.servicios_intro.subtitle') }}</h2>
+            <p class="text-gray-400 max-w-2xl mx-auto text-lg">{{ __('home.servicios_intro.description') }}</p>
+        </div>
+
+        <!-- 4 Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+            @foreach(__('home.servicios_intro.cards') as $key => $card)
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8 group">
+                <div class="flex items-start gap-4 mb-4">
+                    <div class="text-3xl">{{ $card['icon'] }}</div>
+                    @if(isset($card['label']))
+                    <span class="text-gold text-xs font-bold mt-1 bg-gold/10 px-2 py-1 rounded text-nowrap">{{ $card['label'] }}</span>
+                    @endif
+                </div>
+
+                <h3 class="font-serif text-xl font-bold text-white mb-2 group-hover:text-gold transition-colors">{{ $card['title'] }}</h3>
+                <p class="text-gray-400 text-sm leading-relaxed mb-6">{{ $card['description'] }}</p>
+
+                <!-- Services List -->
+                <ul class="space-y-2">
+                    @foreach($card['services'] as $service)
+                    <li class="text-gray-300 text-sm flex items-start gap-2">
+                        <span class="text-gold mt-1">•</span>
+                        <span>{{ $service }}</span>
+                    </li>
+                    @endforeach
+                </ul>
+            </div>
+            @endforeach
+        </div>
+    </div>
+</section>
+
+<!-- SECTION 4: Galería -->
+<section id="galeria" class="bg-[#0A0A0A] py-16 md:py-24">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="section-title">{{ __('home.galeria.title') }}</h2>
+            <p class="text-gray-400">{{ __('home.galeria.subtitle') }}</p>
+        </div>
+
+        <!-- Image Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-8">
+            <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
+                <img src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&q=80" alt="Balayage - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
+            </div>
+            <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
+                <img src="https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=800&q=80" alt="Técnicas de color - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
+            </div>
+            <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
+                <img src="https://images.unsplash.com/photo-1573166475912-1ed8b4f093d2?w=800&q=80" alt="Cabello afro y rizado - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
+            </div>
+            <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
+                <img src="https://images.unsplash.com/photo-1522338242992-e1a54906a8da?w=800&q=80" alt="Peinado de rizos - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
+            </div>
+            <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
+                <img src="https://images.unsplash.com/photo-1634449571010-02389ed0f9b0?w=800&q=80" alt="Corte y estilismo - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
+            </div>
+            <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
+                <img src="https://images.unsplash.com/photo-1559599101-f09722fb4948?w=800&q=80" alt="Corte profesional - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
+            </div>
+        </div>
+
+        <!-- Instagram Link -->
+        <div class="text-center">
+            <a href="https://www.instagram.com/peluqueriajenver/" target="_blank" rel="noopener noreferrer" class="btn-outline inline-block text-sm md:text-base">
+                {{ __('home.galeria.cta') }}
+            </a>
         </div>
     </div>
 </section>

@@ -11,6 +11,10 @@
     <div class="absolute inset-0 bg-black/60"></div>
 
     <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div class="inline-block mb-6">
+            <span class="text-gold text-xs font-semibold tracking-widest uppercase">{{ __('servicios.alisados.hero.subtitle') }}</span>
+        </div>
+
         <h1 class="font-serif text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
             {{ __('servicios.alisados.hero.title') }}
         </h1>
@@ -21,78 +25,108 @@
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <a href="tel:+34633912050" class="btn-gold text-sm md:text-base">
-                Reservar cita →
+                {{ __('home.hero.cta_primary') }}
+            </a>
+            <a href="https://wa.me/34633912050?text=Hola!%20Quería%20pedir%20cita%20para%20alisado%20en%20Peluquería%20Jenver" target="_blank" rel="noopener noreferrer" class="btn-outline text-sm md:text-base">
+                WhatsApp →
             </a>
         </div>
     </div>
 </section>
 
-<!-- SECTION 2: ¿Qué es? -->
+<!-- SECTION 2: Introducción -->
 <section class="bg-[#111111] py-16 md:py-24">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 class="section-title text-center mb-8">{{ __('servicios.alisados.sections.que_es.title') }}</h2>
-        <p class="text-gray-400 text-lg leading-relaxed text-center">
+        <p class="text-gray-400 text-lg leading-relaxed text-center mb-12">
             {{ __('servicios.alisados.sections.que_es.content') }}
         </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            @foreach(__('servicios.alisados.sections.ventajas.items') as $ventaja)
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8 rounded">
+                <div class="text-4xl text-gold mb-4">{{ $ventaja['icon'] }}</div>
+                <h3 class="font-serif text-xl font-bold text-white mb-3">{{ $ventaja['title'] }}</h3>
+                <p class="text-gray-400">{{ $ventaja['description'] }}</p>
+            </div>
+            @endforeach
+        </div>
     </div>
 </section>
 
-<!-- SECTION 3: Tipos de alisado -->
+<!-- SECTION 3: Servicios incluidos -->
 <section class="bg-[#0A0A0A] py-16 md:py-24">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 class="section-title text-center mb-12">{{ __('servicios.alisados.sections.tipos.title') }}</h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
             @foreach(__('servicios.alisados.sections.tipos.items') as $tipo)
-                <div class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8">
-                    <h3 class="font-serif text-2xl font-bold text-white mb-4">{{ $tipo['name'] }}</h3>
-                    <p class="text-gray-400 leading-relaxed">{{ $tipo['description'] }}</p>
-                </div>
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8">
+                <h3 class="font-serif text-2xl font-bold text-white mb-4">{{ $tipo['name'] }}</h3>
+                <p class="text-gray-400 leading-relaxed mb-4">{{ $tipo['description'] }}</p>
+            </div>
             @endforeach
         </div>
     </div>
 </section>
 
-<!-- SECTION 4: Cuidados post-tratamiento -->
+<!-- SECTION 4: Proceso -->
 <section class="bg-[#111111] py-16 md:py-24">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="section-title text-center mb-12">{{ __('servicios.alisados.sections.cuidados.title') }}</h2>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="section-title text-center mb-12">{{ __('servicios.alisados.sections.proceso.title') }}</h2>
 
-        <ul class="space-y-4">
-            @foreach(__('servicios.alisados.sections.cuidados.items') as $cuidado_key => $cuidado)
-                <li class="flex items-center p-4 bg-[#1A1A1A] border border-[#2A2A2A] rounded">
-                    <span class="text-gold text-2xl mr-4">✓</span>
-                    <span class="text-gray-300">{{ $cuidado }}</span>
-                </li>
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            @php $pasos = __('servicios.alisados.sections.proceso.pasos'); @endphp
+            @foreach($pasos as $paso)
+            <div class="text-center">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gold text-black font-bold mb-4 mx-auto">
+                    {{ $loop->iteration }}
+                </div>
+                <p class="text-gray-300 text-sm font-semibold">{{ $paso }}</p>
+            </div>
             @endforeach
-        </ul>
-
-        <div class="mt-8 p-6 bg-gold/10 border border-gold/30 rounded">
-            <p class="text-gray-300 text-center">
-                <strong class="text-gold">Nota importante:</strong> Los resultados mejorarán progresivamente las primeras semanas. Sigue nuestras recomendaciones para obtener el mejor resultado.
-            </p>
         </div>
     </div>
 </section>
 
-<!-- SECTION 5: CTA Reserva -->
+<!-- SECTION 5: Precios -->
+<section class="bg-[#0A0A0A] py-16 md:py-24">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="section-title text-center mb-12">Precios</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            @foreach(__('servicios.alisados.precios') as $servicio => $precio)
+            <div class="bg-[#1A1A1A] border border-[#2A2A2A] p-6 flex items-center justify-between">
+                <h4 class="font-serif text-lg font-bold text-white capitalize">{{ str_replace('_', ' ', $servicio) }}</h4>
+                <p class="text-gold font-bold text-lg">{{ $precio }}</p>
+            </div>
+            @endforeach
+        </div>
+
+        <div class="text-center">
+            <p class="text-gray-400">{!! __('home.servicios.help_text') !!}</p>
+        </div>
+    </div>
+</section>
+
+<!-- SECTION 6: CTA Final -->
 <section class="relative py-20 md:py-32 bg-cover bg-center flex items-center justify-center" style="background-image: url('https://images.unsplash.com/photo-1522338242992-e1a54906a8da?w=1920&q=80');">
     <div class="absolute inset-0 bg-black/70"></div>
 
     <div class="relative z-10 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h2 class="font-serif text-4xl md:text-5xl font-bold text-white mb-6">
-            Cabello liso y sedoso
+            Logra un cabello liso y sedoso
         </h2>
         <p class="text-gray-300 text-lg mb-8">
-            Transforma tu cabello con nuestros tratamientos profesionales de alisado.
+            Nuestros tratamientos profesionales transformarán tu cabello, protegiéndolo mientras lo alisamos.
         </p>
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
             <a href="tel:+34633912050" class="btn-gold text-sm md:text-base font-semibold px-8 py-3">
-                Llamar: 633 912 050
+                {{ __('home.reserva.phone_cta') }}
             </a>
             <a href="https://wa.me/34633912050?text=Hola!%20Quería%20pedir%20cita%20para%20alisado%20en%20Peluquería%20Jenver" target="_blank" rel="noopener noreferrer" class="btn-outline text-sm md:text-base font-semibold px-8 py-3">
-                WhatsApp →
+                {{ __('home.reserva.whatsapp_cta') }}
             </a>
         </div>
     </div>
