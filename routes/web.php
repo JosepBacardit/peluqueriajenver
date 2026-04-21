@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DiscountCodeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -22,3 +23,7 @@ Route::get('/peinados-eventos', function () {
 Route::get('/belleza-estetica', function () {
     return view('pages.services.belleza_estetica');
 })->name('belleza-estetica');
+
+Route::post('/descuento', [DiscountCodeController::class, 'store'])
+    ->name('discount.store')
+    ->middleware('throttle:3,60');

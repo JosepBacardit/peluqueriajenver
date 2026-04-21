@@ -37,6 +37,38 @@
                 {{ __('home.hero.cta_secondary') }}
             </a>
         </div>
+
+        <!-- Discount Email Form -->
+        <div class="mt-8 pt-8 border-t border-white/10 max-w-md mx-auto w-full">
+            <div id="discount-form-wrap">
+                <p class="text-gold text-xs font-semibold tracking-widest uppercase mb-3">
+                    {{ __('home.descuento.label') }}
+                </p>
+                <form id="discount-form" class="flex flex-col sm:flex-row gap-3" novalidate>
+                    @csrf
+                    <input
+                        type="email"
+                        id="discount-email"
+                        name="email"
+                        placeholder="{{ __('home.descuento.placeholder') }}"
+                        required
+                        class="flex-1 bg-white/10 border border-white/20 text-white placeholder-white/40
+                               px-4 py-2.5 text-sm focus:outline-none focus:border-gold focus:ring-1
+                               focus:ring-gold/50 backdrop-blur-sm transition-colors duration-200"
+                    >
+                    <button type="submit" id="discount-submit" class="btn-gold text-sm px-5 py-2.5 whitespace-nowrap">
+                        {{ __('home.descuento.submit') }}
+                    </button>
+                </form>
+                <p id="discount-error" class="hidden mt-2 text-red-400 text-xs text-left"></p>
+                <p class="mt-2 text-white/30 text-xs">{{ __('home.descuento.privacy') }}</p>
+            </div>
+
+            <div id="discount-success" class="hidden py-2">
+                <span class="text-gold font-semibold text-sm">✓ </span>
+                <span id="discount-success-msg" class="text-white/70 text-sm"></span>
+            </div>
+        </div>
     </div>
 
     <!-- Scroll Indicator -->

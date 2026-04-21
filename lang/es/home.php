@@ -255,6 +255,18 @@ return [
         'whatsapp_cta' => 'WhatsApp',
     ],
 
+    // Descuento Section (hero form)
+    'descuento' => [
+        'label'       => '🎁 Oferta exclusiva',
+        'title'       => 'Recibe un 10% de descuento en tu primera visita',
+        'placeholder' => 'tu@email.com',
+        'submit'      => 'Enviar →',
+        'privacy'     => 'Sin spam. Solo tu código, nada más.',
+        'success'     => '¡Código enviado a :email! Revisa tu bandeja de entrada.',
+        'error_rate'  => 'Demasiados intentos. Inténtalo más tarde.',
+        'error_email' => 'Introduce un email válido.',
+    ],
+
     // Contacto Section
     'contacto' => [
         'title' => 'Cómo llegar',
