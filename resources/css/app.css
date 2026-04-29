@@ -11,6 +11,7 @@
     --color-gold: #C9A84C;
     --color-gold-light: #E2C97E;
     --color-gold-dark: #A07830;
+    --text-xs: 0.70rem;
 }
 
 @layer components {

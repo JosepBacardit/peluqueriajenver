@@ -1,5 +1,5 @@
 <!-- Announcement Bar -->
-<div id="announcement" class="fixed top-0 left-0 right-0 z-40 bg-black border-b border-gold/30 py-2 px-4 text-center text-xs md:text-sm text-gray-300">
+<div id="announcement" class="fixed top-0 left-0 right-0 z-40 bg-black border-b border-gold/30 py-2 px-4 text-center text-[0.70rem] md:text-xs text-gray-300">
     <span class="inline-block">{{ __('navigation.announcement.location') }}</span>
     <span class="mx-2 text-gray-500">·</span>
     <a href="tel:+34633912050" class="hover:text-gold transition-colors">{{ __('navigation.announcement.phone_label') }} 633 912 050</a>

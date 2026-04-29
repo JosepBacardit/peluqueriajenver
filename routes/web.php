@@ -22,3 +22,16 @@ Route::get('/peinados-eventos', function () {
 Route::get('/belleza-estetica', function () {
     return view('pages.services.belleza_estetica');
 })->name('belleza-estetica');
+
+// Páginas legales (no indexables)
+Route::get('/privacidad', function () {
+    return view('pages.privacidad');
+})->name('privacidad');
+
+Route::get('/avisos-legales', function () {
+    return view('pages.avisos-legales');
+})->name('avisos-legales');
+
+Route::get('/cookies', function () {
+    return view('pages.cookies');
+})->name('cookies');
