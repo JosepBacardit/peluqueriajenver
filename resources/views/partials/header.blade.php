@@ -32,7 +32,6 @@
                         <a href="{{ route('corte-tratamientos') }}" class="block px-4 py-3 text-gray-300 hover:text-gold hover:bg-[#1A1A1A] text-sm border-t border-[#2A2A2A]">{{ __('navigation.footer.services.items.cut') }}</a>
                         <a href="{{ route('peinados-eventos') }}" class="block px-4 py-3 text-gray-300 hover:text-gold hover:bg-[#1A1A1A] text-sm border-t border-[#2A2A2A]">{{ __('navigation.footer.services.items.peinados') }}</a>
                         <a href="{{ route('belleza-estetica') }}" class="block px-4 py-3 text-gray-300 hover:text-gold hover:bg-[#1A1A1A] text-sm border-t border-[#2A2A2A]">{{ __('navigation.footer.services.items.complementarios') }}</a>
-                        <a href="{{ route('peluqueria-afro') }}" class="block px-4 py-3 text-gray-300 hover:text-gold hover:bg-[#1A1A1A] text-sm border-t border-[#2A2A2A]">{{ __('navigation.footer.services.items.afro') }}</a>
                     </div>
                 </div>
 
@@ -72,7 +71,6 @@
                 <a href="{{ route('corte-tratamientos') }}" class="block px-6 py-2 text-gray-400 hover:text-gold transition-colors text-sm">{{ __('navigation.footer.services.items.cut') }}</a>
                 <a href="{{ route('peinados-eventos') }}" class="block px-6 py-2 text-gray-400 hover:text-gold transition-colors text-sm">{{ __('navigation.footer.services.items.peinados') }}</a>
                 <a href="{{ route('belleza-estetica') }}" class="block px-6 py-2 text-gray-400 hover:text-gold transition-colors text-sm">{{ __('navigation.footer.services.items.complementarios') }}</a>
-                <a href="{{ route('peluqueria-afro') }}" class="block px-6 py-2 text-gray-400 hover:text-gold transition-colors text-sm">{{ __('navigation.footer.services.items.afro') }}</a>
             </div>
 
             <a href="#contacto" class="block px-3 py-2 text-gray-300 hover:text-gold transition-colors">{{ __('navigation.navbar.menu.contact') }}</a>

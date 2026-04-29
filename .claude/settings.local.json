@@ -5,7 +5,15 @@
       "Bash(git commit -m ' *)",
       "Bash(xargs grep *)",
       "Bash(git push *)",
-      "Bash(git commit -m 'Usar imagen personalizada en hero de página corte y tratamientos *)"
+      "Bash(git commit -m 'Usar imagen personalizada en hero de página corte y tratamientos *)",
+      "Bash(php -l /c/laragon/www/peluqueriajenver/resources/views/pages/home.blade.php)",
+      "Bash(echo \"File syntax check completed with exit code $?\")",
+      "Bash(php -r ' *)",
+      "Bash(git commit -m 'Fix: Remover @push blocks que causaban ParseError en home.blade.php *)",
+      "Bash(php artisan *)",
+      "Bash(git commit -m 'Fix: Remover @push blocks de Schema.org en páginas de servicio *)",
+      "Bash(git commit -m 'UX: Remover botón '\\\\''Reservar cita online'\\\\'' de páginas de servicio *)",
+      "Bash(git commit -m 'feat: Remover página Peluquería Afro *)"
     ]
   }
 }
