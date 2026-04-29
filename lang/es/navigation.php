@@ -59,6 +59,7 @@ return [
             'copyright' => '© 2025 Peluquería Jenver · Todos los derechos reservados',
             'privacy' => 'Política de privacidad',
             'legal' => 'Aviso legal',
+            'cookies' => 'Política de cookies',
         ],
     ],
 ];
