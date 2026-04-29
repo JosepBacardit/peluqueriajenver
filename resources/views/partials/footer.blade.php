@@ -4,7 +4,8 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <!-- Column 1: Logo + Description + Social -->
             <div>
-                <img src="{{ asset('images/logo-jenver.png') }}" alt="Peluquería Jenver Logo" class="h-20 w-auto mb-6">
+                {{-- TODO: convertir logo a SVG --}}
+                <img src="{{ asset('images/logo-jenver.png') }}" alt="Peluquería Jenver Logo" class="h-20 w-auto mb-6" width="80" height="80" loading="lazy">
                 <p class="text-gray-400 text-sm mb-6">
                     {{ __('navigation.footer.description') }}
                 </p>

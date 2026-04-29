@@ -8,7 +8,7 @@
 @section('content')
 
 <!-- SECTION 1: Hero -->
-<section id="hero" class="relative w-full h-screen md:h-[90vh] bg-cover bg-center flex items-center justify-center" style="background-image: url('https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1920&q=80');">
+<section id="hero" class="relative w-full h-screen md:h-[90vh] bg-cover bg-center flex items-center justify-center" style="background-image: url('https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1920&q=80&fm=webp');">
     <!-- Overlay -->
     <div class="absolute inset-0 bg-black/60"></div>
 
@@ -54,7 +54,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <!-- Imagen (izquierda) -->
             <div class="hidden lg:block aspect-square bg-[#1A1A1A] overflow-hidden rounded">
-                <img src="https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=800&q=80" alt="Consulta personalizada - Peluquería Jenver" class="w-full h-full object-cover" loading="lazy">
+                <img src="https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=800&q=80&fm=webp" alt="Consulta personalizada - Peluquería Jenver" class="w-full h-full object-cover" width="800" height="800" loading="lazy" fetchpriority="high">
             </div>
 
             <!-- Contenido (derecha) -->
@@ -174,22 +174,22 @@
         <!-- Image Grid -->
         <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-8">
             <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
-                <img src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&q=80" alt="Balayage - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
+                <img src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&q=80&fm=webp" alt="Balayage - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
             </div>
             <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
-                <img src="https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=800&q=80" alt="Técnicas de color - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
+                <img src="https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=800&q=80&fm=webp" alt="Técnicas de color - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
             </div>
             <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
-                <img src="https://images.unsplash.com/photo-1573166475912-1ed8b4f093d2?w=800&q=80" alt="Cabello afro y rizado - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
+                <img src="https://images.unsplash.com/photo-1573166475912-1ed8b4f093d2?w=800&q=80&fm=webp" alt="Cabello afro y rizado - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
             </div>
             <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
-                <img src="https://images.unsplash.com/photo-1522338242992-e1a54906a8da?w=800&q=80" alt="Peinado de rizos - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
+                <img src="https://images.unsplash.com/photo-1522338242992-e1a54906a8da?w=800&q=80&fm=webp" alt="Peinado de rizos - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
             </div>
             <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
-                <img src="https://images.unsplash.com/photo-1634449571010-02389ed0f9b0?w=800&q=80" alt="Corte y estilismo - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
+                <img src="https://images.unsplash.com/photo-1634449571010-02389ed0f9b0?w=800&q=80&fm=webp" alt="Corte y estilismo - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
             </div>
             <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
-                <img src="https://images.unsplash.com/photo-1559599101-f09722fb4948?w=800&q=80" alt="Corte profesional - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
+                <img src="https://images.unsplash.com/photo-1559599101-f09722fb4948?w=800&q=80&fm=webp" alt="Corte profesional - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy">
             </div>
         </div>
 
@@ -289,7 +289,7 @@
 </section>
 
 <!-- SECTION 7: CTA Reserva -->
-<section id="reserva" class="relative py-20 md:py-32 bg-cover bg-center flex items-center justify-center" style="background-image: url('https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1920&q=80');">
+<section id="reserva" class="relative py-20 md:py-32 bg-cover bg-center flex items-center justify-center" style="background-image: url('https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1920&q=80&fm=webp');">
     <div class="absolute inset-0 bg-black/70"></div>
 
     <div class="relative z-10 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">

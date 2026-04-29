@@ -10,8 +10,9 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-24">
             <!-- Logo -->
+            {{-- TODO: convertir logo a SVG para mejor rendimiento --}}
             <a href="{{ url('/') }}" class="flex-shrink-0 flex items-center hover:opacity-80 transition-opacity">
-                <img src="{{ asset('images/logo-jenver.png') }}" alt="Peluquería Jenver Logo" class="h-20 w-auto">
+                <img src="{{ asset('images/logo-jenver.png') }}" alt="Peluquería Jenver Logo" class="h-20 w-auto" width="80" height="80">
             </a>
 
             <!-- Desktop Navigation -->
