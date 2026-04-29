@@ -122,7 +122,20 @@
     </div>
 </section>
 
-<!-- SECTION 5: CTA Final -->
+<!-- SECTION 5: Precios Orientativos -->
+<section class="bg-[#0A0A0A] py-16 md:py-24">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="section-title text-center mb-12">Tarifas Orientativas</h2>
+        @include('partials.precios', ['precios' => [
+            ['Peinado boda (prueba incluida)', 'desde 70€'],
+            ['Peinado evento', 'desde 40€'],
+            ['Recogido', 'desde 30€'],
+            ['Ondas y rizos', 'desde 25€'],
+        ]])
+    </div>
+</section>
+
+<!-- SECTION 6: CTA Final -->
 <section class="relative py-20 md:py-32 bg-cover bg-center flex items-center justify-center" style="background-image: url('{{ asset('images/peinado-boda.png') }}');">
     <div class="absolute inset-0 bg-black/70"></div>
 

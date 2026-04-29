@@ -124,7 +124,22 @@
     </div>
 </section>
 
-<!-- SECTION 5: CTA Final -->
+<!-- SECTION 5: Precios Orientativos -->
+<section class="bg-[#0A0A0A] py-16 md:py-24">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="section-title text-center mb-12">Tarifas Orientativas</h2>
+        @include('partials.precios', ['precios' => [
+            ['Corte de mujer', 'desde 20€'],
+            ['Corte caballero', 'desde 15€'],
+            ['Corte infantil', 'desde 12€'],
+            ['Keratina', 'desde 80€'],
+            ['Alisado permanente', 'desde 100€'],
+            ['Arreglo de barba', 'desde 10€'],
+        ]])
+    </div>
+</section>
+
+<!-- SECTION 6: CTA Final -->
 <section class="relative py-20 md:py-32 bg-cover bg-center flex items-center justify-center" style="background-image: url('{{ asset('images/salon-belleza-moderno-elegante.png') }}');">
     <div class="absolute inset-0 bg-black/70"></div>
 

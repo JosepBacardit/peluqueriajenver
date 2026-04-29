@@ -104,7 +104,20 @@
     </div>
 </section>
 
-<!-- SECTION 5: Promociones especiales -->
+<!-- SECTION 5: Precios Orientativos -->
+<section class="bg-[#111111] py-16 md:py-24">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="section-title text-center mb-12">Tarifas Orientativas</h2>
+        @include('partials.precios', ['precios' => [
+            ['Manicura', 'desde 18€'],
+            ['Pedicura', 'desde 25€'],
+            ['Diseño de cejas', 'desde 12€'],
+            ['Depilación facial', 'desde 10€'],
+        ]])
+    </div>
+</section>
+
+<!-- SECTION 6: Promociones especiales -->
 <section class="bg-[#0A0A0A] py-16 md:py-24">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 class="section-title text-center mb-12">Paquetes y promociones</h2>
