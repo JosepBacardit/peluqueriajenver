@@ -14,7 +14,7 @@
 
     <!-- SEO Meta tags dinámicos -->
     <title>@yield('title', 'Peluquería Jenver | Montcada i Reixac')</title>
-    <meta name="description" content="@yield('description', 'Peluquería unisex en Montcada i Reixac. Especialistas en balayage, cabello afro y rizos. Corte, color y extensiones. Reserva tu cita: 633 912 050.')">
+    <meta name="description" content="@yield('meta_description', 'Peluquería unisex en Montcada i Reixac. Especialistas en balayage, cabello afro y rizos. Corte, color y extensiones. Reserva tu cita: 633 912 050.')">
     <meta name="keywords" content="@yield('keywords', 'peluquería Montcada i Reixac, balayage, cabello afro, rizos, peluquería unisex')">
     <meta name="robots" content="@yield('robots', 'index, follow')">
 
@@ -34,12 +34,17 @@
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
+    <!-- Preconnect para optimización de recursos externos -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
     <!-- Tailwind + App CSS -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <!-- Schema JSON-LD SEO Local -->
     @include('partials.schema-local')
 
+    @stack('structured_data')
     @stack('head')
 </head>
 <body class="bg-[#0A0A0A] text-white font-sans antialiased">

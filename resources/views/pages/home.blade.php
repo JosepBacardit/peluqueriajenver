@@ -1,7 +1,8 @@
 @extends('layouts.app')
 
 @section('title', __('home.meta.title'))
-@section('description', __('home.meta.description'))
+@section('meta_description', __('home.meta.description'))
+@section('canonical', 'https://www.peluqueriajenver.com/')
 @section('keywords', __('home.meta.keywords'))
 
 @section('content')
