@@ -147,4 +147,27 @@
     </div>
 </section>
 
+@push('structured_data')
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "name": "Mechas y Balayage",
+  "description": "Balayage, babylights, mechas clásicas, coloración completa y decoloración profesional en Montcada i Reixac.",
+  "provider": {
+    "@type": "LocalBusiness",
+    "name": "Peluquería Jenver",
+    "url": "{{ url('/') }}"
+  },
+  "areaServed": {
+    "@type": "City",
+    "name": "Montcada i Reixac"
+  },
+  "priceRange": "€€",
+  "url": "{{ route('color-mechas') }}",
+  "image": "{{ asset('images/color-mechas.png') }}"
+}
+</script>
+@endpush
+
 @endsection

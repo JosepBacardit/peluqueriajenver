@@ -154,4 +154,26 @@
     </div>
 </section>
 
+@push('structured_data')
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "name": "Belleza y Estética",
+  "description": "Manicura, pedicura, diseño de cejas y depilación facial.",
+  "provider": {
+    "@type": "LocalBusiness",
+    "name": "Peluquería Jenver",
+    "url": "{{ url('/') }}"
+  },
+  "areaServed": {
+    "@type": "City",
+    "name": "Montcada i Reixac"
+  },
+  "priceRange": "€€",
+  "url": "{{ route('belleza-estetica') }}"
+}
+</script>
+@endpush
+
 @endsection

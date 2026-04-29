@@ -145,4 +145,27 @@
     </div>
 </section>
 
+@push('structured_data')
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "name": "Peinados para Eventos",
+  "description": "Peinados para bodas, recogidos y eventos especiales con prueba previa incluida.",
+  "provider": {
+    "@type": "LocalBusiness",
+    "name": "Peluquería Jenver",
+    "url": "{{ url('/') }}"
+  },
+  "areaServed": {
+    "@type": "City",
+    "name": "Montcada i Reixac"
+  },
+  "priceRange": "€€",
+  "url": "{{ route('peinados-eventos') }}",
+  "image": "{{ asset('images/peinados-para-eventos.png') }}"
+}
+</script>
+@endpush
+
 @endsection

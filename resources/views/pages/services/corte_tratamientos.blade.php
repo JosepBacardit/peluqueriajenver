@@ -147,4 +147,27 @@
     </div>
 </section>
 
+@push('structured_data')
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "name": "Corte y Tratamientos",
+  "description": "Corte de mujer, caballero y niños. Keratina y alisado permanente profesional.",
+  "provider": {
+    "@type": "LocalBusiness",
+    "name": "Peluquería Jenver",
+    "url": "{{ url('/') }}"
+  },
+  "areaServed": {
+    "@type": "City",
+    "name": "Montcada i Reixac"
+  },
+  "priceRange": "€€",
+  "url": "{{ route('corte-tratamientos') }}",
+  "image": "{{ asset('images/corte-y-tratamientos.png') }}"
+}
+</script>
+@endpush
+
 @endsection
