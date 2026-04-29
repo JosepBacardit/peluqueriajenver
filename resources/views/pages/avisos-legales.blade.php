@@ -13,7 +13,7 @@
             <h2 class="text-2xl font-serif font-semibold mt-8 mb-4 text-gold">1. Información del Titular</h2>
             <p class="text-gray-300">
                 <strong>Razón Social:</strong> Peluquería Jenver<br>
-                <strong>Domicilio:</strong> Carrer Lleida, 21 - 08110 Montcada i Reixac (Barcelona)<br>
+                <strong>Domicilio:</strong> C/ Lleida, 21 - 08110 Montcada i Reixac (Barcelona)<br>
                 <strong>Teléfono:</strong> +34 633 912 050<br>
                 <strong>Email:</strong> peluqueriajenver@email.com
             </p>

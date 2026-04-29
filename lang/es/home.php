@@ -250,7 +250,7 @@ return [
     'reserva' => [
         'subtitle' => '¿Lista para tu cambio de look?',
         'title' => 'Reserva tu cita<br>en Peluquería Jenver',
-        'description' => 'Atendemos en Carrer Lleida, 21 · Montcada i Reixac · Barcelona<br>Abiertos de martes a sábado, de 9:00 a 19:00',
+        'description' => 'Atendemos en C/ Lleida, 21 · Montcada i Reixac · Barcelona<br>Abiertos de martes a sábado, de 9:00 a 19:00',
         'phone_cta' => 'Llamar ahora: 633 912 050',
         'whatsapp_cta' => 'WhatsApp',
     ],
@@ -260,7 +260,7 @@ return [
         'title' => 'Cómo llegar',
         'business_name' => 'Peluquería Jenver',
         'address_label' => 'Dirección',
-        'address_street' => 'Carrer Lleida, 21',
+        'address_street' => 'C/ Lleida, 21',
         'address_postal' => '08110 Montcada i Reixac',
         'address_city' => 'Barcelona, España',
         'phone_label' => 'Teléfono',

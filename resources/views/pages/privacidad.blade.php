@@ -13,7 +13,7 @@
             <h2 class="text-2xl font-serif font-semibold mt-8 mb-4 text-gold">1. Responsable del Tratamiento</h2>
             <p class="text-gray-300">
                 <strong>Peluquería Jenver</strong><br>
-                Carrer Lleida, 21<br>
+                C/ Lleida, 21<br>
                 08110 Montcada i Reixac (Barcelona)<br>
                 Teléfono: +34 633 912 050<br>
                 Email: peluqueriajenver@email.com

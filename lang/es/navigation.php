@@ -3,7 +3,7 @@
 return [
     // Announcement Bar
     'announcement' => [
-        'location' => '📍 Carrer Lleida, 21 · Montcada i Reixac',
+        'location' => '📍 C/ Lleida, 21 · Montcada i Reixac',
         'phone_label' => '📞',
     ],
 
@@ -40,7 +40,7 @@ return [
             'title' => 'Contacto',
             'address_label' => 'Dirección',
             'address' => [
-                'street' => 'Carrer Lleida, 21',
+                'street' => 'C/ Lleida, 21',
                 'postal' => '08110 Montcada i Reixac',
                 'city' => 'Barcelona, España',
             ],
