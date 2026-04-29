@@ -27,6 +27,10 @@ Route::get('/belleza-estetica', function () {
     return view('pages.services.belleza_estetica');
 })->name('belleza-estetica');
 
+Route::get('/peluqueria-afro', function () {
+    return view('pages.services.peluqueria_afro');
+})->name('peluqueria-afro');
+
 // Páginas legales (no indexables)
 Route::get('/privacidad', function () {
     return view('pages.privacidad');
