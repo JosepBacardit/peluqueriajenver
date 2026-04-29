@@ -139,7 +139,19 @@
     </div>
 </section>
 
-<!-- SECTION 6: CTA Final -->
+<!-- SECTION 7: Preguntas Frecuentes -->
+<section class="bg-[#111111] py-16 md:py-24">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="section-title text-center mb-12">Preguntas Frecuentes</h2>
+        @include('partials.faq', ['preguntas' => [
+            ['q' => '¿Cuánto dura la keratina?', 'a' => 'Entre 3 y 4 meses con el mantenimiento adecuado. Te asesoramos sobre los cuidados en casa.'],
+            ['q' => '¿Hacéis cortes para niños?', 'a' => 'Sí, atendemos a niños de todas las edades en un ambiente tranquilo y familiar.'],
+            ['q' => '¿El alisado permanente daña el cabello?', 'a' => 'Usamos productos profesionales que minimizan el daño. El diagnóstico previo determina si tu cabello es apto.'],
+        ]])
+    </div>
+</section>
+
+<!-- SECTION 8: CTA Final -->
 <section class="relative py-20 md:py-32 bg-cover bg-center flex items-center justify-center" style="background-image: url('{{ asset('images/salon-belleza-moderno-elegante.png') }}');">
     <div class="absolute inset-0 bg-black/70"></div>
 
@@ -157,6 +169,10 @@
             </a>
             <a href="https://wa.me/34633912050?text=Hola!%20Me%20gustaría%20agendar%20cita%20para%20corte%20en%20Peluquería%20Jenver" target="_blank" rel="noopener noreferrer" class="btn-outline text-sm md:text-base font-semibold px-8 py-3">
                 WhatsApp →
+            </a>
+            {{-- TODO: sustituir href por enlace a Booksy/Calendly cuando esté configurado --}}
+            <a href="#" class="btn-outline text-sm md:text-base font-semibold px-8 py-3 opacity-50 cursor-not-allowed">
+                Reservar cita online →
             </a>
         </div>
     </div>
@@ -181,6 +197,41 @@
   "priceRange": "€€",
   "url": "{{ route('corte-tratamientos') }}",
   "image": "{{ asset('images/corte-y-tratamientos.png') }}"
+}
+</script>
+@endpush
+
+@push('structured_data')
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "¿Cuánto dura la keratina?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Entre 3 y 4 meses con el mantenimiento adecuado. Te asesoramos sobre los cuidados en casa."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Hacéis cortes para niños?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sí, atendemos a niños de todas las edades en un ambiente tranquilo y familiar."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿El alisado permanente daña el cabello?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Usamos productos profesionales que minimizan el daño. El diagnóstico previo determina si tu cabello es apto."
+      }
+    }
+  ]
 }
 </script>
 @endpush

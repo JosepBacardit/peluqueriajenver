@@ -221,7 +221,7 @@
                 <p class="text-gray-300 font-semibold">{{ __('home.nosotros.stats.numero_uno.label') }}</p>
             </div>
             <div class="text-center">
-                <div class="text-gold font-serif text-5xl font-bold mb-2">{{ __('home.nosotros.stats.rating.number') }}</div>
+                <div class="text-gold font-serif text-5xl font-bold mb-2" title="Basado en reseñas de Google Business Profile">{{ __('home.nosotros.stats.rating.number') }}</div>
                 <p class="text-gray-300 font-semibold">{{ __('home.nosotros.stats.rating.label') }}</p>
             </div>
         </div>
@@ -284,6 +284,15 @@
                 </p>
                 <p class="text-gray-500 text-sm font-semibold">— Laura M.</p>
             </div>
+        </div>
+
+        <div class="flex justify-center mt-12">
+            <a href="https://www.google.com/search?q=Peluquería+Jenver+Montcada+i+Reixac#lrd=0x12a4a74d5d5d5d5d:0x5d5d5d5d5d5d5d5d,1" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-gold hover:text-gold-light transition-colors font-semibold">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M15.5 1h-8C6.12 1 5 2.12 5 3.5v17C5 21.88 6.12 23 7.5 23h8c1.38 0 2.5-1.12 2.5-2.5v-17C18 2.12 16.88 1 15.5 1zm-4 21c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5-4H7V4h9v14z"></path>
+                </svg>
+                Ver todas las reseñas en Google →
+            </a>
         </div>
     </div>
 </section>

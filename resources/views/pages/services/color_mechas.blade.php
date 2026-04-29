@@ -139,7 +139,19 @@
     </div>
 </section>
 
-<!-- SECTION 6: CTA Final -->
+<!-- SECTION 7: Preguntas Frecuentes -->
+<section class="bg-[#111111] py-16 md:py-24">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="section-title text-center mb-12">Preguntas Frecuentes</h2>
+        @include('partials.faq', ['preguntas' => [
+            ['q' => '¿Cuánto dura un balayage?', 'a' => 'Entre 3 y 6 meses sin retoque. El efecto degradado hace que el crecimiento sea imperceptible.'],
+            ['q' => '¿Necesito decolorarme para hacerme mechas?', 'a' => 'Depende de tu color natural. En el diagnóstico gratuito te explicamos qué técnica es la mejor para ti.'],
+            ['q' => '¿Cuánto dura la cita para un balayage?', 'a' => 'Entre 2 y 4 horas según la longitud y la técnica. Te lo confirmamos al reservar.'],
+        ]])
+    </div>
+</section>
+
+<!-- SECTION 8: CTA Final -->
 <section class="relative py-20 md:py-32 bg-cover bg-center flex items-center justify-center" style="background-image: url('{{ asset('images/color-mechas-cta.png') }}');">
     <div class="absolute inset-0 bg-black/70"></div>
 
@@ -157,6 +169,10 @@
             </a>
             <a href="https://wa.me/34633912050?text=Hola!%20Me%20gustaría%20agendar%20cita%20para%20color%20y%20mechas%20en%20Peluquería%20Jenver" target="_blank" rel="noopener noreferrer" class="btn-outline text-sm md:text-base font-semibold px-8 py-3">
                 WhatsApp →
+            </a>
+            {{-- TODO: sustituir href por enlace a Booksy/Calendly cuando esté configurado --}}
+            <a href="#" class="btn-outline text-sm md:text-base font-semibold px-8 py-3 opacity-50 cursor-not-allowed">
+                Reservar cita online →
             </a>
         </div>
     </div>
@@ -181,6 +197,41 @@
   "priceRange": "€€",
   "url": "{{ route('color-mechas') }}",
   "image": "{{ asset('images/color-mechas.png') }}"
+}
+</script>
+@endpush
+
+@push('structured_data')
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "¿Cuánto dura un balayage?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Entre 3 y 6 meses sin retoque. El efecto degradado hace que el crecimiento sea imperceptible."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Necesito decolorarme para hacerme mechas?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Depende de tu color natural. En el diagnóstico gratuito te explicamos qué técnica es la mejor para ti."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Cuánto dura la cita para un balayage?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Entre 2 y 4 horas según la longitud y la técnica. Te lo confirmamos al reservar."
+      }
+    }
+  ]
 }
 </script>
 @endpush

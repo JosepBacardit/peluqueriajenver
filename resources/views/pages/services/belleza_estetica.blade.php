@@ -117,7 +117,19 @@
     </div>
 </section>
 
-<!-- SECTION 6: Promociones especiales -->
+<!-- SECTION 6: Preguntas Frecuentes -->
+<section class="bg-[#0A0A0A] py-16 md:py-24">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="section-title text-center mb-12">Preguntas Frecuentes</h2>
+        @include('partials.faq', ['preguntas' => [
+            ['q' => '¿Hacéis manicura semipermanente?', 'a' => 'Sí, ofrecemos manicura con esmalte semipermanente de larga duración.'],
+            ['q' => '¿Es necesario pedir cita para los servicios de estética?', 'a' => 'Sí, recomendamos reservar cita para garantizar tu atención. Puedes llamar o escribirnos por WhatsApp.'],
+            ['q' => '¿Qué técnica usáis para el diseño de cejas?', 'a' => 'Usamos la técnica de hilo y pinzas para un acabado preciso y natural adaptado a tu rostro.'],
+        ]])
+    </div>
+</section>
+
+<!-- SECTION 7: Promociones especiales -->
 <section class="bg-[#0A0A0A] py-16 md:py-24">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 class="section-title text-center mb-12">Paquetes y promociones</h2>
@@ -163,6 +175,10 @@
             <a href="https://wa.me/34633912050?text=Hola!%20Me%20gustaría%20agendar%20cita%20para%20un%20servicio%20de%20belleza%20en%20Peluquería%20Jenver" target="_blank" rel="noopener noreferrer" class="btn-outline text-sm md:text-base font-semibold px-8 py-3">
                 WhatsApp →
             </a>
+            {{-- TODO: sustituir href por enlace a Booksy/Calendly cuando esté configurado --}}
+            <a href="#" class="btn-outline text-sm md:text-base font-semibold px-8 py-3 opacity-50 cursor-not-allowed">
+                Reservar cita online →
+            </a>
         </div>
     </div>
 </section>
@@ -185,6 +201,41 @@
   },
   "priceRange": "€€",
   "url": "{{ route('belleza-estetica') }}"
+}
+</script>
+@endpush
+
+@push('structured_data')
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "¿Hacéis manicura semipermanente?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sí, ofrecemos manicura con esmalte semipermanente de larga duración."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Es necesario pedir cita para los servicios de estética?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sí, recomendamos reservar cita para garantizar tu atención. Puedes llamar o escribirnos por WhatsApp."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Qué técnica usáis para el diseño de cejas?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Usamos la técnica de hilo y pinzas para un acabado preciso y natural adaptado a tu rostro."
+      }
+    }
+  ]
 }
 </script>
 @endpush

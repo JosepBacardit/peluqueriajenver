@@ -135,7 +135,19 @@
     </div>
 </section>
 
-<!-- SECTION 6: CTA Final -->
+<!-- SECTION 7: Preguntas Frecuentes -->
+<section class="bg-[#111111] py-16 md:py-24">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="section-title text-center mb-12">Preguntas Frecuentes</h2>
+        @include('partials.faq', ['preguntas' => [
+            ['q' => '¿Incluís prueba de peinado para bodas?', 'a' => 'Sí, siempre realizamos una prueba previa para que el día del evento todo salga perfecto.'],
+            ['q' => '¿Con cuánta antelación debo reservar para una boda?', 'a' => 'Recomendamos reservar con al menos 2 meses de antelación, especialmente en temporada alta.'],
+            ['q' => '¿Hacéis peinados a domicilio?', 'a' => 'Por el momento solo atendemos en el salón. Contáctanos para valorar opciones especiales.'],
+        ]])
+    </div>
+</section>
+
+<!-- SECTION 8: CTA Final -->
 <section class="relative py-20 md:py-32 bg-cover bg-center flex items-center justify-center" style="background-image: url('{{ asset('images/peinado-boda.png') }}');">
     <div class="absolute inset-0 bg-black/70"></div>
 
@@ -153,6 +165,10 @@
             </a>
             <a href="https://wa.me/34633912050?text=Hola!%20Me%20gustaría%20agendar%20cita%20para%20un%20peinado%20de%20evento%20en%20Peluquería%20Jenver" target="_blank" rel="noopener noreferrer" class="btn-outline text-sm md:text-base font-semibold px-8 py-3">
                 WhatsApp →
+            </a>
+            {{-- TODO: sustituir href por enlace a Booksy/Calendly cuando esté configurado --}}
+            <a href="#" class="btn-outline text-sm md:text-base font-semibold px-8 py-3 opacity-50 cursor-not-allowed">
+                Reservar cita online →
             </a>
         </div>
     </div>
@@ -177,6 +193,41 @@
   "priceRange": "€€",
   "url": "{{ route('peinados-eventos') }}",
   "image": "{{ asset('images/peinados-para-eventos.png') }}"
+}
+</script>
+@endpush
+
+@push('structured_data')
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "¿Incluís prueba de peinado para bodas?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sí, siempre realizamos una prueba previa para que el día del evento todo salga perfecto."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Con cuánta antelación debo reservar para una boda?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Recomendamos reservar con al menos 2 meses de antelación, especialmente en temporada alta."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Hacéis peinados a domicilio?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Por el momento solo atendemos en el salón. Contáctanos para valorar opciones especiales."
+      }
+    }
+  ]
 }
 </script>
 @endpush
