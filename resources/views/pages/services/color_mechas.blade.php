@@ -178,62 +178,6 @@
     </div>
 </section>
 
-@push('structured_data')
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Service",
-  "name": "Mechas y Balayage",
-  "description": "Balayage, babylights, mechas clásicas, coloración completa y decoloración profesional en Montcada i Reixac.",
-  "provider": {
-    "@type": "LocalBusiness",
-    "name": "Peluquería Jenver",
-    "url": "{{ url('/') }}"
-  },
-  "areaServed": {
-    "@type": "City",
-    "name": "Montcada i Reixac"
-  },
-  "priceRange": "€€",
-  "url": "{{ route('color-mechas') }}",
-  "image": "{{ asset('images/color-mechas.png') }}"
-}
-</script>
-@endpush
 
-@push('structured_data')
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {
-      "@type": "Question",
-      "name": "¿Cuánto dura un balayage?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Entre 3 y 6 meses sin retoque. El efecto degradado hace que el crecimiento sea imperceptible."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "¿Necesito decolorarme para hacerme mechas?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Depende de tu color natural. En el diagnóstico gratuito te explicamos qué técnica es la mejor para ti."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "¿Cuánto dura la cita para un balayage?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Entre 2 y 4 horas según la longitud y la técnica. Te lo confirmamos al reservar."
-      }
-    }
-  ]
-}
-</script>
-@endpush
 
 @endsection

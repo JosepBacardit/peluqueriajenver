@@ -174,62 +174,6 @@
     </div>
 </section>
 
-@push('structured_data')
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Service",
-  "name": "Peinados para Eventos",
-  "description": "Peinados para bodas, recogidos y eventos especiales con prueba previa incluida.",
-  "provider": {
-    "@type": "LocalBusiness",
-    "name": "Peluquería Jenver",
-    "url": "{{ url('/') }}"
-  },
-  "areaServed": {
-    "@type": "City",
-    "name": "Montcada i Reixac"
-  },
-  "priceRange": "€€",
-  "url": "{{ route('peinados-eventos') }}",
-  "image": "{{ asset('images/peinados-para-eventos.png') }}"
-}
-</script>
-@endpush
 
-@push('structured_data')
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {
-      "@type": "Question",
-      "name": "¿Incluís prueba de peinado para bodas?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Sí, siempre realizamos una prueba previa para que el día del evento todo salga perfecto."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "¿Con cuánta antelación debo reservar para una boda?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Recomendamos reservar con al menos 2 meses de antelación, especialmente en temporada alta."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "¿Hacéis peinados a domicilio?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Por el momento solo atendemos en el salón. Contáctanos para valorar opciones especiales."
-      }
-    }
-  ]
-}
-</script>
-@endpush
 
 @endsection

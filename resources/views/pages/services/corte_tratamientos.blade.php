@@ -178,62 +178,6 @@
     </div>
 </section>
 
-@push('structured_data')
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Service",
-  "name": "Corte y Tratamientos",
-  "description": "Corte de mujer, caballero y niños. Keratina y alisado permanente profesional.",
-  "provider": {
-    "@type": "LocalBusiness",
-    "name": "Peluquería Jenver",
-    "url": "{{ url('/') }}"
-  },
-  "areaServed": {
-    "@type": "City",
-    "name": "Montcada i Reixac"
-  },
-  "priceRange": "€€",
-  "url": "{{ route('corte-tratamientos') }}",
-  "image": "{{ asset('images/corte-y-tratamientos.png') }}"
-}
-</script>
-@endpush
 
-@push('structured_data')
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {
-      "@type": "Question",
-      "name": "¿Cuánto dura la keratina?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Entre 3 y 4 meses con el mantenimiento adecuado. Te asesoramos sobre los cuidados en casa."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "¿Hacéis cortes para niños?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Sí, atendemos a niños de todas las edades en un ambiente tranquilo y familiar."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "¿El alisado permanente daña el cabello?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Usamos productos profesionales que minimizan el daño. El diagnóstico previo determina si tu cabello es apto."
-      }
-    }
-  ]
-}
-</script>
-@endpush
 
 @endsection

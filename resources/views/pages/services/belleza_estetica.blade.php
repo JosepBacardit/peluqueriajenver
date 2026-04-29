@@ -183,61 +183,6 @@
     </div>
 </section>
 
-@push('structured_data')
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Service",
-  "name": "Belleza y Estética",
-  "description": "Manicura, pedicura, diseño de cejas y depilación facial.",
-  "provider": {
-    "@type": "LocalBusiness",
-    "name": "Peluquería Jenver",
-    "url": "{{ url('/') }}"
-  },
-  "areaServed": {
-    "@type": "City",
-    "name": "Montcada i Reixac"
-  },
-  "priceRange": "€€",
-  "url": "{{ route('belleza-estetica') }}"
-}
-</script>
-@endpush
 
-@push('structured_data')
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {
-      "@type": "Question",
-      "name": "¿Hacéis manicura semipermanente?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Sí, ofrecemos manicura con esmalte semipermanente de larga duración."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "¿Es necesario pedir cita para los servicios de estética?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Sí, recomendamos reservar cita para garantizar tu atención. Puedes llamar o escribirnos por WhatsApp."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "¿Qué técnica usáis para el diseño de cejas?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Usamos la técnica de hilo y pinzas para un acabado preciso y natural adaptado a tu rostro."
-      }
-    }
-  ]
-}
-</script>
-@endpush
 
 @endsection
