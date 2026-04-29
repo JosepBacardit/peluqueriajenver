@@ -23,6 +23,11 @@ Route::get('/belleza-estetica', function () {
     return view('pages.services.belleza_estetica');
 })->name('belleza-estetica');
 
+// Sobre nosotros
+Route::get('/sobre-nosotros', function () {
+    return view('pages.sobre_nosotros');
+})->name('sobre-nosotros');
+
 // Páginas legales (no indexables)
 Route::get('/privacidad', function () {
     return view('pages.privacidad');

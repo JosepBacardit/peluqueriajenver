@@ -34,7 +34,7 @@
                     </div>
                 </div>
 
-                <a href="#nosotros" class="text-gray-300 hover:text-gold transition-colors">{{ __('navigation.navbar.menu.about') }}</a>
+                <a href="{{ route('sobre-nosotros') }}" class="text-gray-300 hover:text-gold transition-colors">{{ __('navigation.navbar.menu.about') }}</a>
                 <a href="#contacto" class="text-gray-300 hover:text-gold transition-colors">{{ __('navigation.navbar.menu.contact') }}</a>
             </div>
 
@@ -73,7 +73,7 @@
                 <a href="{{ route('belleza-estetica') }}" class="block px-6 py-2 text-gray-400 hover:text-gold transition-colors text-sm">{{ __('navigation.footer.services.items.complementarios') }}</a>
             </div>
 
-            <a href="#nosotros" class="block px-3 py-2 text-gray-300 hover:text-gold transition-colors">{{ __('navigation.navbar.menu.about') }}</a>
+            <a href="{{ route('sobre-nosotros') }}" class="block px-3 py-2 text-gray-300 hover:text-gold transition-colors">{{ __('navigation.navbar.menu.about') }}</a>
             <a href="#contacto" class="block px-3 py-2 text-gray-300 hover:text-gold transition-colors">{{ __('navigation.navbar.menu.contact') }}</a>
             <div class="px-3 py-3 mt-2 border-t border-[#2A2A2A]">
                 <a href="tel:+34633912050" class="btn-gold block text-center w-full text-sm font-semibold">
