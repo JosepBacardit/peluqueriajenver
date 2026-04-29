@@ -28,6 +28,9 @@
     <!-- Canonical -->
     <link rel="canonical" href="@yield('canonical', url()->current())">
 
+    <!-- Sitemap -->
+    <link rel="sitemap" type="application/xml" href="{{ route('sitemap') }}">
+
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
 

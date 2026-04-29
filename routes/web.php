@@ -1,10 +1,14 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\SitemapController;
 
 Route::get('/', function () {
     return view('pages.home');
 })->name('home');
+
+// SEO Sitemap
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
 // Servicios principales (por categoría)
 Route::get('/color-y-mechas', function () {
