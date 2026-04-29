@@ -85,8 +85,6 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-center sm:text-left text-gray-500 text-xs">
             <div>{{ __('navigation.footer.bottom.copyright') }}</div>
             <div class="mt-4 sm:mt-0 space-x-4">
-                <a href="{{ route('sobre-nosotros') }}" class="hover:text-gold transition-colors">Sobre nosotros</a>
-                <span>·</span>
                 <a href="{{ route('privacidad') }}" class="hover:text-gold transition-colors">{{ __('navigation.footer.bottom.privacy') }}</a>
                 <span>·</span>
                 <a href="{{ route('avisos-legales') }}" class="hover:text-gold transition-colors">{{ __('navigation.footer.bottom.legal') }}</a>
