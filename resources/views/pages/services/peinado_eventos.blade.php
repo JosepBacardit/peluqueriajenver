@@ -166,10 +166,6 @@
             <a href="https://wa.me/34633912050?text=Hola!%20Me%20gustaría%20agendar%20cita%20para%20un%20peinado%20de%20evento%20en%20Peluquería%20Jenver" target="_blank" rel="noopener noreferrer" class="btn-outline text-sm md:text-base font-semibold px-8 py-3">
                 WhatsApp →
             </a>
-            {{-- TODO: sustituir href por enlace a Booksy/Calendly cuando esté configurado --}}
-            <a href="#" class="btn-outline text-sm md:text-base font-semibold px-8 py-3 opacity-50 cursor-not-allowed">
-                Reservar cita online →
-            </a>
         </div>
     </div>
 </section>
