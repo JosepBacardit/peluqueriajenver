@@ -74,6 +74,8 @@
 
     @include('partials.footer')
 
+    @include('partials.cookie-banner')
+
     @stack('scripts')
 </body>
 </html>
