@@ -8,7 +8,7 @@
 @section('content')
 
 <!-- SECTION 1: Hero -->
-<section id="hero" class="relative w-full h-screen md:h-[90vh] bg-cover bg-center flex items-center justify-center" style="background-image: url('https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1920&q=80&fm=webp');">
+<section id="hero" class="relative w-full h-screen md:h-[90vh] bg-cover bg-center flex items-center justify-center" style="background-image: url('/images/tu-pelo-en-buenas-manos.png');">
     <!-- Overlay -->
     <div class="absolute inset-0 bg-black/60"></div>
 
