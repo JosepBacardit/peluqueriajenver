@@ -8,7 +8,7 @@
 @section('content')
 
 <!-- SECTION 1: Hero -->
-<section class="relative w-full h-screen md:h-[90vh] bg-cover bg-center flex items-center justify-center" style="background-image: url('https://images.unsplash.com/photo-1552852081-a43eab14e5a5?w=1920&q=80&fm=webp');">
+<section class="relative w-full h-screen md:h-[90vh] bg-cover bg-center flex items-center justify-center" style="background-image: url('/images/belleza-y-estética.png');">
     <div class="absolute inset-0 bg-black/60"></div>
 
     <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
