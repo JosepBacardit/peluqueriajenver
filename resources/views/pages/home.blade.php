@@ -54,7 +54,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <!-- Imagen (izquierda) -->
             <div class="hidden lg:block aspect-square bg-[#1A1A1A] overflow-hidden rounded">
-                <img src="/images/diagnositico-gratuito-personalizado.png" alt="Consulta personalizada - Peluquería Jenver" class="w-full h-full object-cover" width="800" height="800" loading="lazy" fetchpriority="high">
+                <img src="/images/diagnostico-gratuito-personalizado.png" alt="Consulta personalizada - Peluquería Jenver" class="w-full h-full object-cover" width="800" height="800" loading="lazy" fetchpriority="high">
             </div>
 
             <!-- Contenido (derecha) -->
