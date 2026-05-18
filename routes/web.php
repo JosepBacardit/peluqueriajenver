@@ -39,3 +39,8 @@ Route::get('/avisos-legales', function () {
 Route::get('/cookies', function () {
     return view('pages.cookies');
 })->name('cookies');
+
+// Contacto
+Route::get('/contacto', function () {
+    return view('pages.contacto');
+})->name('contacto');
