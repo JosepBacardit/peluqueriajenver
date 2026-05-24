@@ -19,6 +19,9 @@
       gtag('config', 'G-EX4HPXH0WV');
     </script>
 
+    <!-- Ahrefs Analytics -->
+    <script src="https://analytics.ahrefs.com/analytics.js" data-key="13MiFXBj6SD9DxTnh4TmCQ" async></script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
