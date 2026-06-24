@@ -92,10 +92,21 @@
     @stack('scripts')
 
     <!-- Defer analytics until after page load to avoid reflows -->
-    <script type="module" src="{{ Vite::asset('resources/js/defer-analytics.js') }}"></script>
-
-    <!-- Ahrefs Analytics (loaded after render) -->
     <script>
+      // Load Google Analytics after page renders
+      window.addEventListener('load', function() {
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = 'https://www.googletagmanager.com/gtag/js?id=G-EX4HPXH0WV';
+        document.head.appendChild(script);
+
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-EX4HPXH0WV');
+      });
+
+      // Load Ahrefs Analytics after page renders
       window.addEventListener('load', function() {
         const script = document.createElement('script');
         script.src = 'https://analytics.ahrefs.com/analytics.js';
