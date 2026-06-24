@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Mechas y Balayage en Montcada i Reixac | Peluquería Jenver')
-@section('meta_description', 'Balayage, babylights y mechas clásicas en Montcada i Reixac. Coloristas expertas. Diagnóstico gratuito incluido. Reserva tu cita.')
+@section('meta_description', 'Balayage, babylights y mechas profesionales en Montcada i Reixac. Coloristas expertas con diagnóstico gratuito. Técnicas naturales y duraderas. Reserva ya.')
 @section('canonical', 'https://www.peluqueriajenver.com/color-y-mechas')
 @section('keywords', 'color cabello, mechas, balayage, babylights, coloración capilar, Montcada i Reixac')
 

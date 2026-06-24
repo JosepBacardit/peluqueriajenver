@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Peinados para Bodas y Eventos | Peluquería Jenver')
-@section('meta_description', 'Peinados para bodas, recogidos y eventos en Montcada i Reixac. Prueba previa incluida. Diseño exclusivo para tu día especial.')
+@section('meta_description', 'Peinados exclusivos para bodas, eventos y celebraciones en Montcada i Reixac. Prueba previa gratis. Diseño personalizado. Agendar cita ahora.')
 @section('canonical', 'https://www.peluqueriajenver.com/peinados-eventos')
 @section('keywords', 'peinado boda, peinados eventos, peinado novia, peluquería eventos, peinado comunión, Montcada i Reixac')
 

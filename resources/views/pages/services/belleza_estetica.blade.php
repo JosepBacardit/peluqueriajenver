@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Manicura, Pedicura y Estética en Montcada i Reixac | Peluquería Jenver')
-@section('meta_description', 'Manicura, pedicura, diseño de cejas y depilación facial en Peluquería Jenver, Montcada i Reixac. Todo en un solo salón.')
+@section('meta_description', 'Manicura, pedicura, diseño de cejas y depilación facial en Montcada i Reixac. Belleza integral en un solo lugar. Profesionales certificadas. Reserva.')
 @section('canonical', 'https://www.peluqueriajenver.com/belleza-estetica')
 @section('keywords', 'manicura, pedicura, diseño cejas, depilación facial, belleza integral, Montcada i Reixac')
 

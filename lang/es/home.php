@@ -4,7 +4,7 @@ return [
     // Meta tags
     'meta' => [
         'title' => 'Peluquería Jenver | Especialistas en Balayage, Afro y Rizos en Montcada i Reixac',
-        'description' => 'Peluquería unisex en Montcada i Reixac. Especialistas en balayage, mechas, cabello afro, rizos y coloración. Corte de pelo hombre y mujer. Reserva: 633 912 050.',
+        'description' => 'Peluquería unisex especializada en balayage, cabello afro y rizos en Montcada i Reixac. Corte profesional, keratina y alisados. Diagnóstico gratis. Reserva hoy.',
         'keywords' => 'peluquería Montcada i Reixac, balayage, cabello afro, especialista rizos, peluquería unisex, corte de pelo',
     ],
 

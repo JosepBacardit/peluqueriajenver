@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Corte de Pelo y Keratina en Montcada i Reixac | Peluquería Jenver')
-@section('meta_description', 'Corte de mujer, caballero y niños. Keratina y alisados duraderos. Peluquería Jenver, Montcada i Reixac. Llama o escríbenos por WhatsApp.')
+@section('meta_description', 'Corte de cabello profesional para mujer, hombre y niños en Montcada i Reixac. Keratina y alisados duraderos con técnica especializada. Contacta hoy.')
 @section('canonical', 'https://www.peluqueriajenver.com/corte-y-tratamientos')
 @section('keywords', 'corte cabello, alisado, keratina, corte caballeros, barbería, Montcada i Reixac')
 

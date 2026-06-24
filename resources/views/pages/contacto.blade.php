@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Contacto - Peluquería Jenver')
-@section('meta_description', 'Contacta con Peluquería Jenver en Montcada i Reixac. Llamadas, WhatsApp o visita nuestro local. Especialistas en balayage, cabello afro y rizos.')
+@section('meta_description', 'Contacta con Peluquería Jenver en Montcada i Reixac. Llamadas, WhatsApp o visita. Horario: Mar-Sáb 9:00-19:00. Especialistas en balayage y afro.')
 @section('canonical', 'https://www.peluqueriajenver.com/contacto')
 
 @section('content')
