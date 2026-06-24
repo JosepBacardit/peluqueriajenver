@@ -57,16 +57,16 @@
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
 
-    <!-- Preconnect para optimización de recursos externos (antes de cargar recursos) -->
+    <!-- DNS prefetch y preconnect para Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <!-- Preload critical fonts para evitar bloqueo -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap">
+    <!-- Preload crítico de fuentes woff2 para evitar FOUT -->
+    <link rel="preload" as="font" type="font/woff2" href="https://fonts.gstatic.com/s/playfairdisplay/v30/nuFiD-vYS-_2YttRW7dM7IitM_b85eLs6Gs.woff2" crossorigin>
+    <link rel="preload" as="font" type="font/woff2" href="https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3i6t4kDjJwO5Do-5d-PXqqKOnQigVc.woff2" crossorigin>
 
-    <!-- Google Fonts - cargar de forma no-bloqueante -->
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"></noscript>
+    <!-- Google Fonts CSS - cargar sincrónico para evitar layout shift -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
     <!-- Tailwind + App CSS - Load asynchronously to avoid render blocking -->
     <link rel="preload" as="style" href="{{ Vite::asset('resources/css/app.css') }}">
