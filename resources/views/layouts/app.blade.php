@@ -91,16 +91,18 @@
 
     @stack('scripts')
 
-    <!-- Google Analytics (deferred to avoid render blocking) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-EX4HPXH0WV"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-EX4HPXH0WV');
-    </script>
+    <!-- Defer analytics until after page load to avoid reflows -->
+    <script type="module" src="{{ Vite::asset('resources/js/defer-analytics.js') }}"></script>
 
-    <!-- Ahrefs Analytics (deferred to avoid forced reflows) -->
-    <script src="https://analytics.ahrefs.com/analytics.js" data-key="13MiFXBj6SD9DxTnh4TmCQ" async defer></script>
+    <!-- Ahrefs Analytics (loaded after render) -->
+    <script>
+      window.addEventListener('load', function() {
+        const script = document.createElement('script');
+        script.src = 'https://analytics.ahrefs.com/analytics.js';
+        script.setAttribute('data-key', '13MiFXBj6SD9DxTnh4TmCQ');
+        script.async = true;
+        document.body.appendChild(script);
+      });
+    </script>
 </body>
 </html>
