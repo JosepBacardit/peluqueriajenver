@@ -9,10 +9,10 @@
 
 <!-- SECTION 1: Hero -->
 <section id="hero" class="relative w-full h-screen md:h-[90vh] flex items-center justify-center overflow-hidden">
-    <!-- Hero Background Image with WebP support -->
+    <!-- Hero Background Image with WebP support - LCP image with high fetch priority -->
     <picture class="absolute inset-0 w-full h-full">
         <source srcset="{{ asset('images/tu-pelo-en-buenas-manos.webp') }}" type="image/webp">
-        <img src="{{ asset('images/tu-pelo-en-buenas-manos.png') }}" alt="" class="w-full h-full object-cover" loading="eager" decoding="async">
+        <img src="{{ asset('images/tu-pelo-en-buenas-manos.png') }}" alt="" class="w-full h-full object-cover" loading="eager" decoding="async" fetchpriority="high">
     </picture>
 
     <!-- Overlay -->
