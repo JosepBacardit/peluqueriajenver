@@ -8,7 +8,13 @@
 @section('content')
 
 <!-- SECTION 1: Hero -->
-<section id="hero" class="relative w-full h-screen md:h-[90vh] bg-cover bg-center flex items-center justify-center" style="background-image: url('/images/tu-pelo-en-buenas-manos.png');">
+<section id="hero" class="relative w-full h-screen md:h-[90vh] flex items-center justify-center overflow-hidden">
+    <!-- Hero Background Image with WebP support -->
+    <picture class="absolute inset-0 w-full h-full">
+        <source srcset="{{ asset('images/tu-pelo-en-buenas-manos.webp') }}" type="image/webp">
+        <img src="{{ asset('images/tu-pelo-en-buenas-manos.png') }}" alt="" class="w-full h-full object-cover" loading="eager" decoding="async">
+    </picture>
+
     <!-- Overlay -->
     <div class="absolute inset-0 bg-black/60"></div>
 
