@@ -13,9 +13,6 @@ class SitemapController extends Controller
             ['url' => route('peinados-eventos'), 'priority' => 0.9, 'changefreq' => 'monthly'],
             ['url' => route('belleza-estetica'), 'priority' => 0.8, 'changefreq' => 'monthly'],
             ['url' => route('contacto'), 'priority' => 0.7, 'changefreq' => 'monthly'],
-            ['url' => route('privacidad'), 'priority' => 0.5, 'changefreq' => 'yearly'],
-            ['url' => route('avisos-legales'), 'priority' => 0.5, 'changefreq' => 'yearly'],
-            ['url' => route('cookies'), 'priority' => 0.5, 'changefreq' => 'yearly'],
         ];
 
         return response()->view('sitemap', ['urls' => $urls], 200, [
