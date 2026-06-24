@@ -156,6 +156,39 @@
     </div>
 </section>
 
+<!-- SECTION 5.5: Otros Servicios -->
+<section class="bg-[#0A0A0A] py-16 md:py-24">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="section-title mb-4">Otros servicios que te pueden interesar</h2>
+            <p class="text-gray-400">Completa tu transformación con nuestros otros servicios especializados</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <a href="{{ route('color-mechas') }}" class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8 group">
+                <div class="text-4xl mb-4">✦</div>
+                <h3 class="font-serif text-xl font-bold text-white mb-3 group-hover:text-gold transition-colors">Color y Mechas</h3>
+                <p class="text-gray-400 text-sm mb-4">Balayage, babylights y coloración profesional para un look perfecto.</p>
+                <span class="text-gold text-sm font-semibold">Ver servicios →</span>
+            </a>
+
+            <a href="{{ route('corte-tratamientos') }}" class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8 group">
+                <div class="text-4xl mb-4">✂</div>
+                <h3 class="font-serif text-xl font-bold text-white mb-3 group-hover:text-gold transition-colors">Corte y Tratamientos</h3>
+                <p class="text-gray-400 text-sm mb-4">Corte profesional, alisados y keratina para transformar tu cabello.</p>
+                <span class="text-gold text-sm font-semibold">Ver servicios →</span>
+            </a>
+
+            <a href="{{ route('peinados-eventos') }}" class="bg-[#1A1A1A] border border-[#2A2A2A] hover:border-gold/50 transition-colors p-8 group">
+                <div class="text-4xl mb-4">👑</div>
+                <h3 class="font-serif text-xl font-bold text-white mb-3 group-hover:text-gold transition-colors">Peinados para Eventos</h3>
+                <p class="text-gray-400 text-sm mb-4">Peinados personalizados para tu día especial, bodas y eventos.</p>
+                <span class="text-gold text-sm font-semibold">Ver servicios →</span>
+            </a>
+        </div>
+    </div>
+</section>
+
 <!-- SECTION 6: CTA Final -->
 <section class="relative py-20 md:py-32 bg-cover bg-center flex items-center justify-center" style="background-image: url('https://images.unsplash.com/photo-1604654894610-df63bc536371?w=1920&q=80&fm=webp');">
     <div class="absolute inset-0 bg-black/70"></div>
