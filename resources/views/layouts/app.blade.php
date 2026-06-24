@@ -68,8 +68,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"></noscript>
 
-    <!-- Tailwind + App CSS -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <!-- Tailwind + App CSS - Load asynchronously to avoid render blocking -->
+    <link rel="preload" as="style" href="{{ Vite::asset('resources/css/app.css') }}">
+    <link rel="stylesheet" href="{{ Vite::asset('resources/css/app.css') }}" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="{{ Vite::asset('resources/css/app.css') }}"></noscript>
+
+    <!-- App JavaScript -->
+    <script type="module" src="{{ Vite::asset('resources/js/app.js') }}"></script>
 
     <!-- Schema JSON-LD SEO Local -->
     @include('partials.schema-local')
