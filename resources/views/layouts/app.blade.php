@@ -65,8 +65,9 @@
     <link rel="preload" as="font" type="font/woff2" href="https://fonts.gstatic.com/s/playfairdisplay/v30/nuFiD-vYS-_2YttRW7dM7IitM_b85eLs6Gs.woff2" crossorigin>
     <link rel="preload" as="font" type="font/woff2" href="https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3i6t4kDjJwO5Do-5d-PXqqKOnQigVc.woff2" crossorigin>
 
-    <!-- Google Fonts CSS - cargar sincrónico para evitar layout shift -->
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Google Fonts CSS - cargar de forma no-bloqueante después del renderizado inicial -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'; this.onload=null;">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"></noscript>
 
     <!-- Tailwind + App CSS - Load asynchronously to avoid render blocking -->
     <link rel="preload" as="style" href="{{ Vite::asset('resources/css/app.css') }}">
