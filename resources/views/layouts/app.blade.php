@@ -1,26 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <!-- Google Tag Manager -->
+    <!-- Google Tag Manager (required early for tracking) -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
     j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
     })(window,document,'script','dataLayer','GTM-NP6KXF9K');</script>
     <!-- End Google Tag Manager -->
-
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-EX4HPXH0WV"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-EX4HPXH0WV');
-    </script>
-
-    <!-- Ahrefs Analytics -->
-    <script src="https://analytics.ahrefs.com/analytics.js" data-key="13MiFXBj6SD9DxTnh4TmCQ" async></script>
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -103,5 +90,17 @@
     @include('partials.cookie-banner')
 
     @stack('scripts')
+
+    <!-- Google Analytics (deferred to avoid render blocking) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-EX4HPXH0WV"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-EX4HPXH0WV');
+    </script>
+
+    <!-- Ahrefs Analytics (deferred to avoid forced reflows) -->
+    <script src="https://analytics.ahrefs.com/analytics.js" data-key="13MiFXBj6SD9DxTnh4TmCQ" async defer></script>
 </body>
 </html>
