@@ -90,8 +90,8 @@
     <link rel="stylesheet" href="{{ Vite::asset('resources/css/app.css') }}" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="{{ Vite::asset('resources/css/app.css') }}"></noscript>
 
-    <!-- App JavaScript -->
-    <script type="module" src="{{ Vite::asset('resources/js/app.js') }}"></script>
+    <!-- Critical JavaScript - Synchronous for immediate interactivity -->
+    <script type="module" src="{{ Vite::asset('resources/js/critical.js') }}"></script>
 
     <!-- Schema JSON-LD SEO Local -->
     @include('partials.schema-local')
