@@ -11,15 +11,19 @@ class CacheHeaders
     {
         $response = $next($request);
 
-        // Cache static assets (CSS, JS, fonts, images)
-        if ($this->isStaticAsset($request->getPathInfo())) {
+        $path = $request->getPathInfo();
+
+        // Cache static assets (CSS, JS, fonts, images) for 1 year
+        if ($this->isStaticAsset($path)) {
             $response->header('Cache-Control', 'public, max-age=31536000, immutable');
             $response->header('Expires', gmdate('D, d M Y H:i:s \G\M\T', time() + 31536000));
+            $response->header('Pragma', 'public');
         }
         // Cache HTML pages (24 hours for homepage, 7 days for others)
-        elseif ($request->getMethod() === 'GET' && !$request->isJson()) {
-            $maxAge = $request->path() === '/' ? 86400 : 604800;
+        elseif ($request->getMethod() === 'GET' && !$request->isJson() && !$this->isApi($path)) {
+            $maxAge = $path === '/' ? 86400 : 604800;
             $response->header('Cache-Control', "public, max-age=$maxAge, must-revalidate");
+            $response->header('Expires', gmdate('D, d M Y H:i:s \G\M\T', time() + $maxAge));
         }
         // Don't cache API responses
         else {
@@ -35,6 +39,11 @@ class CacheHeaders
         $response->header('Referrer-Policy', 'strict-origin-when-cross-origin');
 
         return $response;
+    }
+
+    private function isApi($path): bool
+    {
+        return str_starts_with($path, '/api') || str_starts_with($path, '/admin');
     }
 
     private function isStaticAsset($path): bool
