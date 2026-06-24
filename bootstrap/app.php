@@ -11,7 +11,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->append(\App\Http\Middleware\CacheHeaders::class);
+        $middleware->append(\App\Http\Middleware\OptimizeImages::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
