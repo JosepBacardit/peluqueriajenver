@@ -12,7 +12,14 @@
             <!-- Logo -->
             {{-- TODO: convertir logo a SVG para mejor rendimiento --}}
             <a href="{{ url('/') }}" class="flex-shrink-0 flex items-center hover:opacity-80 transition-opacity">
-                <img src="{{ asset('images/logo-jenver.png') }}" alt="Peluquería Jenver Logo" class="h-20 w-auto" width="80" height="80">
+                <x-optimized-image
+                    src="images/logo-jenver.png"
+                    alt="Peluquería Jenver Logo"
+                    class="h-20 w-auto"
+                    width="80"
+                    height="80"
+                    :lazy="false"
+                />
             </a>
 
             <!-- Desktop Navigation -->

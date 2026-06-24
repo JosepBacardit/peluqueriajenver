@@ -16,6 +16,7 @@
 
 <!-- SECTION 1: Hero -->
 <section class="relative w-full h-screen md:h-[90vh] bg-cover bg-center flex items-center justify-center" style="background-image: url('/images/belleza-y-estética.png');">
+    <link rel="preload" as="image" href="{{ asset('images/belleza-y-estética.webp') }}">
     <div class="absolute inset-0 bg-black/60"></div>
 
     <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
