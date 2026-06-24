@@ -35,8 +35,18 @@
     <meta property="og:title" content="@yield('og_title', 'Peluquería Jenver | Montcada i Reixac')">
     <meta property="og:description" content="@yield('og_description', 'Especialistas en balayage, cabello afro y rizos en Montcada i Reixac, Barcelona.')">
     <meta property="og:image" content="@yield('og_image', asset('images/logo-jenver.png'))">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:locale" content="es_ES">
+    <meta property="og:site_name" content="Peluquería Jenver">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="@yield('og_title', 'Peluquería Jenver | Montcada i Reixac')">
+    <meta name="twitter:description" content="@yield('og_description', 'Especialistas en balayage, cabello afro y rizos.')">
+    <meta name="twitter:image" content="@yield('og_image', asset('images/logo-jenver.png'))">
 
     <!-- Canonical -->
     <link rel="canonical" href="@yield('canonical', url()->current())">
