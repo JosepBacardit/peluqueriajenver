@@ -13,7 +13,9 @@
       "Bash(php artisan *)",
       "Bash(git commit -m 'Fix: Remover @push blocks de Schema.org en páginas de servicio *)",
       "Bash(git commit -m 'UX: Remover botón '\\\\''Reservar cita online'\\\\'' de páginas de servicio *)",
-      "Bash(git commit -m 'feat: Remover página Peluquería Afro *)"
+      "Bash(git commit -m 'feat: Remover página Peluquería Afro *)",
+      "Bash(git commit -m 'feat: Añadir Google Analytics \\(gtag.js\\) con ID G-EX4HPXH0WV *)",
+      "Bash(git commit -m 'feat: Añadir popup de aviso de cookies *)"
     ]
   }
 }

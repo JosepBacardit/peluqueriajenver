@@ -18,6 +18,23 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
+    # Serve WebP images automatically if supported by browser
+    RewriteCond %{HTTP_ACCEPT} image/webp
+    RewriteCond %{REQUEST_FILENAME} ^.*\.(png|jpg|jpeg)$
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI}.webp -f
+    RewriteRule ^(.+)\.(png|jpg|jpeg)$ $1.webp [QSA,T=image/webp,E=Accept-WebP:true,L]
+
+    # Serve WebP if it exists (alternative approach for direct .webp requests)
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME}.webp -f
+    RewriteRule ^(.+)\.(?:png|jpg|jpeg)$ $1.webp [QSA,L]
+
+    # Add Vary: Accept header for WebP rewriting
+    <FilesMatch "\.webp$">
+        Header append Vary Accept
+    </FilesMatch>
+
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
