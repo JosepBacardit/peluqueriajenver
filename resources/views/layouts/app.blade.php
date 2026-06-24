@@ -52,33 +52,36 @@
     <link rel="preload" as="font" type="font/woff2" href="https://fonts.gstatic.com/s/playfairdisplay/v30/nuFiD-vYS-_2YttRW7dM7IitM_b85eLs6Gs.woff2" crossorigin>
     <link rel="preload" as="font" type="font/woff2" href="https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3i6t4kDjJwO5Do-5d-PXqqKOnQigVc.woff2" crossorigin>
 
-    <!-- Google Fonts with font-display: block to wait for fonts (reduces CLS) -->
-    <!-- block waits up to 3 seconds for font to load, preventing layout shift -->
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=block" rel="stylesheet">
+    <!-- Preconnect and preload fonts for early discovery -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <!-- System font stack as fallback with similar metrics -->
+    <!-- Preload font CSS to hint browser to prioritize download -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap">
+
+    <!-- Load Google Fonts asynchronously to avoid render blocking -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"></noscript>
+
+    <!-- System font stack with metrics that match Google Fonts -->
     <style>
-      /* Use system fonts initially, switch to Google Fonts when ready */
+      :root {
+        --font-serif: 'Playfair Display', Georgia, serif;
+        --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+      }
+
       body {
+        /* Fallback: system fonts with similar metrics to prevent FOUT */
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
-        font-size-adjust: 0.5;
+        font-size: 16px;
+        line-height: 1.5;
+        /* Normalize character height to reduce shift when fonts load */
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
+
       h1, h2, h3, h4, h5, h6, .font-serif {
-        font-family: Georgia, 'Times New Roman', serif;
-        font-size-adjust: 0.5;
-      }
-      /* Override with Google Fonts once loaded */
-      body.fonts-loaded {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
-      }
-      body.fonts-loaded h1,
-      body.fonts-loaded h2,
-      body.fonts-loaded h3,
-      body.fonts-loaded h4,
-      body.fonts-loaded h5,
-      body.fonts-loaded h6,
-      body.fonts-loaded .font-serif {
-        font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+        font-family: Georgia, serif;
       }
     </style>
 
