@@ -5,6 +5,10 @@
 @section('canonical', 'https://www.peluqueriajenver.com/peinados-eventos')
 @section('keywords', 'peinado boda, peinados eventos, peinado novia, peluquería eventos, peinado comunión, Montcada i Reixac')
 
+@push('structured_data')
+@include('partials.schema-service')
+@endpush
+
 @section('content')
 
 <!-- SECTION 1: Hero -->

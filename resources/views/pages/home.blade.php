@@ -375,4 +375,8 @@
     </div>
 </section>
 
+@push('structured_data')
+@include('partials.schema-faq')
+@endpush
+
 @endsection

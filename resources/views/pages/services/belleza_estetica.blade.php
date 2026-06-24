@@ -5,6 +5,10 @@
 @section('canonical', 'https://www.peluqueriajenver.com/belleza-estetica')
 @section('keywords', 'manicura, pedicura, diseño cejas, depilación facial, belleza integral, Montcada i Reixac')
 
+@push('structured_data')
+@include('partials.schema-service')
+@endpush
+
 @section('content')
 
 <!-- SECTION 1: Hero -->

@@ -60,6 +60,9 @@
     <!-- Schema JSON-LD SEO Local -->
     @include('partials.schema-local')
 
+    <!-- Schema JSON-LD Breadcrumb -->
+    @include('partials.schema-breadcrumb')
+
     @stack('structured_data')
     @stack('head')
 </head>

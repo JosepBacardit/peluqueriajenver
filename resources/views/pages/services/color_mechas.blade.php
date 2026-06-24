@@ -5,6 +5,10 @@
 @section('canonical', 'https://www.peluqueriajenver.com/color-y-mechas')
 @section('keywords', 'color cabello, mechas, balayage, babylights, coloración capilar, Montcada i Reixac')
 
+@push('structured_data')
+@include('partials.schema-service')
+@endpush
+
 @section('content')
 
 <!-- SECTION 1: Hero -->
