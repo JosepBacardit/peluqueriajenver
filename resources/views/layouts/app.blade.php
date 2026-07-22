@@ -96,6 +96,9 @@
     <!-- Schema JSON-LD SEO Local -->
     @include('partials.schema-local')
 
+    <!-- Schema JSON-LD Aggregate Rating with Reviews -->
+    @include('partials.schema-aggregate-rating')
+
     <!-- Schema JSON-LD Breadcrumb -->
     @include('partials.schema-breadcrumb')
 

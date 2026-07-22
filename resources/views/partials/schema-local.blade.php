@@ -1,12 +1,18 @@
 <?php
 $schema = [
     "@context" => "https://schema.org",
-    "@type" => "HairSalon",
+    "@type" => ["HairSalon", "Organization"],
     "name" => "Peluquería Jenver",
     "description" => "Peluquería unisex en Montcada i Reixac especializada en balayage, cabello afro, rizos y coloración capilar.",
     "url" => url('/'),
     "telephone" => "+34633912050",
-    "email" => "",
+    "contactPoint" => [
+        "@type" => "ContactPoint",
+        "telephone" => "+34633912050",
+        "contactType" => "Customer Service",
+        "areaServed" => "Montcada i Reixac",
+        "availableLanguage" => ["es", "ca"]
+    ],
     "image" => asset('images/logo-jenver.png'),
     "logo" => asset('images/logo-jenver.png'),
     "address" => [
@@ -51,6 +57,18 @@ $schema = [
         ["@type" => "Offer", "itemOffered" => ["@type" => "Service", "name" => "Cabello afro"]],
         ["@type" => "Offer", "itemOffered" => ["@type" => "Service", "name" => "Corte de pelo"]],
         ["@type" => "Offer", "itemOffered" => ["@type" => "Service", "name" => "Peinado para eventos"]]
+    ],
+    "potentialAction" => [
+        "@type" => "ReserveAction",
+        "name" => "Reservar cita",
+        "target" => [
+            "@type" => "EntryPoint",
+            "urlTemplate" => "tel:+34633912050"
+        ]
+    ],
+    "hasMap" => [
+        "@type" => "Map",
+        "url" => "https://maps.google.com/?q=Peluquería+Jenver+Carrer+Lleida+21+Montcada+i+Reixac"
     ]
 ];
 ?>

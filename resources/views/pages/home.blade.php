@@ -184,24 +184,42 @@
         </div>
 
         <!-- Image Grid -->
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-8">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-8">
             <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
-                <img src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400&q=70&fm=webp" srcset="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=300&q=70&fm=webp 300w, https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400&q=70&fm=webp 400w" alt="Balayage - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy" decoding="async" width="400" height="400">
+                <img src="{{ asset('images/foto_1.webp') }}" alt="Galería de trabajos - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy" decoding="async" width="400" height="400">
             </div>
             <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
-                <img src="https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=400&q=70&fm=webp" srcset="https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=300&q=70&fm=webp 300w, https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=400&q=70&fm=webp 400w" alt="Técnicas de color - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy" decoding="async" width="400" height="400">
+                <img src="{{ asset('images/foto_2.webp') }}" alt="Galería de trabajos - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy" decoding="async" width="400" height="400">
             </div>
             <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
-                <img src="https://images.unsplash.com/photo-1573166475912-1ed8b4f093d2?w=400&q=70&fm=webp" srcset="https://images.unsplash.com/photo-1573166475912-1ed8b4f093d2?w=300&q=70&fm=webp 300w, https://images.unsplash.com/photo-1573166475912-1ed8b4f093d2?w=400&q=70&fm=webp 400w" alt="Cabello afro y rizado - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy" decoding="async" width="400" height="400">
+                <img src="{{ asset('images/foto_3.webp') }}" alt="Galería de trabajos - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy" decoding="async" width="400" height="400">
             </div>
             <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
-                <img src="https://images.unsplash.com/photo-1522338242992-e1a54906a8da?w=400&q=70&fm=webp" srcset="https://images.unsplash.com/photo-1522338242992-e1a54906a8da?w=300&q=70&fm=webp 300w, https://images.unsplash.com/photo-1522338242992-e1a54906a8da?w=400&q=70&fm=webp 400w" alt="Peinado de rizos - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy" decoding="async" width="400" height="400">
+                <img src="{{ asset('images/foto_4.webp') }}" alt="Galería de trabajos - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy" decoding="async" width="400" height="400">
             </div>
             <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
-                <img src="https://images.unsplash.com/photo-1634449571010-02389ed0f9b0?w=400&q=70&fm=webp" srcset="https://images.unsplash.com/photo-1634449571010-02389ed0f9b0?w=300&q=70&fm=webp 300w, https://images.unsplash.com/photo-1634449571010-02389ed0f9b0?w=400&q=70&fm=webp 400w" alt="Corte y estilismo - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy" decoding="async" width="400" height="400">
+                <img src="{{ asset('images/foto_5.webp') }}" alt="Galería de trabajos - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy" decoding="async" width="400" height="400">
             </div>
             <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
-                <img src="https://images.unsplash.com/photo-1559599101-f09722fb4948?w=400&q=70&fm=webp" srcset="https://images.unsplash.com/photo-1559599101-f09722fb4948?w=300&q=70&fm=webp 300w, https://images.unsplash.com/photo-1559599101-f09722fb4948?w=400&q=70&fm=webp 400w" alt="Corte profesional - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy" decoding="async" width="400" height="400">
+                <img src="{{ asset('images/foto_6.webp') }}" alt="Galería de trabajos - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy" decoding="async" width="400" height="400">
+            </div>
+            <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
+                <img src="{{ asset('images/foto_7.webp') }}" alt="Galería de trabajos - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy" decoding="async" width="400" height="400">
+            </div>
+            <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
+                <img src="{{ asset('images/foto_8.webp') }}" alt="Galería de trabajos - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy" decoding="async" width="400" height="400">
+            </div>
+            <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
+                <img src="{{ asset('images/foto_9.webp') }}" alt="Galería de trabajos - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy" decoding="async" width="400" height="400">
+            </div>
+            <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
+                <img src="{{ asset('images/foto_10.webp') }}" alt="Galería de trabajos - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy" decoding="async" width="400" height="400">
+            </div>
+            <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
+                <img src="{{ asset('images/maquillaje_y_peinado_novia.webp') }}" alt="Maquillaje y peinado de novia - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy" decoding="async" width="400" height="400">
+            </div>
+            <div class="aspect-square overflow-hidden bg-[#1A1A1A]">
+                <img src="{{ asset('images/maquillaje_y_peinado_novia_2.webp') }}" alt="Maquillaje y peinado de novia - Peluquería Jenver" class="w-full h-full object-cover hover:opacity-80 transition-opacity cursor-pointer" loading="lazy" decoding="async" width="400" height="400">
             </div>
         </div>
 
@@ -262,9 +280,10 @@
                     <span class="text-gold">★</span>
                 </div>
                 <p class="text-gray-300 mb-4 italic">
-                    "El mejor balayage que me han hecho nunca. Vine desde Barcelona norte porque me lo recomendaron y repetiré sin duda. Ambiente muy acogedor."
+                    "No sabía dónde hacerme un alisado de keratina y decidí confiar en ellas… ¡y no puedo estar más contenta con el resultado! Son unas auténticas profesionales, trabajan de forma increíble y además el trato es inmejorable. Te hacen sentir cómoda desde el primer momento. Sin duda, repetiré. ¡Súper recomendadas! 💖"
                 </p>
-                <p class="text-gray-500 text-sm font-semibold">— María G.</p>
+                <p class="text-gray-500 text-sm font-semibold">— Alicia Egea</p>
+                <p class="text-gray-600 text-xs">Hace 3 meses</p>
             </div>
 
             <!-- Review 2 -->
@@ -277,9 +296,10 @@
                     <span class="text-gold">★</span>
                 </div>
                 <p class="text-gray-300 mb-4 italic">
-                    "Especialistas en cabello afro de verdad. Llevan años cuidando mi pelo y siempre salen perfectos los peinados. Los recomiendo a todo el mundo."
+                    "La peluquería de confianza en Montcada i Reixac — Jenver es una joya. Llevo tiempo viniendo y no la cambiaría por nada. Lo que más me sorprende es que no hace falta explicar nada: conocen perfectamente mi cabello y saben exactamente lo que necesito. El trato es exquisito: son atentas, cuidadosas y te hacen sentir cómodo desde el primer momento. Si buscas una peluquería que combine profesionalidad, mimo al detalle y un trato cercano, Jenver es la respuesta. Totalmente recomendada."
                 </p>
-                <p class="text-gray-500 text-sm font-semibold">— Aminata K.</p>
+                <p class="text-gray-500 text-sm font-semibold">— Josep Bacardit</p>
+                <p class="text-gray-600 text-xs">Hace 3 meses</p>
             </div>
 
             <!-- Review 3 -->
@@ -292,9 +312,10 @@
                     <span class="text-gold">★</span>
                 </div>
                 <p class="text-gray-300 mb-4 italic">
-                    "Fui a por un corte y me quedé con el color también. El trato es increíble y el resultado espectacular. Sin duda la mejor peluquería de Montcada i Reixac."
+                    "Encantada con esta pelu. La verdad que tanto Jenny como su madre te hacen sentir súper a gusto. Probé primero corte y hidratación y ahora ya voy por alisado. En todo momento te explican todo. Se ha convertido en mi pelu de confianza 😊"
                 </p>
-                <p class="text-gray-500 text-sm font-semibold">— Laura M.</p>
+                <p class="text-gray-500 text-sm font-semibold">— Raquel Iglesias</p>
+                <p class="text-gray-600 text-xs">Hace 3 meses</p>
             </div>
         </div>
 
