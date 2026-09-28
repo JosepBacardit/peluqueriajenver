@@ -32,9 +32,11 @@ Pint for style. No JS framework, only vanilla JS in `resources/js/`.
 
 Local environment: this checkout used to run under Laragon
 (`/c/laragon/www/peluqueriajenver`), but that vhost no longer exists on this
-machine — the working copy lives at this path instead. Ask the user for the
-current local URL/vhost before assuming one, or fall back to
-`php artisan serve`.
+machine. Local development now runs in Docker (`docker-compose.yml`) — see
+"Docker environment" below. `php artisan serve` is not used any more: the
+`.env` it depended on pointed `SESSION_DRIVER=database` at a MySQL instance
+that no longer exists, and there was no `sessions` migration to create the
+table even if it did (see "Production database" below).
 
 Routes are plain closures in `routes/web.php` (home, 4 service pages,
 `/contacto`, 3 legal pages with `noindex`, plus `/sitemap.xml`). Content
@@ -53,27 +55,128 @@ generic template. Do not treat it as documentation of what exists; this
 AGENTS.md and the code are the source of truth. Do not rewrite the README
 unless the user asks.
 
+## Docker environment
+
+`docker compose up -d --build` builds and starts: `nginx` serving the app at
+`http://localhost:8082`, the Vite dev server on port `5175`
+(`VITE_USE_POLLING=true`, required on Windows), and `mysql` (database
+`peluqueriajenver`, matching production's driver) on host port `3310`.
+Ports were chosen so this stack can run alongside the sibling projects at
+the same time: cobaprojects uses `8081`/`5174`/`3308`/`3309`, obranur uses
+`8080`/`5173`/`3306`/`3307`/`6381`.
+
+There is no queue worker or scheduler: routes are plain closures that
+return views, with no contact form or other background work, even though
+`QUEUE_CONNECTION=database` matches production — there is simply nothing to
+consume.
+
+`vendor/` and `node_modules/` live in the named volumes `vendor-data` and
+`node-modules-data`, not in the bind mount: autoloading their ~10k/~3.2k
+small files over the Windows bind mount (9p/drvfs) is what made requests
+and `artisan` calls slow in cobaprojects/obranur before this same fix.
+`composer install` and `npm install` run automatically inside the
+`app`/`node` containers on every `docker compose up`. There is no
+`vendor/` on the host any more, so PHP IDE autocompletion for dependencies
+is not available on Windows for this repository; this is an accepted
+tradeoff, not a bug.
+
+Laravel Boost's MCP server (`.mcp.json`) now runs via
+`docker compose exec -T app php artisan boost:mcp`, so the containers must
+already be up (`docker compose up -d`) before starting Claude Code in this
+project, or the MCP server will fail to start.
+
+OPcache in the `app` container uses `opcache.revalidate_freq=60`
+(`docker/php/opcache.ini`, local-only) instead of the engine default of 2,
+so an edited `.php` file can take up to 60s to show up; it does not need a
+restart to be picked up, just that delay. `docker compose exec app php -r
+"opcache_reset();"` does **not** speed this up — it resets a separate
+OPcache instance private to that one-off CLI process, not php-fpm's. To see
+a change immediately instead of waiting: `docker compose restart app`.
+
+**First start:** the `mysql` service starts empty. Run
+`docker compose exec app php artisan migrate` once after the first
+`docker compose up -d` (not run automatically by the `app` container's
+command — see "Production database" for why that matters here specifically:
+the same command, unmodified, is what you would run against the real
+database if this compose file were ever pointed at one).
+
+## Production database
+
+Production uses `SESSION_DRIVER=database`, but this repository has no
+migration for the `sessions` table — only `users`, `cache` and `jobs`
+(Laravel's stock skeleton migrations) existed before this change. That
+means production's `sessions` table, if it exists, was created outside
+Laravel's migration history and has no matching row in the `migrations`
+table. The `0001_01_01_000003_create_sessions_table` migration added by
+this change guards its `up()` with `Schema::hasTable('sessions')` so that
+running `php artisan migrate --force` there does not fail or attempt to
+recreate a live table, and its `down()` is deliberately a no-op so a
+rollback can never drop it.
+
+`cache` and `jobs` are not guarded the same way: their migrations already
+existed in this repository from the project's initial setup, so — assuming
+the standard Laravel deploy flow was followed (`composer.json`'s
+`post-create-project-cmd` runs `artisan migrate --graceful` on first
+install) — they should already be recorded in production's `migrations`
+table. This is an assumption, not something verified against the real
+server; confirm it before trusting it.
+
+**Before running `php artisan migrate` (or `--force`) against production,
+always check its current state first, from the server itself:**
+
+```
+php artisan migrate:status
+```
+
+If `0001_01_01_000003_create_sessions_table` (or any migration) is missing
+from that list while its table already exists, do **not** run `migrate`
+blindly — inspect further first:
+
+```
+php artisan tinker --execute 'echo config("database.connections.".config("database.default").".database");'
+mysql -u<user> -p -e "SHOW TABLES;" <database>
+```
+
+Never run `migrate:fresh`, `migrate:refresh`, `migrate:reset`, `db:wipe`, or
+a manual `DROP`/`TRUNCATE` against production. If `migrate:status` shows
+anything unexpected, stop and ask the user before proceeding.
+
 ## How to verify locally
 
-- `php artisan test` runs the Pest suite (`tests/Feature`, `tests/Unit`).
-- `npm run build` compiles Tailwind/Vite assets into `public/build`;
-  `npm run dev` starts a watch server.
-- `php artisan serve` to preview the app when there is no configured vhost;
-  check pages manually — there is no visual regression tooling.
+- `docker compose exec app php artisan test` runs the Pest suite
+  (`tests/Feature`, `tests/Unit`) inside the container, against an
+  in-memory SQLite database (`phpunit.xml` forces this — see its comments);
+  it never touches the `mysql` service, so there is no separate testing
+  database to manage.
+- `docker compose exec node npm run build` compiles Tailwind/Vite assets
+  into `public/build`; the `node` service already runs `npm run dev` with
+  hot-module reload against `http://localhost:5175`.
+- Visit `http://localhost:8082` to check pages manually — there is no
+  visual regression tooling.
+- Run Pint inside the container too:
+  `docker compose exec app vendor/bin/pint --dirty --format agent`.
 
 ## Known traps
 
 - Commercial copy (service pages, meta descriptions, FAQ) must only state
   facts the user has confirmed — see the `programador` agent's rules on
   commercial copy before writing marketing text.
+- `phpunit.xml` forces `DB_CONNECTION=sqlite` for tests, so the `app`
+  image needs the `pdo_sqlite` PHP extension in addition to `pdo_mysql`
+  (used for the real `mysql` service) — both are installed in
+  `docker/php/Dockerfile`. The host PHP install on this machine does not
+  have `pdo_sqlite` at all, which is one more reason tests only run inside
+  the container, never from the host.
 
 ## Working agreements
 
 - Use TDD, Clean Code, SOLID, and PSR-12.
 - Write source code, comments, tests, pull-request text, and commit messages
   in English.
-- Branches: `feature/<short-description>` or `fix/<short-description>` (no
-  other project-specific convention found).
+- Branches: `feature/<short-description>`, `fix/<short-description>`, or
+  `chore/<short-description>` for tooling/environment changes with no
+  behavior change (matching cobaprojects/obranur, e.g.
+  `chore/docker-local`).
 - Images served to visitors are optimized WebP with a `<picture>`/`srcset`
   fallback (the existing `<x-optimized-image>` component and the hero
   `<picture>` already follow this). PNG/JPG-only exceptions are limited to

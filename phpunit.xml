@@ -18,7 +18,23 @@
         </include>
     </source>
     <php>
-        <env name="APP_ENV" value="testing"/>
+        <!--
+            docker-compose.yml sets APP_ENV=local as a real container
+            environment variable on the `app` service. PHP populates both
+            $_SERVER and $_ENV from the process environment, and Laravel's
+            env repository reads $_SERVER first. A plain <env> here only
+            forces $_ENV, so the container's real APP_ENV=local would win
+            (see the same trap already documented in cobaprojects/obranur).
+            <server> forces $_SERVER too, so no current or future
+            container-level env var can change what env the tests run as.
+            DB_* does not need the same treatment here: this project has no
+            shared `mysql-testing` service for the container to point at by
+            accident, and phpunit's own <env> for DB_CONNECTION/DB_DATABASE
+            already sends every test to an isolated in-memory sqlite
+            database.
+        -->
+        <env name="APP_ENV" value="testing" force="true"/>
+        <server name="APP_ENV" value="testing" force="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
