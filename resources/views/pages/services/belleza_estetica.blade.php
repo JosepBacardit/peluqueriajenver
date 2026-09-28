@@ -112,16 +112,14 @@
     </div>
 </section>
 
-<!-- SECTION 5: Precios Orientativos -->
+<!-- SECTION 5: Consulta de precio por WhatsApp -->
 <section class="bg-[#111111] py-16 md:py-24">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="section-title text-center mb-12">Tarifas Orientativas</h2>
-        @include('partials.precios', ['precios' => [
-            ['Manicura', 'desde 18€'],
-            ['Pedicura', 'desde 25€'],
-            ['Diseño de cejas', 'desde 12€'],
-            ['Depilación facial', 'desde 10€'],
-        ]])
+    <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="section-title text-center mb-12">¿Cuánto cuesta?</h2>
+        @include('partials.whatsapp-cta', [
+            'text' => 'Te decimos el precio exacto en el diagnóstico gratuito: escríbenos por WhatsApp.',
+            'whatsappUrl' => 'https://wa.me/34633912050?text=Hola!%20Me%20gustaría%20agendar%20cita%20para%20un%20servicio%20de%20belleza%20en%20Peluquería%20Jenver',
+        ])
     </div>
 </section>
 
@@ -146,19 +144,19 @@
             <div class="bg-[#1A1A1A] border border-[#2A2A2A] p-8 text-center rounded">
                 <h3 class="font-serif text-xl font-bold text-white mb-4">Manicura + Pedicura</h3>
                 <p class="text-gray-400 mb-4">Combo de cuidado completo para manos y pies.</p>
-                <p class="text-gold text-sm">Consúltanos precios especiales</p>
+                <a href="https://wa.me/34633912050?text=Hola!%20Me%20gustaría%20agendar%20cita%20para%20un%20servicio%20de%20belleza%20en%20Peluquería%20Jenver" target="_blank" rel="noopener noreferrer" class="text-gold text-sm hover:text-gold-light transition-colors">Pregúntanos por WhatsApp</a>
             </div>
 
             <div class="bg-[#1A1A1A] border border-[#2A2A2A] p-8 text-center rounded">
                 <h3 class="font-serif text-xl font-bold text-white mb-4">Cejas + Depilación</h3>
                 <p class="text-gray-400 mb-4">Cuidado completo del rostro en una sesión.</p>
-                <p class="text-gold text-sm">Consúltanos precios especiales</p>
+                <a href="https://wa.me/34633912050?text=Hola!%20Me%20gustaría%20agendar%20cita%20para%20un%20servicio%20de%20belleza%20en%20Peluquería%20Jenver" target="_blank" rel="noopener noreferrer" class="text-gold text-sm hover:text-gold-light transition-colors">Pregúntanos por WhatsApp</a>
             </div>
 
             <div class="bg-[#1A1A1A] border border-[#2A2A2A] p-8 text-center rounded">
                 <h3 class="font-serif text-xl font-bold text-white mb-4">Belleza Completa</h3>
                 <p class="text-gray-400 mb-4">Manicura, pedicura, cejas y depilación.</p>
-                <p class="text-gold text-sm">Consúltanos precios especiales</p>
+                <a href="https://wa.me/34633912050?text=Hola!%20Me%20gustaría%20agendar%20cita%20para%20un%20servicio%20de%20belleza%20en%20Peluquería%20Jenver" target="_blank" rel="noopener noreferrer" class="text-gold text-sm hover:text-gold-light transition-colors">Pregúntanos por WhatsApp</a>
             </div>
         </div>
     </div>

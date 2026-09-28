@@ -42,11 +42,9 @@ $schema = [
             "closes" => "00:00"
         ]
     ],
-    "priceRange" => "€€",
     "currenciesAccepted" => "EUR",
     "paymentAccepted" => "Cash, Credit Card",
     "areaServed" => ["Montcada i Reixac", "Ripollet", "Cerdanyola del Vallès", "Santa Coloma de Gramenet"],
-    "hasMap" => "https://maps.google.com/?q=Peluquería+Jenver+Carrer+Lleida+21+Montcada+i+Reixac",
     "sameAs" => [
         "https://www.instagram.com/peluqueriajenver/",
         "https://www.tiktok.com/@peluqueriajenver"

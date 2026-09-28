@@ -63,11 +63,6 @@ unless the user asks.
 
 ## Known traps
 
-- `resources/views/pages/contacto.blade.php` has a "¿Prefieres que te
-  contactemos?" block with input fields and a submit button that is **not**
-  inside a `<form>` and has no backing route or JS handler — it does nothing
-  when clicked. Do not leave it in place silently; any change touching
-  contact needs the user's explicit direction on what replaces it.
 - Commercial copy (service pages, meta descriptions, FAQ) must only state
   facts the user has confirmed — see the `programador` agent's rules on
   commercial copy before writing marketing text.
