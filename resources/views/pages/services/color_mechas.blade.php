@@ -131,18 +131,14 @@
     </div>
 </section>
 
-<!-- SECTION 5: Precios Orientativos -->
+<!-- SECTION 5: Consulta de precio por WhatsApp -->
 <section class="bg-[#0A0A0A] py-16 md:py-24">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="section-title text-center mb-12">Tarifas Orientativas</h2>
-        @include('partials.precios', ['precios' => [
-            ['Balayage', 'desde 80€'],
-            ['Babylights', 'desde 70€'],
-            ['Mechas clásicas', 'desde 50€'],
-            ['Coloración completa', 'desde 45€'],
-            ['Retoque de raíz', 'desde 30€'],
-            ['Decoloración', 'desde 60€'],
-        ]])
+    <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="section-title text-center mb-12">¿Cuánto cuesta?</h2>
+        @include('partials.whatsapp-cta', [
+            'text' => 'Te decimos el precio exacto en el diagnóstico gratuito: escríbenos por WhatsApp.',
+            'whatsappUrl' => 'https://wa.me/34633912050?text=Hola!%20Me%20gustaría%20agendar%20cita%20para%20color%20y%20mechas%20en%20Peluquería%20Jenver',
+        ])
     </div>
 </section>
 

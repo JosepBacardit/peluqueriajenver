@@ -12,7 +12,7 @@ return [
     'hero' => [
         'location' => '✨ Peluquería Unisex Jenver en Montcada i Reixac',
         'title' => 'Tu pelo, en manos de confianza.',
-        'subtitle' => 'Atención personalizada, precios honestos y resultados que te gustan de verdad.',
+        'subtitle' => 'Atención personalizada y resultados que te gustan de verdad.',
         'cta_primary' => 'Reservar cita →',
         'cta_secondary' => 'Ver servicios',
     ],
@@ -80,139 +80,11 @@ return [
         ],
     ],
 
-    // Todos los Servicios Section
-    'todos_servicios' => [
-        'title' => 'Todos nuestros servicios',
-        'subtitle' => 'Listado completo de servicios y precios',
-        'items' => [
-            [
-                'name' => 'Corte de pelo mujer',
-                'price' => 'Desde €20',
-                'category' => 'Corte',
-            ],
-            [
-                'name' => 'Corte de pelo hombre',
-                'price' => 'Desde €15',
-                'category' => 'Corte',
-            ],
-            [
-                'name' => 'Corte infantil',
-                'price' => 'Desde €12',
-                'category' => 'Corte',
-            ],
-            [
-                'name' => 'Balayage',
-                'price' => 'Desde €60',
-                'category' => 'Color',
-            ],
-            [
-                'name' => 'Mechas / Highlights',
-                'price' => 'Desde €45',
-                'category' => 'Color',
-            ],
-            [
-                'name' => 'Coloración completa',
-                'price' => 'Desde €40',
-                'category' => 'Color',
-            ],
-            [
-                'name' => 'Retoque de raíz',
-                'price' => 'Desde €30',
-                'category' => 'Color',
-            ],
-            [
-                'name' => 'Decoloración',
-                'price' => 'Consultar',
-                'category' => 'Color',
-            ],
-            [
-                'name' => 'Peinado cabello afro',
-                'price' => 'Consultar',
-                'category' => 'Peinado',
-            ],
-            [
-                'name' => 'Definición de rizos',
-                'price' => 'Consultar',
-                'category' => 'Peinado',
-            ],
-            [
-                'name' => 'Peinado para bodas',
-                'price' => 'Consultar',
-                'category' => 'Peinado',
-            ],
-            [
-                'name' => 'Peinado para eventos',
-                'price' => 'Consultar',
-                'category' => 'Peinado',
-            ],
-            [
-                'name' => 'Extensiones de cabello',
-                'price' => 'Consultar',
-                'category' => 'Tratamientos',
-            ],
-            [
-                'name' => 'Tratamiento keratina',
-                'price' => 'Consultar',
-                'category' => 'Tratamientos',
-            ],
-            [
-                'name' => 'Alisado permanente',
-                'price' => 'Consultar',
-                'category' => 'Tratamientos',
-            ],
-            [
-                'name' => 'Manicura',
-                'price' => 'Desde €15',
-                'category' => 'Belleza',
-            ],
-            [
-                'name' => 'Pedicura',
-                'price' => 'Desde €20',
-                'category' => 'Belleza',
-            ],
-            [
-                'name' => 'Diseño de cejas',
-                'price' => 'Desde €10',
-                'category' => 'Belleza',
-            ],
-        ],
-    ],
-
     // Galería Section
     'galeria' => [
         'title' => 'Nuestros trabajos',
         'subtitle' => 'Síguenos en Instagram @peluqueria_jenver',
         'cta' => 'Ver más en Instagram →',
-    ],
-
-    // Servicios Section
-    'servicios' => [
-        'title' => 'Servicios',
-        'items' => [
-            'mujer_cut' => 'Corte de pelo mujer',
-            'hombre_cut' => 'Corte de pelo hombre',
-            'nino_cut' => 'Corte infantil',
-            'balayage' => 'Balayage',
-            'highlights' => 'Mechas / Highlights',
-            'coloracion' => 'Coloración completa',
-            'afro_peinado' => 'Peinado cabello afro',
-            'rizos' => 'Definición de rizos',
-            'extensiones' => 'Extensiones de cabello',
-            'keratina' => 'Tratamiento keratina',
-        ],
-        'prices' => [
-            'mujer_cut' => 'Desde €20',
-            'hombre_cut' => 'Desde €15',
-            'nino_cut' => 'Desde €12',
-            'balayage' => 'Desde €60',
-            'highlights' => 'Desde €45',
-            'coloracion' => 'Desde €40',
-            'afro_peinado' => 'Consultar',
-            'rizos' => 'Consultar',
-            'extensiones' => 'Consultar',
-            'keratina' => 'Consultar',
-        ],
-        'help_text' => '¿Tienes dudas sobre el precio? <a href="tel:+34633912050" class="text-gold hover:text-gold-light transition-colors font-semibold">Llámanos: 633 912 050</a>',
     ],
 
     // Nosotros Section

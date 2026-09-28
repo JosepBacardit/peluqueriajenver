@@ -78,41 +78,4 @@
     </div>
 </section>
 
-<!-- Formulario de contacto rápido -->
-<section class="bg-[#0A0A0A] py-16 md:py-24">
-    <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="section-title text-center mb-8">¿Prefieres que te contactemos?</h2>
-
-        <div class="bg-[#1A1A1A] border border-[#2A2A2A] p-8 rounded">
-            <p class="text-gray-400 text-center mb-6">Si lo prefieres, déjanos tu información y nos pondremos en contacto contigo lo antes posible.</p>
-
-            <div class="space-y-4">
-                <div>
-                    <label for="name" class="block text-white font-semibold mb-2">Nombre</label>
-                    <input type="text" id="name" placeholder="Tu nombre" class="w-full bg-[#2A2A2A] border border-[#3A3A3A] text-white px-4 py-2 rounded focus:outline-none focus:border-gold">
-                </div>
-
-                <div>
-                    <label for="phone" class="block text-white font-semibold mb-2">Teléfono</label>
-                    <input type="tel" id="phone" placeholder="Tu teléfono" class="w-full bg-[#2A2A2A] border border-[#3A3A3A] text-white px-4 py-2 rounded focus:outline-none focus:border-gold">
-                </div>
-
-                <div>
-                    <label for="email" class="block text-white font-semibold mb-2">Email (opcional)</label>
-                    <input type="email" id="email" placeholder="Tu email" class="w-full bg-[#2A2A2A] border border-[#3A3A3A] text-white px-4 py-2 rounded focus:outline-none focus:border-gold">
-                </div>
-
-                <div>
-                    <label for="message" class="block text-white font-semibold mb-2">Mensaje</label>
-                    <textarea id="message" placeholder="Tu mensaje..." rows="4" class="w-full bg-[#2A2A2A] border border-[#3A3A3A] text-white px-4 py-2 rounded focus:outline-none focus:border-gold"></textarea>
-                </div>
-
-                <button type="submit" class="btn-gold w-full text-sm md:text-base font-semibold py-3">
-                    Enviar mensaje
-                </button>
-            </div>
-        </div>
-    </div>
-</section>
-
 @endsection

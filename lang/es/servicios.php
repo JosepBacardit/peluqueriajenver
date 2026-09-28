@@ -24,19 +24,19 @@ return [
                 'items' => [
                     'balayage' => [
                         'name' => 'Balayage',
-                        'description' => 'Técnica de mano alzada que crea un efecto degradado muy natural. Perfecto para quienes buscan un cambio sutil pero impactante.'
+                        'description' => 'Técnica de mano alzada que crea un efecto degradado muy natural. Perfecto para quienes buscan un cambio sutil pero impactante.',
                     ],
                     'babylights' => [
                         'name' => 'Babylights',
-                        'description' => 'Mechas finísimas y delicadas que imitan los tonos naturales del cabello. Ideal para un resultado muy natural y delicado.'
+                        'description' => 'Mechas finísimas y delicadas que imitan los tonos naturales del cabello. Ideal para un resultado muy natural y delicado.',
                     ],
                     'clasicas' => [
                         'name' => 'Mechas Clásicas',
-                        'description' => 'Las mechas tradicionales con separación definida. Perfectas para un contraste más marcado y efectista.'
+                        'description' => 'Las mechas tradicionales con separación definida. Perfectas para un contraste más marcado y efectista.',
                     ],
                     'degradadas' => [
                         'name' => 'Mechas Degradadas',
-                        'description' => 'Combinación de mechas que crean un degradado suave en el cabello. Elegantes y fáciles de mantener.'
+                        'description' => 'Combinación de mechas que crean un degradado suave en el cabello. Elegantes y fáciles de mantener.',
                     ],
                 ],
             ],
@@ -64,32 +64,25 @@ return [
                     'natural' => [
                         'icon' => '✨',
                         'title' => 'Resultado Natural',
-                        'description' => 'Nuestras técnicas crean un efecto degradado que parece natural y armonioso con tu tono base.'
+                        'description' => 'Nuestras técnicas crean un efecto degradado que parece natural y armonioso con tu tono base.',
                     ],
                     'flexible' => [
                         'icon' => '🎨',
                         'title' => 'Infinitas Posibilidades',
-                        'description' => 'Desde cambios sutiles hasta efectos impactantes. Adaptamos el diseño a tu personalidad y estilo.'
+                        'description' => 'Desde cambios sutiles hasta efectos impactantes. Adaptamos el diseño a tu personalidad y estilo.',
                     ],
                     'mantenimiento' => [
                         'icon' => '⏰',
                         'title' => 'Fácil Mantenimiento',
-                        'description' => 'Las mechas requieren menos mantenimiento que la coloración completa. Retoques cada 6-8 semanas.'
+                        'description' => 'Las mechas requieren menos mantenimiento que la coloración completa. Retoques cada 6-8 semanas.',
                     ],
                     'protegido' => [
                         'icon' => '💪',
                         'title' => 'Cabello Protegido',
-                        'description' => 'Solo coloreamos las partes selectas, protegiendo el resto de tu cabello de la química.'
+                        'description' => 'Solo coloreamos las partes selectas, protegiendo el resto de tu cabello de la química.',
                     ],
                 ],
             ],
-        ],
-        'precios' => [
-            'balayage' => 'Desde €60',
-            'babylights' => 'Desde €75',
-            'highlights' => 'Desde €45',
-            'completo' => 'Desde €90',
-            'consulta' => 'Diagnóstico gratuito',
         ],
     ],
 
@@ -114,19 +107,19 @@ return [
                 'items' => [
                     'completa' => [
                         'name' => 'Coloración Completa',
-                        'description' => 'Cambio total de color desde raíz a puntas. Perfecto para un cambio radical de look.'
+                        'description' => 'Cambio total de color desde raíz a puntas. Perfecto para un cambio radical de look.',
                     ],
                     'tonalizados' => [
                         'name' => 'Tonalizados',
-                        'description' => 'Coloración en tonos más claros que el natural. Crea reflejos y luces sutiles.'
+                        'description' => 'Coloración en tonos más claros que el natural. Crea reflejos y luces sutiles.',
                     ],
                     'raices' => [
                         'name' => 'Retoque de Raíces',
-                        'description' => 'Coloración solo en la parte de raíces para mantener el color y cubrir canas.'
+                        'description' => 'Coloración solo en la parte de raíces para mantener el color y cubrir canas.',
                     ],
                     'decoloracion' => [
                         'name' => 'Decoloración y Aclarado',
-                        'description' => 'Aclarado progresivo para lograr tonos más claros. Necesita sesiones para proteger el cabello.'
+                        'description' => 'Aclarado progresivo para lograr tonos más claros. Necesita sesiones para proteger el cabello.',
                     ],
                 ],
             ],
@@ -145,32 +138,25 @@ return [
                     'tonalidad' => [
                         'icon' => '🎨',
                         'title' => 'Tonalidad Perfecta',
-                        'description' => 'Encontramos el color que mejor complemente tu tono de piel y realce tus facciones.'
+                        'description' => 'Encontramos el color que mejor complemente tu tono de piel y realce tus facciones.',
                     ],
                     'calidad' => [
                         'icon' => '✨',
                         'title' => 'Productos Premium',
-                        'description' => 'Utilizamos tintes profesionales que cuidan tu cabello mientras lo transforman.'
+                        'description' => 'Utilizamos tintes profesionales que cuidan tu cabello mientras lo transforman.',
                     ],
                     'cobertura' => [
                         'icon' => '💫',
                         'title' => 'Cobertura Total',
-                        'description' => 'Cobertura completa de canas y resultados uniformes en todo el cabello.'
+                        'description' => 'Cobertura completa de canas y resultados uniformes en todo el cabello.',
                     ],
                     'asesoramiento' => [
                         'icon' => '💇‍♀️',
                         'title' => 'Expertos en Color',
-                        'description' => 'Nuestros coloristas asesoran sobre el tono más favorecedero para ti.'
+                        'description' => 'Nuestros coloristas asesoran sobre el tono más favorecedero para ti.',
                     ],
                 ],
             ],
-        ],
-        'precios' => [
-            'coloracion_completa' => 'Desde €40',
-            'raices' => 'Desde €35',
-            'tonalizados' => 'Desde €30',
-            'decoloracion' => 'Desde €50',
-            'consulta' => 'Diagnóstico gratuito',
         ],
     ],
 
@@ -195,15 +181,15 @@ return [
                 'items' => [
                     'keratina' => [
                         'name' => 'Tratamiento Keratina',
-                        'description' => 'Aplanado progresivo con keratina brasileña. Resultados progresivos hasta 4 semanas.'
+                        'description' => 'Aplanado progresivo con keratina brasileña. Resultados progresivos hasta 4 semanas.',
                     ],
                     'brasileño' => [
                         'name' => 'Alisado Brasileño',
-                        'description' => 'Alisado profundo con efecto liso inmediato. Dura 3-4 meses.'
+                        'description' => 'Alisado profundo con efecto liso inmediato. Dura 3-4 meses.',
                     ],
                     'protector' => [
                         'name' => 'Alisado Protector',
-                        'description' => 'Alisado suave que cuida el cabello dañado. Ideal para cabellos debilitados.'
+                        'description' => 'Alisado suave que cuida el cabello dañado. Ideal para cabellos debilitados.',
                     ],
                 ],
             ],
@@ -231,30 +217,25 @@ return [
                     'duracion' => [
                         'icon' => '⏱',
                         'title' => 'Duradero',
-                        'description' => 'Resultados que duran de 3 a 4 meses dependiendo del tipo de tratamiento.'
+                        'description' => 'Resultados que duran de 3 a 4 meses dependiendo del tipo de tratamiento.',
                     ],
                     'facilidad' => [
                         'icon' => '✨',
                         'title' => 'Fácil Mantenimiento',
-                        'description' => 'Tu cabello será mucho más fácil de peinar y mantener en casa.'
+                        'description' => 'Tu cabello será mucho más fácil de peinar y mantener en casa.',
                     ],
                     'sedoso' => [
                         'icon' => '💪',
                         'title' => 'Cabello Sedoso',
-                        'description' => 'Recupera la suavidad y brillo natural de tu cabello con keratina.'
+                        'description' => 'Recupera la suavidad y brillo natural de tu cabello con keratina.',
                     ],
                     'salud' => [
                         'icon' => '🌟',
                         'title' => 'Cuidado Profesional',
-                        'description' => 'Reparamos daños y fortalecemus tu cabello mientras lo alisamos.'
+                        'description' => 'Reparamos daños y fortalecemus tu cabello mientras lo alisamos.',
                     ],
                 ],
             ],
-        ],
-        'precios' => [
-            'keratina' => 'Desde €50',
-            'brasileño' => 'Desde €80',
-            'protector' => 'Desde €60',
         ],
     ],
 
@@ -279,19 +260,19 @@ return [
                 'items' => [
                     'boda' => [
                         'name' => 'Peinado de Novia',
-                        'description' => 'Diseño exclusivo para tu día especial. Incluye prueba previa y día de evento.'
+                        'description' => 'Diseño exclusivo para tu día especial. Incluye prueba previa y día de evento.',
                     ],
                     'comunion' => [
                         'name' => 'Peinado Comunión',
-                        'description' => 'Peinados elegantes y sofisticados para niñas y adolescentes.'
+                        'description' => 'Peinados elegantes y sofisticados para niñas y adolescentes.',
                     ],
                     'evento' => [
                         'name' => 'Peinado para Eventos',
-                        'description' => 'Gala, cóctel, cumpleaños. Diseños adaptados a cada ocasión.'
+                        'description' => 'Gala, cóctel, cumpleaños. Diseños adaptados a cada ocasión.',
                     ],
                     'fiesta' => [
                         'name' => 'Peinado Fiesta',
-                        'description' => 'Looks modernos y atrevidos para celebraciones.'
+                        'description' => 'Looks modernos y atrevidos para celebraciones.',
                     ],
                 ],
             ],
@@ -310,31 +291,25 @@ return [
                     'diseño' => [
                         'icon' => '👑',
                         'title' => 'Diseño Exclusivo',
-                        'description' => 'Creamos un estilo único pensado solo para ti y tu ocasión especial.'
+                        'description' => 'Creamos un estilo único pensado solo para ti y tu ocasión especial.',
                     ],
                     'prueba' => [
                         'icon' => '✨',
                         'title' => 'Prueba Previa',
-                        'description' => 'Realizamos una prueba completa antes del evento para tu tranquilidad.'
+                        'description' => 'Realizamos una prueba completa antes del evento para tu tranquilidad.',
                     ],
                     'duracion' => [
                         'icon' => '⏰',
                         'title' => 'Larga Duración',
-                        'description' => 'Nuestros peinados aguantan toda la jornada sin perder forma ni estilo.'
+                        'description' => 'Nuestros peinados aguantan toda la jornada sin perder forma ni estilo.',
                     ],
                     'profesional' => [
                         'icon' => '💇‍♀️',
                         'title' => 'Manos Expertas',
-                        'description' => 'Nuestros peluqueros tienen años de experiencia en eventos especiales.'
+                        'description' => 'Nuestros peluqueros tienen años de experiencia en eventos especiales.',
                     ],
                 ],
             ],
-        ],
-        'precios' => [
-            'peinado_simple' => 'Desde €40',
-            'peinado_complejo' => 'Desde €60',
-            'novia' => 'Desde €100',
-            'prueba' => 'Consulta',
         ],
     ],
 
@@ -359,19 +334,19 @@ return [
                 'items' => [
                     'mujer' => [
                         'name' => 'Corte Mujer',
-                        'description' => 'Desde cortes geométricos modernos hasta flequillos y capas. Personalizados a tu tipo de cabello.'
+                        'description' => 'Desde cortes geométricos modernos hasta flequillos y capas. Personalizados a tu tipo de cabello.',
                     ],
                     'hombre' => [
                         'name' => 'Corte Caballeros',
-                        'description' => 'Barba, perfilado y cortes con máquina. Técnicas de barbería tradicional y moderna.'
+                        'description' => 'Barba, perfilado y cortes con máquina. Técnicas de barbería tradicional y moderna.',
                     ],
                     'infantil' => [
                         'name' => 'Corte Infantil',
-                        'description' => 'Cortes cómodos y fáciles de mantener para niños y niñas.'
+                        'description' => 'Cortes cómodos y fáciles de mantener para niños y niñas.',
                     ],
                     'combinado' => [
                         'name' => 'Corte + Color',
-                        'description' => 'Combina corte con color o mechas en la misma sesión.'
+                        'description' => 'Combina corte con color o mechas en la misma sesión.',
                     ],
                 ],
             ],
@@ -390,31 +365,25 @@ return [
                     'experto' => [
                         'icon' => '✂️',
                         'title' => 'Técnica Profesional',
-                        'description' => 'Nuestros barberos y estilistas dominan todas las técnicas de corte modernas.'
+                        'description' => 'Nuestros barberos y estilistas dominan todas las técnicas de corte modernas.',
                     ],
                     'personalizado' => [
                         'icon' => '👤',
                         'title' => 'Personalizado',
-                        'description' => 'Cada corte se adapta a tu forma de cara, tipo de cabello y estilo personal.'
+                        'description' => 'Cada corte se adapta a tu forma de cara, tipo de cabello y estilo personal.',
                     ],
                     'mantenimiento' => [
                         'icon' => '💇‍♂️',
                         'title' => 'Fácil Mantenimiento',
-                        'description' => 'Un buen corte hará que tu cabello sea mucho más fácil de peinar en casa.'
+                        'description' => 'Un buen corte hará que tu cabello sea mucho más fácil de peinar en casa.',
                     ],
                     'versatil' => [
                         'icon' => '🎯',
                         'title' => 'Para Toda la Familia',
-                        'description' => 'Contamos con especialistas para mujer, hombre y niños.'
+                        'description' => 'Contamos con especialistas para mujer, hombre y niños.',
                     ],
                 ],
             ],
-        ],
-        'precios' => [
-            'mujer_cut' => 'Desde €20',
-            'hombre_cut' => 'Desde €15',
-            'nino_cut' => 'Desde €12',
-            'barba' => 'Desde €10',
         ],
     ],
 
@@ -439,19 +408,19 @@ return [
                 'items' => [
                     'peinado' => [
                         'name' => 'Peinado Cabello Afro',
-                        'description' => 'Trenzas, moños, ondas y peinados protectores. Estilos que cuidan tu cabello.'
+                        'description' => 'Trenzas, moños, ondas y peinados protectores. Estilos que cuidan tu cabello.',
                     ],
                     'definicion' => [
                         'name' => 'Definición de Rizos',
-                        'description' => 'Realza y define tus rizos naturales con técnicas profesionales.'
+                        'description' => 'Realza y define tus rizos naturales con técnicas profesionales.',
                     ],
                     'corte' => [
                         'name' => 'Corte Especializado',
-                        'description' => 'Cortes pensados para cabello rizado y afro. Mantienen la forma y volumen.'
+                        'description' => 'Cortes pensados para cabello rizado y afro. Mantienen la forma y volumen.',
                     ],
                     'protector' => [
                         'name' => 'Trenzas Protectoras',
-                        'description' => 'Protege tu cabello mientras crece con estilos duraderos y cómodos.'
+                        'description' => 'Protege tu cabello mientras crece con estilos duraderos y cómodos.',
                     ],
                 ],
             ],
@@ -479,31 +448,25 @@ return [
                     'especialista' => [
                         'icon' => '👑',
                         'title' => 'Especialistas Reales',
-                        'description' => 'Años de experiencia cuidando cabello afro, rizado y texturizado.'
+                        'description' => 'Años de experiencia cuidando cabello afro, rizado y texturizado.',
                     ],
                     'tecnicas' => [
                         'icon' => '✨',
                         'title' => 'Técnicas Profesionales',
-                        'description' => 'Dominamos todas las técnicas modernas para realzar tu belleza natural.'
+                        'description' => 'Dominamos todas las técnicas modernas para realzar tu belleza natural.',
                     ],
                     'productos' => [
                         'icon' => '🌿',
                         'title' => 'Productos Adecuados',
-                        'description' => 'Usamos productos específicos para tu tipo de cabello que lo cuidan y protegen.'
+                        'description' => 'Usamos productos específicos para tu tipo de cabello que lo cuidan y protegen.',
                     ],
                     'natural' => [
                         'icon' => '💪',
                         'title' => 'Respeto a lo Natural',
-                        'description' => 'Celebramos y realzamos tu belleza natural sin dañar tu cabello.'
+                        'description' => 'Celebramos y realzamos tu belleza natural sin dañar tu cabello.',
                     ],
                 ],
             ],
-        ],
-        'precios' => [
-            'peinado' => 'Consultar',
-            'definicion' => 'Consultar',
-            'corte' => 'Desde €25',
-            'trenzas' => 'Consultar',
         ],
     ],
 
@@ -549,31 +512,25 @@ return [
                     'higiene' => [
                         'icon' => '✨',
                         'title' => 'Higiene Profesional',
-                        'description' => 'Todos nuestros servicios cumplen con los estándares más altos de higiene y desinfección.'
+                        'description' => 'Todos nuestros servicios cumplen con los estándares más altos de higiene y desinfección.',
                     ],
                     'calidad' => [
                         'icon' => '💅',
                         'title' => 'Productos Premium',
-                        'description' => 'Usamos productos de calidad profesional que cuidan tu piel y uñas.'
+                        'description' => 'Usamos productos de calidad profesional que cuidan tu piel y uñas.',
                     ],
                     'especialistas' => [
                         'icon' => '👥',
                         'title' => 'Especialistas',
-                        'description' => 'Nuestros profesionales tienen formación específica en cada servicio.'
+                        'description' => 'Nuestros profesionales tienen formación específica en cada servicio.',
                     ],
                     'completo' => [
                         'icon' => '🎁',
                         'title' => 'Belleza Integral',
-                        'description' => 'Todos los servicios que necesitas en un solo lugar. Belleza de cabeza a pies.'
+                        'description' => 'Todos los servicios que necesitas en un solo lugar. Belleza de cabeza a pies.',
                     ],
                 ],
             ],
-        ],
-        'precios' => [
-            'cejas' => 'Desde €15',
-            'depilacion_facial' => 'Desde €20',
-            'manicura' => 'Desde €20',
-            'pedicura' => 'Desde €30',
         ],
     ],
 
