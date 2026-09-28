@@ -1,0 +1,78 @@
+name: peluqueriajenver
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    # composer install runs on every start, like node's npm install below,
+    # so the vendor-data volume (see volumes:) is populated automatically.
+    # Migrations are NOT run here (see AGENTS.md, "Docker environment" and
+    # "Production database"): the same command runs against the real
+    # database when this compose file is ever pointed at one, and this
+    # project's tables may already exist there outside migration history.
+    command: sh -c "composer install --no-interaction --no-progress && php-fpm"
+    volumes:
+      - ./:/var/www/html
+      # vendor/ has 10k+ small files. Reading them over the Windows bind
+      # mount (9p/drvfs) on every autoload is what made requests and
+      # `artisan` calls slow locally in cobaprojects/obranur. A named
+      # volume is backed by the container's native filesystem instead, so
+      # nginx/node keep the rest of the code on the bind mount but PHP
+      # autoloads vendor/ at native speed. See docker/php/opcache.ini for
+      # the matching OPcache tuning.
+      - vendor-data:/var/www/html/vendor
+    depends_on:
+      - mysql
+    environment:
+      - APP_ENV=local
+
+  # No queue worker and no scheduler: the site has no contact form and no
+  # background work (routes are plain closures that just return views), so
+  # there is nothing to consume even though QUEUE_CONNECTION=database
+  # matches production.
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "8082:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+      - node
+
+  node:
+    image: node:22-alpine
+    working_dir: /var/www/html
+    command: sh -c "npm install && npm run dev -- --host"
+    environment:
+      VITE_USE_POLLING: "true"
+    volumes:
+      - ./:/var/www/html
+      # Same reasoning as vendor-data above, for node_modules' ~3.2k files.
+      - node-modules-data:/var/www/html/node_modules
+    ports:
+      - "5175:5173"
+
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: peluqueriajenver
+      MYSQL_USER: peluqueriajenver
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3310:3306"
+
+  # No mysql-testing: phpunit.xml already forces DB_CONNECTION=sqlite with
+  # DB_DATABASE=:memory: (in place before this change), so the test suite
+  # never touches this mysql service. See AGENTS.md, "Testing".
+
+volumes:
+  mysql-data:
+  vendor-data:
+  node-modules-data:
