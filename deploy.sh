@@ -27,7 +27,12 @@
 # unlike cobaprojects there is no equivalent of `contact:notify-pending`
 # or a cron entry here - see AGENTS.md "Production deploys".
 
-set -euo pipefail
+# -E (errtrace) makes the ERR trap below fire for a failure inside a
+# function (e.g. fix_permissions) too, not just at the top level. Without
+# it, set -e still stops the script, but on_error never runs, so a
+# mid-maintenance failure inside a function leaves the site down with no
+# instructions printed - caught by the obranur demo's review.
+set -Eeuo pipefail
 
 WEB_USER="${WEB_USER:-www-data}"
 DEPLOY_USER="$(id -un)"
