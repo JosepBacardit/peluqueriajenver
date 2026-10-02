@@ -62,6 +62,11 @@ return [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
+            // laravel.log is written by both PHP-FPM (www-data) and
+            // deploy.sh / artisan calls (deploy): without an explicit
+            // permission, whichever process creates the file first locks
+            // the other out of it. See AGENTS.md "Production deploys".
+            'permission' => 0664,
             'replace_placeholders' => true,
         ],
 
@@ -70,6 +75,7 @@ return [
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => env('LOG_DAILY_DAYS', 14),
+            'permission' => 0664,
             'replace_placeholders' => true,
         ],
 

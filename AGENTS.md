@@ -141,6 +141,136 @@ Never run `migrate:fresh`, `migrate:refresh`, `migrate:reset`, `db:wipe`, or
 a manual `DROP`/`TRUNCATE` against production. If `migrate:status` shows
 anything unexpected, stop and ask the user before proceeding.
 
+## Production deploys
+
+The VPS has nginx and PHP-FPM installed directly (no Docker in production),
+and PHP-FPM runs as `www-data`. This reuses the pattern built and
+independently reviewed for cobaprojects (`deploy.sh`, `deploy:check`,
+`.ai/reviews/deploy-safety.md` in that repository), adapted to what this
+project actually has — see "What this project does not need" below.
+
+- `./deploy.sh`, run as the non-root `deploy` user from the checkout,
+  deploys whatever is already pushed to the branch it is on (it only
+  fast-forwards; it never switches branches). Order of operations:
+  1. Refuses to run as root or with a dirty working tree, fixes
+     `storage`/`bootstrap/cache` ownership and permissions up front (in
+     case an earlier root `artisan` call left something it owns), asking
+     for `deploy`'s sudo password once at the start for this.
+  2. Still with the site live, checks that GitHub is reachable and the
+     branch can fast-forward: `git fetch` (no remote argument — it uses
+     the branch's configured upstream), then that `@{u}` actually
+     resolves (the branch has an upstream configured), then
+     `git merge-base --is-ancestor HEAD "@{u}"`. This preflight — and the
+     later "Pulling the latest code" step merging `@{u}` instead of
+     pulling again, so it reuses this exact fetch instead of risking a
+     second one — mirrors cobaprojects' `deploy.sh`: on **that**
+     project's first real deploy, it put the site in maintenance mode and
+     only then found `git pull` failing on an SSH problem with GitHub,
+     leaving the site down for nothing. This project has not had its
+     first real deploy yet, so it gets the same preflight from the start
+     rather than waiting to hit the same problem. Any of the three checks
+     failing aborts here, with the site still live and before the second
+     `sudo` prompt: a failed `fetch` points at `deploy`'s SSH key/alias, a
+     missing upstream at `git branch --set-upstream-to=origin/<branch>`,
+     a diverged branch at fixing it by hand (rebase, reset) — including a
+     detached `HEAD`, which also has no `@{u}` to resolve.
+  3. Asks for `deploy`'s sudo password again right before enabling
+     maintenance mode — the last point it is safe to prompt — then enters
+     maintenance mode **before** pulling, so every step that changes code
+     (merging `@{u}`, `composer install`, `npm run build`) happens inside
+     the controlled downtime window instead of in front of live traffic
+     (`npm run build` empties `public/build` before writing to it, which
+     is what makes this order matter: the site 500s on
+     `ViteManifestNotFoundException` for as long as
+     `public/build/manifest.json` is missing).
+  4. Runs migrations, `optimize`, fixes the same permissions again
+     (non-interactively, with `sudo -n`, so an expired credential fails
+     fast instead of hanging the site in maintenance mode), runs
+     `php artisan deploy:check` **as `www-data`** before leaving
+     maintenance mode, and finally checks `/`, `/contacto`,
+     `/avisos-legales`, `/sitemap.xml` and `/up` on the live site (each
+     request capped at 20s). `/sitemap.xml` is included because it
+     already broke once in this project (see "Known traps"). `/up` is
+     Laravel's own health route (`health: '/up'` in `bootstrap/app.php`)
+     and is the only one of the five that compiles a Blade view on every
+     request instead of serving an already-compiled one, so it is the
+     one that actually catches a `storage/framework/views` permissions
+     problem — the other four can keep returning 200 from an
+     already-compiled view even when that directory is unwritable. On any
+     failure — including a non-200 response or an unreachable site in
+     that last check — it stays in maintenance mode rather than risk
+     exposing a half-deployed site, and prints what to do next; if the
+     failure happened after leaving maintenance mode, it explicitly does
+     **not** suggest `git checkout <previous-commit> && ./deploy.sh` —
+     the preflight above only ever fast-forwards, so it would refuse to
+     deploy a commit that is not a descendant of the current one — and
+     instead points at `git revert <commit>`, pushed, then `./deploy.sh`
+     again.
+  5. Its executable bit is tracked in Git
+     (`git update-index --chmod=+x deploy.sh`), so a fresh checkout never
+     needs a local `chmod +x` that `core.fileMode` would then see as an
+     uncommitted change (see Developer Brain's `knowledge/vps-ovh.md`,
+     "Trampa de `core.fileMode`" — that already bit this project once,
+     unrelated to deploying).
+- **Standing rule: never run `php artisan` as root on the VPS** — always
+  as `deploy` (`sudo -u deploy php artisan ...` or `su - deploy`). An
+  `artisan` call run as root can leave files PHP-FPM cannot write to,
+  500ing every page until the ownership is fixed by hand.
+- `php artisan deploy:check` — the check `deploy.sh` runs as `www-data`
+  before leaving maintenance mode. Fails (exit 1) if `APP_ENV` is not
+  `production`, `APP_DEBUG` is not `false`, `APP_URL` does not start with
+  `https://`, or if `storage/framework/views`, `storage/logs`,
+  `storage/framework/cache` or `bootstrap/cache` is not writable by
+  whoever runs it.
+
+### What this project does not need
+
+- **No `contact:notify-pending`-style retry command.** cobaprojects has
+  one because its `/contacto` page has a real form that saves a row and
+  sends an email synchronously; this project's `/contacto` is a static
+  page (phone and WhatsApp links only, see "Project" above), with no form,
+  no `ContactSubmission`-like model and no outgoing mail of its own. If
+  that changes — for instance if the unmerged `claude/email-discount-code`
+  branch, which adds a hero email form for a discount code, is ever
+  merged — revisit this and consider the same pattern.
+- **No cron entry.** Nothing above needs one without the retry command.
+
+### Before the first real deploy
+
+These are unresolved prerequisites, not yet done — the next deploy is the
+first time any of this gets confirmed:
+
+- **VPS path:** not yet annotated anywhere (`developer-brain/knowledge/vps-ovh.md`
+  lists it as "sin anotar"; this repository's own `NGINX-CACHE-CONFIG.md`
+  only guesses `/etc/nginx/sites-available/peluqueriajenver.com` "o
+  similar"). Confirm the real checkout path on the VPS during the first
+  deploy and record it in `developer-brain/knowledge/vps-ovh.md`.
+- **`deploy`'s SSH access to GitHub:** the user manages one deploy key per
+  repository, with a per-repo alias in `~/.ssh/config` — for this project,
+  `github-peluqueriajenver`. Confirm the key and the alias are set up for
+  the `deploy` user (not root) before the first `./deploy.sh` run, or the
+  new remote/divergence check above will fail immediately (by design —
+  that is the point of checking it first).
+- **`storage`/`bootstrap/cache` ownership:** unlike cobaprojects and
+  obranur, this has not been checked on the VPS yet for this project. Run
+  `find storage bootstrap/cache \( ! -user deploy -o ! -group www-data \) -print`
+  before the first `./deploy.sh` run — unlike `ls -ld`, which only shows
+  the top level, this walks every file and directory underneath, which is
+  where a stray root-owned entry actually breaks a deploy. Fix ownership
+  by hand (`chown -R deploy:www-data storage bootstrap/cache`) if it
+  prints anything — `deploy.sh`'s `fix_permissions` re-applies this on
+  every run, but the very first `php artisan` call, before `deploy.sh`
+  has run even once, needs it too.
+- **`.env` values `deploy:check` requires:** confirm in the VPS `.env`
+  itself, before the first `./deploy.sh` run, that `APP_ENV=production`,
+  `APP_DEBUG=false` and `APP_URL=https://www.peluqueriajenver.com` — if
+  any of them is wrong, `deploy.sh` will reach `deploy:check` with the
+  site already in maintenance mode and fail there instead of up front
+  (the behavior is safe — the site just stays down until it is fixed —
+  but it is an avoidable maintenance window). After changing `.env` by
+  hand, run `php artisan optimize` as `deploy` (not root): configuration
+  is cached, so edits to `.env` are invisible until it is rebuilt.
+
 ## How to verify locally
 
 - `docker compose exec app php artisan test` runs the Pest suite
@@ -167,6 +297,12 @@ anything unexpected, stop and ask the user before proceeding.
   `docker/php/Dockerfile`. The host PHP install on this machine does not
   have `pdo_sqlite` at all, which is one more reason tests only run inside
   the container, never from the host.
+- `/sitemap.xml` 500s with `short_open_tag=On` (the case in the Docker
+  `app` image, see `docker/php/Dockerfile`): the leading literal `<?xml`
+  compiles as a PHP open tag instead of being emitted as text. Production
+  has `short_open_tag=Off` and never showed this. Fixed in `d65c8d8` by
+  emitting the XML declaration so it survives either setting;
+  `tests/Feature/SitemapTest.php` guards against a regression.
 
 ## Working agreements
 
