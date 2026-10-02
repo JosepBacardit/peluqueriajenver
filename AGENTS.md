@@ -189,8 +189,7 @@ project actually has — see "What this project does not need" below.
      (`git update-index --chmod=+x deploy.sh`), so a fresh checkout never
      needs a local `chmod +x` that `core.fileMode` would then see as an
      uncommitted change (see Developer Brain's `knowledge/vps-ovh.md`,
-     "Trampa de `core.fileMode`" — this bit this project already into
-     once).
+     "Trampa de `core.fileMode`" — this already bit this project once).
 - **Standing rule: never run `php artisan` as root on the VPS** — always
   as `deploy` (`sudo -u deploy php artisan ...` or `su - deploy`). An
   `artisan` call run as root can leave files PHP-FPM cannot write to,
