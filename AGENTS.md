@@ -141,6 +141,104 @@ Never run `migrate:fresh`, `migrate:refresh`, `migrate:reset`, `db:wipe`, or
 a manual `DROP`/`TRUNCATE` against production. If `migrate:status` shows
 anything unexpected, stop and ask the user before proceeding.
 
+## Production deploys
+
+The VPS has nginx and PHP-FPM installed directly (no Docker in production),
+and PHP-FPM runs as `www-data`. This reuses the pattern built and
+independently reviewed for cobaprojects (`deploy.sh`, `deploy:check`,
+`.ai/reviews/deploy-safety.md` in that repository), adapted to what this
+project actually has — see "What this project does not need" below.
+
+- `./deploy.sh`, run as the non-root `deploy` user from the checkout,
+  deploys whatever is already pushed to the branch it is on (it only
+  fast-forwards; it never switches branches). Order of operations:
+  1. Checks that the remote is reachable and this branch has not diverged
+     from its upstream (`git fetch origin` then
+     `git merge-base --is-ancestor HEAD @{u}`) — **before** asking for
+     sudo or touching the site at all. This is new compared to
+     cobaprojects: on peluqueriajenver's first real deploy, `deploy.sh`
+     put the site in maintenance mode and then `git pull` failed on an
+     SSH problem with GitHub, leaving the site down with nothing to roll
+     forward to. Checking this first means an SSH/access problem, or a
+     genuinely diverged branch, is reported with the site still live and
+     before sudo is even requested.
+  2. Refuses to run as root or with a dirty working tree, fixes
+     `storage`/`bootstrap/cache` ownership and permissions up front (in
+     case an earlier root `artisan` call left something it owns), asks
+     for `deploy`'s sudo password once at the start and again right
+     before enabling maintenance mode — the last point it is safe to
+     prompt — then enters maintenance mode **before** pulling, so every
+     step that changes code (`git pull`, `composer install`,
+     `npm run build`) happens inside the controlled downtime window
+     instead of in front of live traffic (`npm run build` empties
+     `public/build` before writing to it, which is what makes this order
+     matter: the site 500s on `ViteManifestNotFoundException` for as long
+     as `public/build/manifest.json` is missing).
+  3. Runs migrations, `optimize`, fixes the same permissions again
+     (non-interactively, with `sudo -n`, so an expired credential fails
+     fast instead of hanging the site in maintenance mode), runs
+     `php artisan deploy:check` **as `www-data`** before leaving
+     maintenance mode, and finally checks `/`, `/contacto`,
+     `/avisos-legales` and `/sitemap.xml` on the live site (each request
+     capped at 20s; `/sitemap.xml` is included because it already broke
+     once in this project, see "Known traps"). On any failure — including
+     a non-200 response or an unreachable site in that last check — it
+     stays in maintenance mode rather than risk exposing a half-deployed
+     site, and prints what to do next.
+  4. Its executable bit is tracked in Git
+     (`git update-index --chmod=+x deploy.sh`), so a fresh checkout never
+     needs a local `chmod +x` that `core.fileMode` would then see as an
+     uncommitted change (see Developer Brain's `knowledge/vps-ovh.md`,
+     "Trampa de `core.fileMode`" — this bit this project already into
+     once).
+- **Standing rule: never run `php artisan` as root on the VPS** — always
+  as `deploy` (`sudo -u deploy php artisan ...` or `su - deploy`). An
+  `artisan` call run as root can leave files PHP-FPM cannot write to,
+  500ing every page until the ownership is fixed by hand.
+- `php artisan deploy:check` — the check `deploy.sh` runs as `www-data`
+  before leaving maintenance mode. Fails (exit 1) if `APP_ENV` is not
+  `production`, `APP_DEBUG` is not `false`, `APP_URL` does not start with
+  `https://`, or if `storage/framework/views`, `storage/logs`,
+  `storage/framework/cache` or `bootstrap/cache` is not writable by
+  whoever runs it.
+
+### What this project does not need
+
+- **No `contact:notify-pending`-style retry command.** cobaprojects has
+  one because its `/contacto` page has a real form that saves a row and
+  sends an email synchronously; this project's `/contacto` is a static
+  page (phone and WhatsApp links only, see "Project" above), with no form,
+  no `ContactSubmission`-like model and no outgoing mail of its own. If
+  that changes — for instance if the unmerged `claude/email-discount-code`
+  branch, which adds a hero email form for a discount code, is ever
+  merged — revisit this and consider the same pattern.
+- **No cron entry.** Nothing above needs one without the retry command.
+
+### Before the first real deploy
+
+These are unresolved prerequisites, not yet done — the next deploy is the
+first time any of this gets confirmed:
+
+- **VPS path:** not yet annotated anywhere (`developer-brain/knowledge/vps-ovh.md`
+  lists it as "sin anotar"; this repository's own `NGINX-CACHE-CONFIG.md`
+  only guesses `/etc/nginx/sites-available/peluqueriajenver.com` "o
+  similar"). Confirm the real checkout path on the VPS during the first
+  deploy and record it in `developer-brain/knowledge/vps-ovh.md`.
+- **`deploy`'s SSH access to GitHub:** the user manages one deploy key per
+  repository, with a per-repo alias in `~/.ssh/config` — for this project,
+  `github-peluqueriajenver`. Confirm the key and the alias are set up for
+  the `deploy` user (not root) before the first `./deploy.sh` run, or the
+  new remote/divergence check above will fail immediately (by design —
+  that is the point of checking it first).
+- **`storage`/`bootstrap/cache` ownership:** unlike cobaprojects and
+  obranur, this has not been checked on the VPS yet for this project. Run
+  `ls -ld storage bootstrap/cache` (and the first level below them) before
+  the first `./deploy.sh` run and fix ownership by hand
+  (`chown -R deploy:www-data storage bootstrap/cache`) if it is not
+  already `deploy:www-data`-writable — `deploy.sh`'s `fix_permissions`
+  re-applies this on every run, but the very first `php artisan` call,
+  before `deploy.sh` has run even once, needs it too.
+
 ## How to verify locally
 
 - `docker compose exec app php artisan test` runs the Pest suite
