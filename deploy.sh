@@ -86,9 +86,11 @@ on_error() {
             # riskier than it looks (which commit is "good"?), so this asks
             # a human instead of guessing.
             echo "Deploy finished and the site left maintenance mode, but the health check below" >&2
-            echo "failed. The new code is already live: check $SITE_URL by hand and storage/logs," >&2
-            echo "and roll back by hand (e.g. 'git checkout <previous-commit> && ./deploy.sh') if" >&2
-            echo "it is actually broken." >&2
+            echo "failed. The new code is already live: check $SITE_URL by hand and storage/logs." >&2
+            echo "'git checkout <previous-commit> && ./deploy.sh' will not fix it: the preflight" >&2
+            echo "check below only ever fast-forwards, so it refuses to deploy a commit that is" >&2
+            echo "not an ancestor of @{u}. If it is actually broken, revert the bad commit(s)" >&2
+            echo "('git revert <commit>'), push that to the branch, then run ./deploy.sh again." >&2
             ;;
         *)
             echo "Deploy failed before touching the site; production is untouched." >&2
@@ -96,28 +98,6 @@ on_error() {
     esac
 }
 trap on_error ERR
-
-# Checked before anything that needs sudo or touches the site: a failed
-# fetch or a diverged branch means `git pull --ff-only` further down would
-# fail too, but finding that out here costs nothing, while finding it out
-# after the site is already in maintenance mode would leave it down for no
-# reason - this is exactly the 2026-10-02 cobaprojects incident this check
-# exists to avoid (see AGENTS.md "Production deploys").
-step "Checking the remote is reachable and this branch has not diverged"
-if ! git fetch origin; then
-    echo "Could not fetch from the remote. This usually means 'deploy' cannot reach GitHub" >&2
-    echo "over SSH (check its deploy key and ~/.ssh/config alias), not a problem with the code." >&2
-    on_error
-    exit 1
-fi
-
-if ! git merge-base --is-ancestor HEAD '@{u}'; then
-    echo "This branch has diverged from its upstream (@{u}); a fast-forward pull would fail." >&2
-    echo "Inspect it by hand (e.g. 'git log --oneline HEAD..@{u}' and 'git log --oneline @{u}..HEAD')" >&2
-    echo "before deploying - this is not an access problem, the histories themselves disagree." >&2
-    on_error
-    exit 1
-fi
 
 step "Checking sudo access"
 sudo -v
@@ -131,6 +111,35 @@ fi
 step "Fixing storage and bootstrap/cache permissions"
 fix_permissions
 
+# Catches three problems before the site goes into maintenance mode, where
+# they would otherwise be discovered too late: this preflight reuses the
+# one cobaprojects added after its own first real deploy went down and
+# only then failed to pull because "deploy" had no SSH access to GitHub
+# (see cobaprojects' AGENTS.md "Production deploys" and
+# developer-brain/knowledge/vps-ovh.md - that incident happened there, not
+# on this project's own first deploy, which has not run yet). The
+# "Pulling the latest code" step below merges @{u} instead of pulling
+# again, so it reuses this exact fetch rather than risking a second one
+# racing ahead of the ancestry check just done.
+step "Checking GitHub access and that the branch can fast-forward"
+if ! git fetch; then
+    echo "git fetch failed. Check deploy's SSH access to GitHub: the deploy key and the" >&2
+    echo "'github-peluqueriajenver' alias in ~/.ssh/config (see AGENTS.md, 'Production deploys')." >&2
+    exit 1
+fi
+
+if ! git rev-parse --abbrev-ref --symbolic-full-name "@{u}" >/dev/null 2>&1; then
+    echo "The current branch has no upstream configured (@{u} does not resolve). Set one" >&2
+    echo "with 'git branch --set-upstream-to=origin/<branch>' before deploying." >&2
+    exit 1
+fi
+
+if ! git merge-base --is-ancestor HEAD "@{u}"; then
+    echo "The local branch has diverged from its upstream (@{u}); a fast-forward merge would" >&2
+    echo "fail. Resolve this by hand (rebase, reset or fix the branch) before deploying." >&2
+    exit 1
+fi
+
 step "Enabling maintenance mode"
 # Refreshed here, the last point where it is safe to prompt for a
 # password: every step below this line runs while the site is down.
@@ -139,7 +148,7 @@ php artisan down --retry=15
 deploy_stage="in_maintenance"
 
 step "Pulling the latest code"
-git pull --ff-only
+git merge --ff-only "@{u}"
 
 step "Installing PHP dependencies"
 composer install --no-dev --optimize-autoloader --no-interaction
@@ -165,7 +174,7 @@ php artisan up
 deploy_stage="live"
 
 step "Checking the live site"
-for path in / /contacto /avisos-legales /sitemap.xml; do
+for path in / /contacto /avisos-legales /sitemap.xml /up; do
     if ! status="$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' "$SITE_URL$path")"; then
         echo "Could not reach $SITE_URL$path (curl failed)." >&2
         on_error
