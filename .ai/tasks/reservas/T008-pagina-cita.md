@@ -5,7 +5,7 @@
 - **Depende de:** T007
 - **Modelo:** Claude Sonnet 5 · **Esfuerzo:** `medium`
 - **Motivo:** son una página y una acción acotadas.
-- **Estado:** pending
+- **Estado:** done
 - **PR / rama:** PR 3, `feature/booking-public`
 
 ## Plan

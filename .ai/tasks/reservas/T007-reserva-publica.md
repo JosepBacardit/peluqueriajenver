@@ -5,7 +5,7 @@
 - **Depende de:** T004
 - **Modelo:** Claude Sonnet 5 · **Esfuerzo:** `high`
 - **Motivo:** es el flujo público con muchos casos límite, aunque la lógica de fondo ya está en T004.
-- **Estado:** pending
+- **Estado:** done
 - **PR / rama:** PR 3, `feature/booking-public`
 
 ## Plan

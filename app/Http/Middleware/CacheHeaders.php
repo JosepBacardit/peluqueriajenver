@@ -41,9 +41,17 @@ class CacheHeaders
         return $response;
     }
 
+    /**
+     * Paths never cached: the API, the admin panel, and the booking pages
+     * (free times change constantly and their forms carry a CSRF token).
+     */
     private function isApi($path): bool
     {
-        return str_starts_with($path, '/api') || str_starts_with($path, '/admin');
+        return str_starts_with($path, '/api')
+            || str_starts_with($path, '/admin')
+            || $path === '/reservas'
+            || str_starts_with($path, '/reservas/')
+            || str_starts_with($path, '/cita/');
     }
 
     private function isStaticAsset($path): bool

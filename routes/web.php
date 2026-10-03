@@ -7,6 +7,8 @@ use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Admin\OpeningHoursController;
 use App\Http\Controllers\Admin\ScheduleBlockController;
 use App\Http\Controllers\Admin\ServiceController;
+use App\Http\Controllers\BookingController;
+use App\Http\Controllers\CustomerAppointmentController;
 use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
 
@@ -51,6 +53,12 @@ Route::get('/cookies', function () {
 Route::get('/contacto', function () {
     return view('pages.contacto');
 })->name('contacto');
+
+// Reservas online (sin caché pública, ver CacheHeaders)
+Route::get('/reservas', [BookingController::class, 'index'])->name('reservas');
+Route::post('/reservas', [BookingController::class, 'store'])->middleware('throttle:bookings')->name('reservas.store');
+Route::get('/cita/{token}', [CustomerAppointmentController::class, 'show'])->name('cita.show');
+Route::post('/cita/{token}/cancelar', [CustomerAppointmentController::class, 'cancel'])->middleware('throttle:bookings')->name('cita.cancel');
 
 // Panel de administración del salón (privado, sin registro público)
 Route::prefix('admin')->group(function () {

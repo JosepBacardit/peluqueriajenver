@@ -1,5 +1,10 @@
 <?php
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+// The booking page reads services from the database.
+uses(RefreshDatabase::class);
+
 it('serves public pages without prices, self-reported reviews or the dead contact form', function (string $routeName) {
     $response = $this->get(route($routeName));
 
@@ -21,4 +26,5 @@ it('serves public pages without prices, self-reported reviews or the dead contac
     'peinados-eventos',
     'belleza-estetica',
     'contacto',
+    'reservas',
 ]);

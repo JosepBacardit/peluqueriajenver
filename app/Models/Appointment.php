@@ -76,4 +76,12 @@ class Appointment extends Model
     {
         return $this->status === AppointmentStatus::Confirmed;
     }
+
+    /**
+     * Spanish long date, e.g. "jueves 10 de enero de 2030".
+     */
+    public function dayLabel(): string
+    {
+        return $this->starts_at->locale('es')->translatedFormat('l j \d\e F \d\e Y');
+    }
 }

@@ -5,7 +5,7 @@
 - **Depende de:** T007, T008
 - **Modelo:** Claude Sonnet 5 · **Esfuerzo:** `medium`
 - **Motivo:** son cambios localizados en piezas existentes.
-- **Estado:** pending
+- **Estado:** done
 - **PR / rama:** PR 3, `feature/booking-public`
 
 ## Plan

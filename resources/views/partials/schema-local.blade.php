@@ -61,7 +61,7 @@ $schema = [
         "name" => "Reservar cita",
         "target" => [
             "@type" => "EntryPoint",
-            "urlTemplate" => "tel:+34633912050"
+            "urlTemplate" => route('reservas')
         ]
     ],
     "hasMap" => [
