@@ -16,12 +16,13 @@ use Illuminate\Console\Command;
  * APP_DEBUG=true leaked a stack trace to visitors, and
  * storage/framework/views not writable by www-data 500'd every page.
  *
- * Unlike cobaprojects, this project has no contact form and none of its
- * own required .env values, so there is nothing to check beyond the
- * safety flags and the writable paths.
+ * Since the online booking system it also checks the outgoing mail
+ * configuration and the salon's notification address: the confirmation
+ * email carries the customer's only link to cancel, so a site that cannot
+ * send mail must not be deployed silently.
  */
 #[Signature('deploy:check')]
-#[Description('Check the production-safety flags and writable paths required before a production deploy')]
+#[Description('Check the production-safety flags, mail settings and writable paths required before a production deploy')]
 class DeployCheckCommand extends Command
 {
     /**
@@ -68,6 +69,8 @@ class DeployCheckCommand extends Command
             $this->info('APP_URL is https.');
         }
 
+        $ok = $this->checkMail() && $ok;
+
         foreach ($this->writablePaths() as $label => $path) {
             if (! is_writable($path)) {
                 $this->error("{$label} is missing or not writable by this user.");
@@ -84,5 +87,52 @@ class DeployCheckCommand extends Command
         $this->info('Every deploy check passed.');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Booking emails must really leave the server: no log/array mailer, a
+     * real SMTP host, a sender other than the skeleton default, and a valid
+     * address for the salon's notices.
+     */
+    private function checkMail(): bool
+    {
+        $ok = true;
+        $mailer = (string) config('mail.default');
+
+        if (in_array($mailer, ['', 'log', 'array'], true)) {
+            $this->error("MAIL_MAILER does not send real email (got \"{$mailer}\").");
+            $ok = false;
+        } else {
+            $this->info("MAIL_MAILER is {$mailer}.");
+        }
+
+        if ($mailer === 'smtp') {
+            $host = (string) config('mail.mailers.smtp.host');
+
+            if (in_array($host, ['', '127.0.0.1', 'localhost'], true)) {
+                $this->error("MAIL_HOST is not a real SMTP server (got \"{$host}\").");
+                $ok = false;
+            } else {
+                $this->info('MAIL_HOST is set.');
+            }
+        }
+
+        $from = (string) config('mail.from.address');
+
+        if (! filter_var($from, FILTER_VALIDATE_EMAIL) || $from === 'hello@example.com') {
+            $this->error("MAIL_FROM_ADDRESS is missing or still the skeleton default (got \"{$from}\").");
+            $ok = false;
+        } else {
+            $this->info('MAIL_FROM_ADDRESS is set.');
+        }
+
+        if (! filter_var((string) config('booking.salon_notification_email'), FILTER_VALIDATE_EMAIL)) {
+            $this->error('BOOKING_NOTIFICATION_EMAIL is missing or not a valid email address.');
+            $ok = false;
+        } else {
+            $this->info('BOOKING_NOTIFICATION_EMAIL is set.');
+        }
+
+        return $ok;
     }
 }

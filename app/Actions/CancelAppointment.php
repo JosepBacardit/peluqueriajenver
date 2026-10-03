@@ -11,15 +11,21 @@ use App\Models\Appointment;
  */
 class CancelAppointment
 {
-    public function handle(Appointment $appointment): void
+    /**
+     * @return bool whether the appointment was cancelled by this call
+     *              (false if it was already cancelled)
+     */
+    public function handle(Appointment $appointment): bool
     {
         if (! $appointment->isConfirmed()) {
-            return;
+            return false;
         }
 
         $appointment->update([
             'status' => AppointmentStatus::Cancelled,
             'cancelled_at' => now(),
         ]);
+
+        return true;
     }
 }

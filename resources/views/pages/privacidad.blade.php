@@ -4,78 +4,94 @@
 @section('title', 'Política de Privacidad | Peluquería Jenver')
 @section('description', 'Política de privacidad de Peluquería Jenver. Conoce cómo tratamos y protegemos tus datos personales.')
 
+{{--
+    The bracketed "[Pendiente de confirmar: ...]" values are facts the client
+    has not provided yet. They are deliberately left visible instead of
+    invented, and block publishing the booking system (see AGENTS.md,
+    "Before deploying the booking system").
+--}}
+
 @section('content')
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <h1 class="text-4xl font-serif font-bold mb-8 text-gold">Política de Privacidad</h1>
 
     <div class="prose prose-invert max-w-none space-y-6">
         <section>
-            <h2 class="text-2xl font-serif font-semibold mt-8 mb-4 text-gold">1. Responsable del Tratamiento</h2>
+            <h2 class="text-2xl font-serif font-semibold mt-8 mb-4 text-gold">1. Responsable del tratamiento</h2>
             <p class="text-gray-300">
                 <strong>Peluquería Jenver</strong><br>
+                Titular: [Pendiente de confirmar: nombre o razón social del titular]<br>
+                NIF: [Pendiente de confirmar: NIF]<br>
                 C/ Lleida, 21<br>
                 08110 Montcada i Reixac (Barcelona)<br>
                 Teléfono: +34 633 912 050<br>
-                Email: peluqueriajenver@email.com
+                Email: [Pendiente de confirmar: email de contacto]
             </p>
         </section>
 
         <section>
-            <h2 class="text-2xl font-serif font-semibold mt-8 mb-4 text-gold">2. Información que Recopilamos</h2>
-            <p class="text-gray-300">
-                Recopilamos información que nos proporcionas directamente, como:
-            </p>
+            <h2 class="text-2xl font-serif font-semibold mt-8 mb-4 text-gold">2. Datos que tratamos</h2>
             <ul class="list-disc list-inside text-gray-300 space-y-2 ml-4">
-                <li>Nombre y número de teléfono para reservas</li>
-                <li>Dirección de correo electrónico</li>
-                <li>Información sobre tus preferencias de servicios</li>
-                <li>Datos de cookies y análisis de navegación</li>
+                <li><strong>Reservas online:</strong> nombre, teléfono, email, el servicio, el día y la hora elegidos y las observaciones que quieras añadir.</li>
+                <li><strong>Citas por teléfono o WhatsApp:</strong> los mismos datos, que el salón apunta en su agenda.</li>
+                <li><strong>Navegación:</strong> datos de cookies y de análisis, según la <a href="{{ route('cookies') }}" class="text-gold underline">política de cookies</a>.</li>
             </ul>
         </section>
 
         <section>
-            <h2 class="text-2xl font-serif font-semibold mt-8 mb-4 text-gold">3. Base Legal del Tratamiento</h2>
+            <h2 class="text-2xl font-serif font-semibold mt-8 mb-4 text-gold">3. Finalidad</h2>
             <p class="text-gray-300">
-                El tratamiento de tus datos personales se realiza en base a:
+                Gestionar tu cita: reservarla, enviarte su confirmación con el enlace para consultarla o cancelarla, avisarte si el salón tiene que cancelarla y atenderte el día de la cita. No usamos estos datos para enviarte publicidad.
+            </p>
+        </section>
+
+        <section>
+            <h2 class="text-2xl font-serif font-semibold mt-8 mb-4 text-gold">4. Base legal</h2>
+            <p class="text-gray-300">
+                La aplicación, a petición tuya, de medidas precontractuales: tratamos tus datos porque nos pides una cita (artículo 6.1.b del Reglamento General de Protección de Datos). Sin ellos no podemos reservarla ni avisarte sobre ella. Las cookies que no son técnicas se basan en tu consentimiento.
+            </p>
+        </section>
+
+        <section>
+            <h2 class="text-2xl font-serif font-semibold mt-8 mb-4 text-gold">5. Destinatarios y encargados del tratamiento</h2>
+            <p class="text-gray-300">
+                No cedemos tus datos a terceros, salvo obligación legal. Para prestar el servicio, estos proveedores los tratan por cuenta del salón:
             </p>
             <ul class="list-disc list-inside text-gray-300 space-y-2 ml-4">
-                <li>Tu consentimiento explícito (reservas y contacto)</li>
-                <li>Ejecución de un contrato (citas y servicios)</li>
-                <li>Cumplimiento de obligaciones legales</li>
-                <li>Intereses legítimos de la empresa</li>
+                <li><strong>Alojamiento de la web y de la base de datos:</strong> OVH (servidor privado virtual).</li>
+                <li><strong>Envío de los correos de las citas:</strong> [Pendiente de confirmar: proveedor de correo electrónico].</li>
             </ul>
         </section>
 
         <section>
-            <h2 class="text-2xl font-serif font-semibold mt-8 mb-4 text-gold">4. Derechos del Usuario</h2>
+            <h2 class="text-2xl font-serif font-semibold mt-8 mb-4 text-gold">6. Plazo de conservación</h2>
             <p class="text-gray-300">
-                Según la RGPD, tienes derecho a:
+                Conservamos los datos de cada cita durante [Pendiente de confirmar: plazo de conservación de las citas] desde la fecha de la cita y, después, durante los plazos que exija la ley. Pasado ese tiempo se eliminan.
+            </p>
+        </section>
+
+        <section>
+            <h2 class="text-2xl font-serif font-semibold mt-8 mb-4 text-gold">7. Derechos</h2>
+            <p class="text-gray-300">
+                Puedes ejercer en cualquier momento tus derechos de:
             </p>
             <ul class="list-disc list-inside text-gray-300 space-y-2 ml-4">
-                <li><strong>Acceso</strong>: Solicitar acceso a tus datos personales</li>
-                <li><strong>Rectificación</strong>: Corregir datos inexactos</li>
-                <li><strong>Supresión</strong>: Solicitar la eliminación de tus datos</li>
-                <li><strong>Restricción</strong>: Limitar el procesamiento de tus datos</li>
-                <li><strong>Portabilidad</strong>: Obtener tus datos en formato estructurado</li>
-                <li><strong>Oposición</strong>: Oponerte al tratamiento de tus datos</li>
+                <li><strong>Acceso</strong>: saber qué datos tuyos tratamos.</li>
+                <li><strong>Rectificación</strong>: corregir datos inexactos.</li>
+                <li><strong>Supresión</strong>: pedir que eliminemos tus datos.</li>
+                <li><strong>Limitación</strong>: pedir que limitemos su tratamiento.</li>
+                <li><strong>Portabilidad</strong>: recibirlos en un formato estructurado.</li>
+                <li><strong>Oposición</strong>: oponerte a su tratamiento.</li>
             </ul>
-        </section>
-
-        <section>
-            <h2 class="text-2xl font-serif font-semibold mt-8 mb-4 text-gold">5. Seguridad de los Datos</h2>
             <p class="text-gray-300">
-                Implementamos medidas técnicas y organizativas para proteger tus datos personales contra acceso no autorizado, alteración o destrucción.
+                Para ejercerlos, escríbenos a [Pendiente de confirmar: email de contacto] o llámanos al +34 633 912 050. Si crees que no hemos atendido bien tu solicitud, puedes presentar una reclamación ante la Agencia Española de Protección de Datos (www.aepd.es).
             </p>
         </section>
 
         <section>
-            <h2 class="text-2xl font-serif font-semibold mt-8 mb-4 text-gold">6. Contacto</h2>
+            <h2 class="text-2xl font-serif font-semibold mt-8 mb-4 text-gold">8. Seguridad de los datos</h2>
             <p class="text-gray-300">
-                Para ejercer tus derechos o si tienes preguntas sobre esta política, ponte en contacto con nosotros en:
-            </p>
-            <p class="text-gray-300">
-                <strong>Email:</strong> peluqueriajenver@email.com<br>
-                <strong>Teléfono:</strong> +34 633 912 050
+                Aplicamos medidas técnicas y organizativas para proteger tus datos personales contra el acceso no autorizado, la alteración o la destrucción. Solo el personal del salón, con una cuenta personal, puede ver la agenda de citas.
             </p>
         </section>
 

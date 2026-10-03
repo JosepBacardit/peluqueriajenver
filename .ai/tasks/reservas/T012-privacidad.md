@@ -5,7 +5,7 @@
 - **Depende de:** T007
 - **Modelo:** Claude Sonnet 5 · **Esfuerzo:** `medium`
 - **Motivo:** es un texto legal sin lógica, pero sin datos inventados.
-- **Estado:** pending
+- **Estado:** done
 - **PR / rama:** PR 4, `feature/booking-notifications`
 
 ## Plan

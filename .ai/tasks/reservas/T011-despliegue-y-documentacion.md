@@ -5,7 +5,7 @@
 - **Depende de:** T010
 - **Modelo:** Claude Sonnet 5 · **Esfuerzo:** `medium`
 - **Motivo:** amplía un comando que ya existe y actualiza la documentación.
-- **Estado:** pending
+- **Estado:** done
 - **PR / rama:** PR 4, `feature/booking-notifications`
 
 ## Plan

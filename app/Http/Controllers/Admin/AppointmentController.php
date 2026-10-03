@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Actions\CancelAppointment;
 use App\Actions\CreateAppointment;
+use App\Booking\AppointmentNotifier;
 use App\Booking\DuplicateAppointmentException;
 use App\Booking\SlotUnavailableException;
 use App\Enums\AppointmentSource;
@@ -29,27 +30,31 @@ class AppointmentController extends Controller
         ]);
     }
 
-    public function store(StoreAdminAppointmentRequest $request, CreateAppointment $createAppointment): RedirectResponse
+    public function store(StoreAdminAppointmentRequest $request, CreateAppointment $createAppointment, AppointmentNotifier $notifier): RedirectResponse
     {
         $service = Service::findOrFail($request->validated('service_id'));
         $startsAt = $request->startsAt();
 
         try {
-            $createAppointment->handle($service, $startsAt, $request->customer(), AppointmentSource::Admin, applyPublicRules: false);
+            $appointment = $createAppointment->handle($service, $startsAt, $request->customer(), AppointmentSource::Admin, applyPublicRules: false);
         } catch (SlotUnavailableException) {
             return back()->withInput()->withErrors(['time' => 'Esa hora no está disponible para este servicio.']);
         } catch (DuplicateAppointmentException) {
             return back()->withInput()->withErrors(['customer_email' => 'Este email ya tiene una cita confirmada a esa hora.']);
         }
 
+        $notifier->sendCreationNotices($appointment);
+
         return redirect()
             ->route('admin.agenda', ['fecha' => $startsAt->toDateString()])
             ->with('status', 'Cita creada.');
     }
 
-    public function cancel(Appointment $appointment, CancelAppointment $cancelAppointment): RedirectResponse
+    public function cancel(Appointment $appointment, CancelAppointment $cancelAppointment, AppointmentNotifier $notifier): RedirectResponse
     {
-        $cancelAppointment->handle($appointment);
+        if ($cancelAppointment->handle($appointment)) {
+            $notifier->sendCancellationNotices($appointment, cancelledByCustomer: false);
+        }
 
         return redirect()
             ->route('admin.agenda', ['fecha' => $appointment->starts_at->toDateString()])

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\CancelAppointment;
+use App\Booking\AppointmentNotifier;
 use App\Models\Appointment;
 use App\Models\BookingSetting;
 use Illuminate\Http\RedirectResponse;
@@ -28,7 +29,7 @@ class CustomerAppointmentController extends Controller
         ]);
     }
 
-    public function cancel(Request $request, string $token, CancelAppointment $cancelAppointment): RedirectResponse
+    public function cancel(Request $request, string $token, CancelAppointment $cancelAppointment, AppointmentNotifier $notifier): RedirectResponse
     {
         $appointment = Appointment::query()->where('token', $token)->firstOrFail();
 
@@ -43,7 +44,9 @@ class CustomerAppointmentController extends Controller
 
         $request->validate(['confirm' => ['accepted']], ['confirm.accepted' => __('reservas.appointment.cancel_confirm_required')]);
 
-        $cancelAppointment->handle($appointment);
+        if ($cancelAppointment->handle($appointment)) {
+            $notifier->sendCancellationNotices($appointment, cancelledByCustomer: true);
+        }
 
         return redirect()->route('cita.show', $token)->with('status', __('reservas.messages.cancelled_now'));
     }

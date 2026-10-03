@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\CreateAppointment;
+use App\Booking\AppointmentNotifier;
 use App\Booking\AvailabilityCalculator;
 use App\Booking\DuplicateAppointmentException;
 use App\Booking\SlotUnavailableException;
@@ -65,7 +66,7 @@ class BookingController extends Controller
         ]);
     }
 
-    public function store(StoreBookingRequest $request, CreateAppointment $createAppointment): RedirectResponse
+    public function store(StoreBookingRequest $request, CreateAppointment $createAppointment, AppointmentNotifier $notifier): RedirectResponse
     {
         $startsAt = $request->startsAt();
         $service = Service::query()->bookableOnline()->find($request->validated('service_id'));
@@ -86,6 +87,8 @@ class BookingController extends Controller
         } catch (DuplicateAppointmentException) {
             return redirect()->to($backToDay)->withInput()->withErrors(['customer_email' => __('reservas.messages.duplicate')]);
         }
+
+        $notifier->sendCreationNotices($appointment);
 
         return redirect()
             ->route('cita.show', $appointment->token)

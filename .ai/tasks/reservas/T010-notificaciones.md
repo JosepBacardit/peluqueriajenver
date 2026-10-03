@@ -5,7 +5,7 @@
 - **Depende de:** T006, T008
 - **Modelo:** Claude Sonnet 5 · **Esfuerzo:** `high`
 - **Motivo:** hay que tratar los fallos parciales y la idempotencia del reintento.
-- **Estado:** pending
+- **Estado:** done
 - **PR / rama:** PR 4, `feature/booking-notifications`
 
 ## Plan

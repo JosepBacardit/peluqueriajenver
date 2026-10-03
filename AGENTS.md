@@ -76,6 +76,25 @@ pre-filled message per page); the salon records those in the admin agenda.
   limit) live in the single-row `booking_settings` table and the weekly
   schedule in `opening_hours`; both are created with their default values
   by their migrations. Services are not seeded: the salon enters them.
+- **Public booking** at `/reservas` (server-rendered Blade, no JS; a
+  vanilla-JS calendar is a possible later step) and the customer's page
+  `/cita/{token}` (random 48-character token, `noindex`). Both are excluded
+  from the public HTML cache in `App\Http\Middleware\CacheHeaders` (free
+  times change constantly and the forms carry a CSRF token). Availability
+  lives in `App\Booking\AvailabilityCalculator`; every booking (web or
+  admin) goes through `App\Actions\CreateAppointment`, which re-checks
+  availability under a row lock on `booking_settings` so concurrent
+  bookings cannot overbook. Prices are internal: never render
+  `price_cents` on a public page or a customer email
+  (`PublicPagesHaveNoPublicPricingTest` and the booking tests guard this).
+- **Email** is sent synchronously (no queue worker) by
+  `App\Booking\AppointmentNotifier`: confirmation with the personal link to
+  the customer, notice of web bookings and customer cancellations to
+  `BOOKING_NOTIFICATION_EMAIL`, and cancellation emails. A failed send is
+  logged and never undoes the booking; failed creation notices stay with a
+  null `customer_notified_at`/`salon_notified_at` and are retried by
+  `php artisan appointments:notify-pending` (cron, see "Production
+  deploys").
 
 ## Note on README.md
 
@@ -95,10 +114,12 @@ Ports were chosen so this stack can run alongside the sibling projects at
 the same time: cobaprojects uses `8081`/`5174`/`3308`/`3309`, obranur uses
 `8080`/`5173`/`3306`/`3307`/`6381`.
 
-There is no queue worker or scheduler: routes are plain closures that
-return views, with no contact form or other background work, even though
-`QUEUE_CONNECTION=database` matches production — there is simply nothing to
-consume.
+There is no queue worker or scheduler: booking emails are sent
+synchronously (locally `MAIL_MAILER=log` writes them to
+`storage/logs/laravel.log`), even though `QUEUE_CONNECTION=database`
+matches production — there is nothing to consume. Locally, run
+`docker compose exec app php artisan appointments:notify-pending` by hand
+if you need to exercise the retry.
 
 `vendor/` and `node_modules/` live in the named volumes `vendor-data` and
 `node-modules-data`, not in the bind mount: autoloading their ~10k/~3.2k
@@ -217,7 +238,7 @@ project actually has — see "What this project does not need" below.
      (non-interactively, with `sudo -n`, so an expired credential fails
      fast instead of hanging the site in maintenance mode), runs
      `php artisan deploy:check` **as `www-data`** before leaving
-     maintenance mode, and finally checks `/`, `/contacto`,
+     maintenance mode, and finally checks `/`, `/contacto`, `/reservas`,
      `/avisos-legales`, `/sitemap.xml` and `/up` on the live site (each
      request capped at 20s). `/sitemap.xml` is included because it
      already broke once in this project (see "Known traps"). `/up` is
@@ -249,21 +270,56 @@ project actually has — see "What this project does not need" below.
 - `php artisan deploy:check` — the check `deploy.sh` runs as `www-data`
   before leaving maintenance mode. Fails (exit 1) if `APP_ENV` is not
   `production`, `APP_DEBUG` is not `false`, `APP_URL` does not start with
-  `https://`, or if `storage/framework/views`, `storage/logs`,
+  `https://`, if `storage/framework/views`, `storage/logs`,
   `storage/framework/cache` or `bootstrap/cache` is not writable by
-  whoever runs it.
+  whoever runs it, or if booking email cannot really be sent:
+  `MAIL_MAILER` is `log`/`array`/empty, the SMTP `MAIL_HOST` is empty or
+  local, `MAIL_FROM_ADDRESS` is missing or `hello@example.com`, or
+  `BOOKING_NOTIFICATION_EMAIL` is missing or invalid.
 
-### What this project does not need
+### Cron (booking email retry)
 
-- **No `contact:notify-pending`-style retry command.** cobaprojects has
-  one because its `/contacto` page has a real form that saves a row and
-  sends an email synchronously; this project's `/contacto` is a static
-  page (phone and WhatsApp links only, see "Project" above), with no form,
-  no `ContactSubmission`-like model and no outgoing mail of its own. If
-  that changes — for instance if the unmerged `claude/email-discount-code`
-  branch, which adds a hero email form for a discount code, is ever
-  merged — revisit this and consider the same pattern.
-- **No cron entry.** Nothing above needs one without the retry command.
+`appointments:notify-pending` resends the booking confirmations and salon
+notices that failed when the appointment was made (only for upcoming
+confirmed appointments created more than 5 minutes ago; each notice is
+sent once). It needs one entry in the **`deploy` user's** crontab
+(`crontab -e` as `deploy`, never root), with `flock` so two runs never
+overlap:
+
+```
+*/10 * * * * cd /var/www/peluqueriajenver && flock -n /tmp/peluqueriajenver-notify-pending.lock php artisan appointments:notify-pending >> /dev/null 2>&1
+```
+
+There is no Laravel scheduler (`schedule:run`) entry: nothing else needs
+one yet. A day-before reminder would add it (planned as a later PR).
+
+### Before deploying the booking system (PRs 1-4)
+
+Blocking prerequisites, all pending as of 2026-10-03:
+
+- **Mailbox and SMTP:** the salon's sending mailbox (likely on Hostalia,
+  like obranur/cobaprojects: `smtp.servidor-correo.net:587`) is not
+  decided. Set `MAIL_MAILER=smtp`, `MAIL_HOST`, `MAIL_PORT`,
+  `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_SCHEME`, `MAIL_FROM_ADDRESS`,
+  `MAIL_FROM_NAME` and `BOOKING_NOTIFICATION_EMAIL` in the VPS `.env`
+  **before** running `./deploy.sh`, then `php artisan optimize` as
+  `deploy`; otherwise `deploy:check` fails with the site already in
+  maintenance mode. Configure SPF/DKIM/DMARC for the sending domain.
+- **Privacy policy data:** `/privacidad` shows "[Pendiente de confirmar
+  …]" markers for the data controller's legal name, NIF, contact email
+  and the retention period. The client must provide them before going
+  live.
+- **Migrations:** the release adds five tables (`services`,
+  `opening_hours`, `booking_settings`, `appointments`, `schedule_blocks`),
+  additive only. Check `php artisan migrate:status` on the server first
+  (see "Production database").
+- **Admin account:** after deploying, create at least one with
+  `php artisan admin:create-user` (as `deploy`), then let the salon enter
+  its services in `/admin/servicios`. Until a bookable service exists,
+  `/reservas` shows the "call or WhatsApp" message.
+- **Cron:** add the entry above.
+- **nginx:** confirm the server config adds no HTML caching of its own for
+  `/reservas` or `/cita/` (the app already sends `no-store` for them).
 
 ### Before the first real deploy
 

@@ -179,7 +179,7 @@ php artisan up
 deploy_stage="live"
 
 step "Checking the live site"
-for path in / /contacto /avisos-legales /sitemap.xml /up; do
+for path in / /contacto /reservas /avisos-legales /sitemap.xml /up; do
     if ! status="$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' "$SITE_URL$path")"; then
         echo "Could not reach $SITE_URL$path (curl failed)." >&2
         on_error

@@ -9,9 +9,9 @@
  * deploys"): APP_DEBUG=true leaked a stack trace to visitors, and
  * storage/framework/views not writable by www-data 500'd every page.
  *
- * Unlike cobaprojects, this project has no contact form and none of its
- * own required .env values (no CONTACT_ or LEGAL_ keys), so this command
- * only checks the production-safety flags and the writable paths.
+ * Since the online booking system, it also checks that outgoing mail is
+ * really configured (booking confirmations carry the customer's only link
+ * to cancel) and that the salon's notification address is set.
  */
 
 /**
@@ -55,12 +55,19 @@ beforeEach(function () {
         'app.env' => 'production',
         'app.debug' => false,
         'app.url' => 'https://www.peluqueriajenver.com',
+        'mail.default' => 'smtp',
+        'mail.mailers.smtp.host' => 'smtp.mail-provider.example',
+        'mail.from.address' => 'citas@example.test',
+        'booking.salon_notification_email' => 'salon@example.test',
     ]);
 });
 
 test('it passes when every check is satisfied', function () {
     $this->artisan('deploy:check')
         ->assertExitCode(0)
+        ->expectsOutputToContain('MAIL_MAILER')
+        ->expectsOutputToContain('MAIL_FROM_ADDRESS')
+        ->expectsOutputToContain('BOOKING_NOTIFICATION_EMAIL')
         ->expectsOutputToContain('APP_ENV')
         ->expectsOutputToContain('APP_DEBUG')
         ->expectsOutputToContain('APP_URL')
@@ -69,6 +76,23 @@ test('it passes when every check is satisfied', function () {
         ->expectsOutputToContain('storage/framework/cache')
         ->expectsOutputToContain('bootstrap/cache');
 });
+
+test('it fails when outgoing mail is not really configured', function (array $mailConfig, string $expectedOutput) {
+    config($mailConfig);
+
+    $this->artisan('deploy:check')
+        ->assertExitCode(1)
+        ->expectsOutputToContain($expectedOutput);
+})->with([
+    'mailer writes to the log' => [['mail.default' => 'log'], 'MAIL_MAILER'],
+    'mailer keeps mail in memory' => [['mail.default' => 'array'], 'MAIL_MAILER'],
+    'smtp without host' => [['mail.mailers.smtp.host' => ''], 'MAIL_HOST'],
+    'smtp pointing at the local default' => [['mail.mailers.smtp.host' => '127.0.0.1'], 'MAIL_HOST'],
+    'no sender address' => [['mail.from.address' => null], 'MAIL_FROM_ADDRESS'],
+    'skeleton sender address' => [['mail.from.address' => 'hello@example.com'], 'MAIL_FROM_ADDRESS'],
+    'no salon address' => [['booking.salon_notification_email' => null], 'BOOKING_NOTIFICATION_EMAIL'],
+    'invalid salon address' => [['booking.salon_notification_email' => 'salon-at-example'], 'BOOKING_NOTIFICATION_EMAIL'],
+]);
 
 test('it fails when app env is not production', function () {
     config(['app.env' => 'local']);
