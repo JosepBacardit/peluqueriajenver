@@ -5,7 +5,7 @@
 - **Depende de:** T004
 - **Modelo:** Claude Sonnet 5 · **Esfuerzo:** `medium`
 - **Motivo:** es un CRUD sencillo sobre una tabla ya creada.
-- **Estado:** pending
+- **Estado:** done
 - **PR / rama:** PR 2, `feature/booking-availability`
 
 ## Plan

@@ -5,7 +5,7 @@
 - **Depende de:** T002, T003
 - **Modelo:** Claude Opus 5.5 · **Esfuerzo:** `medium`
 - **Motivo:** es la lógica crítica: solapes, capacidad, cierres y concurrencia.
-- **Estado:** pending
+- **Estado:** done
 - **PR / rama:** PR 2, `feature/booking-availability`
 
 ## Plan

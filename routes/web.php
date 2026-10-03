@@ -1,8 +1,11 @@
 <?php
 
+use App\Http\Controllers\Admin\AgendaController;
+use App\Http\Controllers\Admin\AppointmentController;
 use App\Http\Controllers\Admin\BookingSettingsController;
 use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Admin\OpeningHoursController;
+use App\Http\Controllers\Admin\ScheduleBlockController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
@@ -59,7 +62,12 @@ Route::prefix('admin')->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
 
     Route::middleware('auth')->name('admin.')->group(function () {
-        Route::view('/', 'admin.home')->name('home');
+        Route::redirect('/', '/admin/agenda')->name('home');
+
+        Route::get('/agenda', [AgendaController::class, 'index'])->name('agenda');
+        Route::get('/citas/crear', [AppointmentController::class, 'create'])->name('appointments.create');
+        Route::post('/citas', [AppointmentController::class, 'store'])->name('appointments.store');
+        Route::post('/citas/{appointment}/cancelar', [AppointmentController::class, 'cancel'])->name('appointments.cancel');
 
         Route::resource('servicios', ServiceController::class)
             ->only(['index', 'create', 'store', 'edit', 'update'])
@@ -68,6 +76,10 @@ Route::prefix('admin')->group(function () {
 
         Route::get('/horario', [OpeningHoursController::class, 'edit'])->name('opening-hours.edit');
         Route::put('/horario', [OpeningHoursController::class, 'update'])->name('opening-hours.update');
+
+        Route::get('/cierres', [ScheduleBlockController::class, 'index'])->name('blocks.index');
+        Route::post('/cierres', [ScheduleBlockController::class, 'store'])->name('blocks.store');
+        Route::delete('/cierres/{block}', [ScheduleBlockController::class, 'destroy'])->name('blocks.destroy');
 
         Route::get('/ajustes', [BookingSettingsController::class, 'edit'])->name('settings.edit');
         Route::put('/ajustes', [BookingSettingsController::class, 'update'])->name('settings.update');

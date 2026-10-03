@@ -5,7 +5,7 @@
 - **Depende de:** T004
 - **Modelo:** Claude Sonnet 5 · **Esfuerzo:** `medium`
 - **Motivo:** son pantallas de panel sobre acciones ya probadas.
-- **Estado:** pending
+- **Estado:** done
 - **PR / rama:** PR 2, `feature/booking-availability`
 
 ## Plan

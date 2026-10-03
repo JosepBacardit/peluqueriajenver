@@ -95,7 +95,7 @@ Reglas de los campos de un servicio (conjunto único de valores válidos, válid
 ### Cierres y bloqueos
 
 - **PRF-021.** Una persona del salón **debe** poder crear un cierre con inicio y fin (fecha y hora), un motivo opcional de hasta 150 caracteres y una reducción de capacidad: «cierre total» o un número de 1 a 10 de citas a la vez que se restan a la capacidad durante ese periodo (por ejemplo, 1 cuando una peluquera está de vacaciones). El fin debe ser posterior al inicio.
-- **PRF-022.** Si un cierre nuevo coincide con citas confirmadas, el panel **debe** guardarlo, avisar con «Hay N citas confirmadas en ese periodo. No se han cancelado: revísalas en la agenda.» y **no debe** cancelar ninguna cita por su cuenta.
+- **PRF-022.** Si un cierre nuevo coincide con citas confirmadas, el panel **debe** guardarlo, avisar con «Hay N citas confirmadas en ese periodo. No se han cancelado: revísalas en la agenda.» (con una sola cita: «Hay 1 cita confirmada en ese periodo. No se ha cancelado: revísala en la agenda.») y **no debe** cancelar ninguna cita por su cuenta.
 - **PRF-023.** La lista de cierres **debe** mostrar los que todavía no han terminado, ordenados por inicio. Sin cierres futuros, muestra «No hay cierres previstos.».
 - **PRF-024.** Una persona del salón **debe** poder eliminar un cierre tras confirmarlo. Las horas que liberaba vuelven a estar disponibles.
 
