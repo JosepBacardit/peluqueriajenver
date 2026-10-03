@@ -18,11 +18,14 @@ Before changing this project, read the relevant guidance in Developer Brain:
 
 Project-specific facts and decisions belong here. There is no `.ai/` folder
 yet — create `.ai/specs/` and `.ai/reviews/` the first time a task needs one.
+The online booking system is specified in `.ai/specs/reservas.md`, with its
+tasks and coverage matrix in `.ai/tasks/reservas/index.md`.
 
 ## Project
 
-Peluquería Jenver is a marketing/SEO website — not a booking or management
-app — for a unisex hair salon in Montcada i Reixac (Barcelona), specialized
+Peluquería Jenver is a marketing/SEO website, now growing an online booking
+system and a hand-made admin panel (see "Booking system and admin panel"
+below), for a unisex hair salon in Montcada i Reixac (Barcelona), specialized
 in balayage, afro hair and curls. It is a client of COBA PROJECTS. Production:
 https://www.peluqueriajenver.com/ (nginx). There is no CI/CD; deploys are
 manual — ask the user how before assuming a process.
@@ -38,14 +41,41 @@ machine. Local development now runs in Docker (`docker-compose.yml`) — see
 that no longer exists, and there was no `sessions` migration to create the
 table even if it did (see "Production database" below).
 
-Routes are plain closures in `routes/web.php` (home, 4 service pages,
-`/contacto`, 3 legal pages with `noindex`, plus `/sitemap.xml`). Content
-strings live in `lang/es/*.php`; `lang/en/` only has Laravel's own default
-files — the site itself is Spanish-only.
+Public marketing routes are plain closures in `routes/web.php` (home, 4
+service pages, `/contacto`, 3 legal pages with `noindex`, plus
+`/sitemap.xml`); the booking pages and the admin panel use controllers.
+Content strings live in `lang/es/*.php`; `lang/en/` only has Laravel's own
+default files — the site itself is Spanish-only. Because of that,
+`config/app.php` pins `locale` to `es` (not read from `APP_LOCALE`, so a
+stale production `.env` cannot switch validation messages to English) and
+`timezone` to `Europe/Madrid` (every booking time is salon-local).
+`lang/es/validation.php` holds the Spanish validation messages.
 
-The only way to book an appointment is by phone (`tel:+34633912050`) or
-WhatsApp (`wa.me/34633912050` links, with a pre-filled message per page).
-There is no booking system.
+Besides the booking system, customers still book by phone
+(`tel:+34633912050`) or WhatsApp (`wa.me/34633912050` links, with a
+pre-filled message per page); the salon records those in the admin agenda.
+
+## Booking system and admin panel
+
+- **Admin panel** at `/admin`, hand-made Blade (no Filament/Livewire, user
+  decision 2026-10-03), behind Laravel's session `auth` with a hand-made
+  login (`Admin\LoginController`, 5 failed attempts per minute per
+  email+IP). There is no public registration and no password reset screen.
+  Every account has the same permissions.
+- **Accounts:** created (or their password changed) only with
+  `php artisan admin:create-user`, which asks for the password
+  interactively. The repository is public: never seed accounts or commit
+  credentials (`DatabaseSeeder` is intentionally empty). On the VPS run it
+  as `deploy`, like every other `artisan` call.
+- **Adding a module:** add one entry to the `$modules` array at the top of
+  `resources/views/layouts/admin.blade.php` plus its routes inside the
+  `auth` group in `routes/web.php`. Admin UI strings are written directly
+  in Spanish in the admin views (internal tool, not SEO content), unlike
+  public copy, which lives in `lang/es/`.
+- **Booking rules** (capacity, slot interval, min/max notice, cancellation
+  limit) live in the single-row `booking_settings` table and the weekly
+  schedule in `opening_hours`; both are created with their default values
+  by their migrations. Services are not seeded: the salon enters them.
 
 ## Note on README.md
 
