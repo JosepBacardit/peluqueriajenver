@@ -72,3 +72,29 @@ test('a logged in user can log out and the admin asks for access again', functio
 test('the login screen is not indexable', function () {
     $this->get(route('login'))->assertSee('noindex', false);
 });
+
+test('login is also throttled per connection when the email keeps changing', function () {
+    User::factory()->create(['email' => 'salon@example.test']);
+
+    foreach (range(1, 20) as $attempt) {
+        $this->post(route('login'), ['email' => "guess{$attempt}@example.test", 'password' => 'wrong']);
+    }
+
+    $this->post(route('login'), ['email' => 'salon@example.test', 'password' => 'password'])
+        ->assertSessionHasErrors('email');
+
+    $this->assertGuest();
+});
+
+test('an unknown email still costs a password hash check, so emails cannot be enumerated by timing', function () {
+    Hash::spy();
+
+    $this->post(route('login'), ['email' => 'nobody@example.test', 'password' => 'whatever']);
+
+    Hash::shouldHaveReceived('check')->once();
+    $this->assertGuest();
+});
+
+test('the login offers no long-lived remember-me session', function () {
+    $this->get(route('login'))->assertDontSee('name="remember"', false);
+});

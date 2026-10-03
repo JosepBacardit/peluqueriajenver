@@ -7,6 +7,7 @@ use App\Booking\AppointmentNotifier;
 use App\Booking\AvailabilityCalculator;
 use App\Booking\DuplicateAppointmentException;
 use App\Booking\SlotUnavailableException;
+use App\Booking\TooManyUpcomingAppointmentsException;
 use App\Enums\AppointmentSource;
 use App\Http\Requests\StoreBookingRequest;
 use App\Models\Service;
@@ -86,6 +87,8 @@ class BookingController extends Controller
             return redirect()->to($backToDay)->withInput()->withErrors(['time' => __('reservas.messages.slot_unavailable')]);
         } catch (DuplicateAppointmentException) {
             return redirect()->to($backToDay)->withInput()->withErrors(['customer_email' => __('reservas.messages.duplicate')]);
+        } catch (TooManyUpcomingAppointmentsException) {
+            return redirect()->to($backToDay)->withInput()->withErrors(['customer_email' => __('reservas.messages.too_many_upcoming')]);
         }
 
         $notifier->sendCreationNotices($appointment);

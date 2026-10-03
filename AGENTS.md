@@ -188,9 +188,14 @@ php artisan tinker --execute 'echo config("database.connections.".config("databa
 mysql -u<user> -p -e "SHOW TABLES;" <database>
 ```
 
-Never run `migrate:fresh`, `migrate:refresh`, `migrate:reset`, `db:wipe`, or
-a manual `DROP`/`TRUNCATE` against production. If `migrate:status` shows
-anything unexpected, stop and ask the user before proceeding.
+Never run `migrate:fresh`, `migrate:refresh`, `migrate:reset`,
+`migrate:rollback`, `db:wipe`, or a manual `DROP`/`TRUNCATE` against
+production. If `migrate:status` shows anything unexpected, stop and ask the
+user before proceeding. `migrate:rollback` is on the list because the
+booking migrations' `down()` drops `appointments` and the other booking
+tables, which hold customers' personal data: rolling back a release means
+reverting its commits (`git revert`, push, `./deploy.sh`) and leaving the
+new tables in place unused, never undoing migrations.
 
 ## Production deploys
 
@@ -275,7 +280,16 @@ project actually has — see "What this project does not need" below.
   whoever runs it, or if booking email cannot really be sent:
   `MAIL_MAILER` is `log`/`array`/empty, the SMTP `MAIL_HOST` is empty or
   local, `MAIL_FROM_ADDRESS` is missing or `hello@example.com`, or
-  `BOOKING_NOTIFICATION_EMAIL` is missing or invalid.
+  `BOOKING_NOTIFICATION_EMAIL` is missing or invalid; and if
+  `SESSION_SECURE_COOKIE` is not `true` (the admin session cookie must be
+  https-only). `deploy.sh` runs the same mail-shape checks against `.env`
+  in its preflight (`check_env_mail`), before maintenance mode, so a
+  missing setting no longer causes an outage. `php artisan deploy:check
+  --smtp` additionally connects and logs in to the SMTP server without
+  sending anything: run it by hand (as `deploy`) after setting the mail
+  credentials, since wrong credentials otherwise only show up as failed
+  sends in the log. SMTP calls time out after `MAIL_TIMEOUT` seconds
+  (default 10), so a dead mail server cannot hang a booking.
 
 ### Cron (booking email retry)
 
@@ -293,6 +307,20 @@ overlap:
 There is no Laravel scheduler (`schedule:run`) entry: nothing else needs
 one yet. A day-before reminder would add it (planned as a later PR).
 
+### Booking abuse limits and cleanup
+
+Online bookings are capped at 5 submissions per minute and 10 per day per
+IP (`booking-submissions` limiter in `AppServiceProvider`) and at 2
+upcoming confirmed online appointments per email or per phone (compared by
+its last 9 digits; `CreateAppointment::MAX_UPCOMING_ONLINE`). Bookings made
+from the admin panel are not capped. If a flood of fake bookings still gets
+through (e.g. from many IPs), find them read-only first, for example
+`php artisan tinker --execute 'App\Models\Appointment::where("source","web")->where("created_at",">=",now()->subDay())->orderBy("created_at")->get(["id","customer_email","customer_phone","starts_at","created_at"])->each(fn($a)=>print($a->toJson().PHP_EOL));'`,
+confirm with the user which ones are fake, and cancel them (never delete:
+`status`/`cancelled_at`, through the panel or `App\Actions\CancelAppointment`).
+If it keeps happening, consider a cookie-less CAPTCHA (Turnstile, Friendly
+Captcha) on `/reservas`.
+
 ### Before deploying the booking system (PRs 1-4)
 
 Blocking prerequisites, all pending as of 2026-10-03:
@@ -304,7 +332,16 @@ Blocking prerequisites, all pending as of 2026-10-03:
   `MAIL_FROM_NAME` and `BOOKING_NOTIFICATION_EMAIL` in the VPS `.env`
   **before** running `./deploy.sh`, then `php artisan optimize` as
   `deploy`; otherwise `deploy:check` fails with the site already in
-  maintenance mode. Configure SPF/DKIM/DMARC for the sending domain.
+  maintenance mode (`deploy.sh` now also refuses to start, with the site
+  still live, if they are missing). Configure SPF/DKIM/DMARC for the
+  sending domain, then run `php artisan deploy:check --smtp` as `deploy`.
+- **`SESSION_SECURE_COOKIE=true`** in the VPS `.env` (required by
+  `deploy:check`).
+- **Analytics consent (review finding M4, pending the user's decision):**
+  GTM/GA4/Ahrefs still load before any cookie choice on every page except
+  `/cita/{token}`, while the privacy policy says non-technical cookies rely
+  on consent. Either gate them on consent or fix the policy text before
+  going live (`.ai/reviews/reservas.md`).
 - **Privacy policy data:** `/privacidad` shows "[Pendiente de confirmar
   …]" markers for the data controller's legal name, NIF, contact email
   and the retention period. The client must provide them before going

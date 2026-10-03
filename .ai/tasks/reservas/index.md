@@ -6,7 +6,7 @@
   - PR 2, `feature/booking-availability`: T004–T006;
   - PR 3, `feature/booking-public`: T007–T009;
   - PR 4, `feature/booking-notifications`: T010–T012.
-- **Estado general:** implementación terminada (T001–T012); falta la revisión independiente (T013).
+- **Estado general:** implementación (T001–T012), revisión (T013) y resolución (T014) hechas. Queda pendiente el hallazgo M4 de la revisión (analítica y consentimiento, decisión del usuario) y los datos del cliente que bloquean publicar.
 
 ## Tareas
 
@@ -24,7 +24,8 @@
 | T010 | [Notificaciones](T010-notificaciones.md) | FEATURE | PRF-014, 050–054 | T006, T008 | Claude Sonnet 5 | `high` | Pest + Pint | done |
 | T011 | [Despliegue y documentación](T011-despliegue-y-documentacion.md) | FEATURE | PRF-055 | T010 | Claude Sonnet 5 | `medium` | Pest + Pint + `bash -n` | done |
 | T012 | [Privacidad](T012-privacidad.md) | FEATURE | PRF-059, 060 | T007 | Claude Sonnet 5 | `medium` | Pest | done |
-| T013 | [Revisión independiente](T013-revision.md) | REVIEW | Todos | T001–T012 | Claude Opus 5.5 | `medium` | Matriz completa | pending |
+| T013 | [Revisión independiente](T013-revision.md) | REVIEW | Todos | T001–T012 | Claude Opus 5.5 | `medium` | Matriz completa | done |
+| T014 | [Resolver la revisión](T014-resolver-revision.md) | FEATURE | PRF-062–069 | T013 | Claude Opus 5.5 | `medium` | Pest + Pint + `bash -n` | done |
 
 Nota de ejecución: las tareas T001–T012 las ejecutó una misma instancia del agente `programador` (Claude Opus 5.5), por indicación del agente principal, en lugar de alternar modelos por tarea.
 
@@ -67,6 +68,14 @@ Nota de ejecución: las tareas T001–T012 las ejecutó una misma instancia del 
 | PRF-056 a PRF-058 | comportamiento | T009 | `BookingLinksAndSeoTest` | covered |
 | PRF-059, PRF-060 | comportamiento y prohibición | T012 | `PrivacyPolicyTest` | covered (datos del cliente pendientes, bloquean publicar) |
 | PRF-061 | prohibición | T007 | `PublicPagesHaveNoPublicPricingTest` | covered |
+| PRF-062 | prohibición | T014 | `BookingAbuseLimitsTest` | covered |
+| PRF-063 | prohibición | T014 | `BookingAbuseLimitsTest` | covered |
+| PRF-064 | prohibición | T014 | `AppointmentPagePrivacyTest` | covered |
+| PRF-065 | prohibición | T014 | `MailContentEscapingTest` | covered |
+| PRF-066 | comportamiento | T014 | `AgendaTest` | covered |
+| PRF-067 | prohibición | T014 | `DeployCheckCommandTest` | covered |
+| PRF-068 | prohibición | T014 | `AdminAuthenticationTest` | covered |
+| PRF-069 | comportamiento | T014 | `DeployCheckCommandTest` (timeout) y `AppointmentNotificationsTest` | covered |
 
 ## Casos revisados que no aplican
 

@@ -56,7 +56,7 @@ Route::get('/contacto', function () {
 
 // Reservas online (sin caché pública, ver CacheHeaders)
 Route::get('/reservas', [BookingController::class, 'index'])->name('reservas');
-Route::post('/reservas', [BookingController::class, 'store'])->middleware('throttle:bookings')->name('reservas.store');
+Route::post('/reservas', [BookingController::class, 'store'])->middleware('throttle:booking-submissions')->name('reservas.store');
 Route::get('/cita/{token}', [CustomerAppointmentController::class, 'show'])->name('cita.show');
 Route::post('/cita/{token}/cancelar', [CustomerAppointmentController::class, 'cancel'])->middleware('throttle:bookings')->name('cita.cancel');
 

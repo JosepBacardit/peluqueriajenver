@@ -25,7 +25,10 @@ beforeEach(function () {
  */
 function customerData(string $email = 'ana@example.test'): array
 {
-    return ['customer_name' => 'Ana', 'customer_phone' => '600 000 000', 'customer_email' => $email, 'notes' => null];
+    // A phone of its own per email, so the per-customer limit does not interfere.
+    $phone = '6'.str_pad((string) (crc32($email) % 100000000), 8, '0', STR_PAD_LEFT);
+
+    return ['customer_name' => 'Ana', 'customer_phone' => $phone, 'customer_email' => $email, 'notes' => null];
 }
 
 test('it creates a confirmed appointment copying the service name and duration', function () {
@@ -92,4 +95,27 @@ test('cancelling frees the slot and keeps the appointment', function () {
 
     app(CreateAppointment::class)->handle($this->service, $start, customerData('other@example.test'), AppointmentSource::Web, true, $this->now);
     expect(Appointment::confirmed()->count())->toBe(1);
+});
+
+test('the row lock on the booking settings is the first query of the booking transaction', function () {
+    // On MySQL (REPEATABLE READ) the re-check only sees bookings committed
+    // by a concurrent request if the locking read comes first: any plain
+    // read before it would fix an older snapshot and reopen overbooking.
+    $queries = [];
+    DB::listen(function ($query) use (&$queries) {
+        $queries[] = $query->sql;
+    });
+
+    app(CreateAppointment::class)->handle($this->service, CarbonImmutable::parse('2030-01-08 10:00'), customerData(), AppointmentSource::Web, true, $this->now);
+
+    expect($queries[0])->toContain('"booking_settings"');
+});
+
+test('cancelling the same appointment twice at once only cancels it once', function () {
+    $appointment = Appointment::factory()->create(['starts_at' => '2030-01-08 10:00', 'ends_at' => '2030-01-08 11:00']);
+    $firstRequest = Appointment::find($appointment->id);
+    $secondRequest = Appointment::find($appointment->id);
+
+    expect(app(CancelAppointment::class)->handle($firstRequest))->toBeTrue();
+    expect(app(CancelAppointment::class)->handle($secondRequest))->toBeFalse();
 });

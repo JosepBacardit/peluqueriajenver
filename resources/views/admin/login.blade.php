@@ -27,10 +27,6 @@
             @enderror
         </div>
 
-        <label class="flex items-center gap-2 text-sm text-gray-300">
-            <input type="checkbox" name="remember" value="1"> Mantener la sesión abierta
-        </label>
-
         <button type="submit" class="btn-gold w-full">Entrar</button>
     </form>
 </div>

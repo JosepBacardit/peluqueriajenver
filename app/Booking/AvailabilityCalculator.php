@@ -35,18 +35,31 @@ class AvailabilityCalculator
      */
     public function availableStartTimes(int $durationMinutes, CarbonImmutable $day, CarbonImmutable $now): array
     {
-        $settings = BookingSetting::current();
         $day = $day->startOfDay();
 
+        return $this->startTimesFor(
+            $durationMinutes, $day, $now,
+            BookingSetting::current(),
+            $this->rangesFor($day),
+            $this->loadOccupation($day, $day->addDay()),
+        );
+    }
+
+    /**
+     * @param  Collection<int, OpeningHour>  $ranges  the day's opening ranges
+     * @param  array{appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>}  $context  occupation covering at least the day
+     * @return list<CarbonImmutable>
+     */
+    private function startTimesFor(int $durationMinutes, CarbonImmutable $day, CarbonImmutable $now, BookingSetting $settings, Collection $ranges, array $context): array
+    {
         if (! $this->isWithinBookingWindow($day, $now, $settings)) {
             return [];
         }
 
-        $context = $this->loadOccupation($day, $day->addDay());
         $earliest = $now->addMinutes($settings->min_notice_minutes);
         $times = [];
 
-        foreach ($this->rangesFor($day) as $range) {
+        foreach ($ranges as $range) {
             for ($minute = $range->opensAtMinutes(); $minute + $durationMinutes <= $range->closesAtMinutes(); $minute += $settings->slot_interval_minutes) {
                 $start = $this->atMinute($day, $minute);
 
@@ -109,10 +122,17 @@ class AvailabilityCalculator
      */
     public function daysWithAvailability(int $durationMinutes, CarbonImmutable $from, CarbonImmutable $to, CarbonImmutable $now): array
     {
+        // Loaded once for the whole range (a handful of queries for a month
+        // view instead of four per day).
+        $settings = BookingSetting::current();
+        $rangesByWeekday = OpeningHour::query()->orderBy('opens_at')->get()->groupBy('weekday');
+        $context = $this->loadOccupation($from->startOfDay(), $to->startOfDay()->addDay());
         $days = [];
 
         for ($day = $from->startOfDay(); $day->lte($to); $day = $day->addDay()) {
-            if ($this->availableStartTimes($durationMinutes, $day, $now) !== []) {
+            $ranges = $rangesByWeekday->get($day->isoWeekday(), collect());
+
+            if ($this->startTimesFor($durationMinutes, $day, $now, $settings, $ranges, $context) !== []) {
                 $days[] = $day->toDateString();
             }
         }

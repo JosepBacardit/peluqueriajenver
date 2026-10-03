@@ -103,3 +103,18 @@ test('appointment pages are not listed in the sitemap', function () {
 
     expect($this->get('/sitemap.xml')->getContent())->not->toContain('/cita/')->not->toContain($appointment->token);
 });
+
+test('too many cancellation attempts show a message on the appointment page', function () {
+    $appointment = Appointment::factory()->create(['starts_at' => '2030-01-10 11:00', 'ends_at' => '2030-01-10 12:00']);
+
+    foreach (range(1, 5) as $attempt) {
+        $this->post(route('cita.cancel', $appointment->token), []);
+    }
+
+    $this->from(route('cita.show', $appointment->token))
+        ->post(route('cita.cancel', $appointment->token), ['confirm' => '1'])
+        ->assertRedirect(route('cita.show', $appointment->token));
+
+    $this->get(route('cita.show', $appointment->token))
+        ->assertSee('Demasiados intentos. Espera un minuto y vuelve a probar.');
+});

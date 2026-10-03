@@ -233,3 +233,19 @@ test('the default minimum notice is respected on the day list', function () {
         ->assertDontSee('value="12:00"', false)
         ->assertSee('value="12:15"', false);
 });
+
+test('the month calendar needs a small, fixed number of queries', function () {
+    $queries = 0;
+    DB::listen(function () use (&$queries) {
+        $queries++;
+    });
+
+    $this->get(route('reservas', ['servicio' => $this->service->id, 'mes' => '2030-01']))->assertOk();
+
+    expect($queries)->toBeLessThan(15);
+});
+
+test('the basic data-protection notice marks the data controller as pending like the privacy policy', function () {
+    $this->get(route('reservas', ['servicio' => $this->service->id, 'fecha' => '2030-01-08']))
+        ->assertSee('[Pendiente de confirmar: nombre o razón social del titular]');
+});

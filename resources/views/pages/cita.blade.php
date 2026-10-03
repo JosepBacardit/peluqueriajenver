@@ -3,6 +3,9 @@
 @section('title', __('reservas.appointment.meta_title'))
 @section('robots', 'noindex, nofollow')
 @section('canonical', route('reservas'))
+@section('og_url', route('reservas'))
+{{-- The URL carries the appointment's secret token: no third-party analytics here. --}}
+@section('without_analytics', '1')
 
 @section('content')
 <section class="bg-[#111111] py-12 md:py-16">
@@ -12,6 +15,10 @@
         @if (session('status'))
             <p role="status" class="border border-gold/40 bg-gold/10 text-gold-light px-4 py-3 text-center">{{ session('status') }}</p>
         @endif
+
+        @error('booking')
+            <p role="alert" class="border border-red-500/50 bg-red-500/10 text-red-200 px-4 py-3 text-center">{{ $message }}</p>
+        @enderror
 
         @if (! $appointment->isConfirmed() && ! session('status'))
             <p role="status" class="border border-red-500/40 bg-red-500/10 text-red-200 px-4 py-3 text-center">{{ __('reservas.messages.already_cancelled') }}</p>

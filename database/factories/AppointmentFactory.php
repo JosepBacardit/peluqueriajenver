@@ -30,7 +30,7 @@ class AppointmentFactory extends Factory
             'starts_at' => $startsAt,
             'ends_at' => $startsAt->addHour(),
             'customer_name' => fake()->name(),
-            'customer_phone' => '600 123 456',
+            'customer_phone' => fake()->unique()->numerify('6## ### ###'),
             'customer_email' => fake()->unique()->safeEmail(),
             'notes' => null,
             'status' => AppointmentStatus::Confirmed,

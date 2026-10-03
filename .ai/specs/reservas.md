@@ -174,6 +174,17 @@ Ejemplos resueltos (capacidad 2, intervalo de 15 minutos, tramo de 09:00 a 19:00
 - **PRF-060.** La web **no debe** mostrar ninguna dirección de email de contacto que no sea real.
 - **PRF-061.** La página de reservas **no debe** mostrar «€», rangos de precio, valoraciones autodeclaradas ni el texto «enviar mensaje», igual que el resto de páginas públicas.
 
+### Añadidos tras la revisión independiente (2026-10-03, `.ai/reviews/reservas.md`)
+
+- **PRF-062.** Un mismo email, o un mismo teléfono (comparado por sus 9 últimos dígitos, sea cual sea su formato), **no debe** tener más de 2 citas confirmadas futuras reservadas desde la web. La tercera muestra «Ya tienes 2 citas pendientes. Para reservar otra, cancela una o llámanos al 633 912 050.» y no se crea. Las citas del panel no tienen límite. Las canceladas y las pasadas no cuentan.
+- **PRF-063.** Desde una misma conexión, la página **no debe** aceptar más de 10 envíos de reserva al día. El siguiente muestra «Se han hecho demasiadas reservas hoy desde esta conexión. Llámanos al 633 912 050.».
+- **PRF-064.** La página de la cita **no debe** cargar herramientas de analítica de terceros ni publicar su propia dirección en etiquetas de la página, porque su dirección permite ver y cancelar la cita.
+- **PRF-065.** El texto que escribe el cliente (nombre, observaciones) **no debe** convertirse en enlaces ni en formato en ningún correo.
+- **PRF-066.** La agenda **debe** avisar con «Correo de confirmación no enviado…» en cada cita confirmada con email cuyo correo de confirmación todavía no se ha podido enviar.
+- **PRF-067.** El despliegue **no debe** completarse si la cookie de sesión del panel puede viajar sin cifrar. Además, **no debe** empezar (con la web todavía en marcha) si falta la configuración del correo.
+- **PRF-068.** El acceso al panel **no debe** comprobar más de 20 contraseñas por minuto desde una misma conexión, aunque cambie el email. Tampoco debe tardar menos con un email inexistente que con una contraseña errónea, ni ofrecer una sesión persistente («mantener la sesión abierta»).
+- **PRF-069.** Si el servidor de correo no responde, cada intento de envío **debe** abandonarse como mucho a los 10 segundos, para que la página de éxito llegue al cliente (PRF-052).
+
 ## Datos existentes y transición
 
 No hay citas, servicios ni cuentas previos. Al desplegar se crean el horario inicial (PRF-019) y los ajustes iniciales (PRF-020). No se crean servicios: los da de alta el salón. Hasta que exista al menos un servicio reservable, la página de reservas muestra el mensaje de PRF-027. Antes de publicar hay que crear al menos una cuenta del panel, configurar el correo y la dirección del salón (PRF-055) y completar los datos pendientes de la política de privacidad (PRF-059). Las citas que lleguen por teléfono o WhatsApp deben apuntarse en el panel para que ocupen su hueco.

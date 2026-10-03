@@ -5,6 +5,8 @@ namespace App\Console\Commands;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Mail;
+use Throwable;
 
 /**
  * Run as the web user (deploy.sh does this with `sudo -u www-data`) right
@@ -21,7 +23,7 @@ use Illuminate\Console\Command;
  * email carries the customer's only link to cancel, so a site that cannot
  * send mail must not be deployed silently.
  */
-#[Signature('deploy:check')]
+#[Signature('deploy:check {--smtp : Also connect and authenticate to the SMTP server, without sending anything}')]
 #[Description('Check the production-safety flags, mail settings and writable paths required before a production deploy')]
 class DeployCheckCommand extends Command
 {
@@ -69,6 +71,18 @@ class DeployCheckCommand extends Command
             $this->info('APP_URL is https.');
         }
 
+        // The admin panel's session cookie carries access to personal data.
+        if (config('session.secure') !== true) {
+            $this->error('SESSION_SECURE_COOKIE is not true: the session cookie could travel over plain http.');
+            $ok = false;
+        } else {
+            $this->info('SESSION_SECURE_COOKIE is true.');
+        }
+
+        if ($this->option('smtp')) {
+            $ok = $this->checkSmtpConnection() && $ok;
+        }
+
         $ok = $this->checkMail() && $ok;
 
         foreach ($this->writablePaths() as $label => $path) {
@@ -87,6 +101,32 @@ class DeployCheckCommand extends Command
         $this->info('Every deploy check passed.');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Opens (and closes) a real connection to the configured mailer, which
+     * for SMTP includes the login, so wrong credentials are caught before
+     * every booking email starts failing silently. Run it by hand on the
+     * first deploy: `php artisan deploy:check --smtp`.
+     */
+    private function checkSmtpConnection(): bool
+    {
+        try {
+            $transport = Mail::mailer()->getSymfonyTransport();
+
+            if (method_exists($transport, 'start')) {
+                $transport->start();
+                $transport->stop();
+            }
+        } catch (Throwable $exception) {
+            $this->error('SMTP connection or login failed: '.$exception->getMessage());
+
+            return false;
+        }
+
+        $this->info('SMTP connection and login succeeded.');
+
+        return true;
     }
 
     /**

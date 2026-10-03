@@ -38,7 +38,7 @@ return [
     'privacy_layer' => [
         'title' => 'Información básica sobre protección de datos',
         'controller_label' => 'Responsable',
-        'controller' => 'Peluquería Jenver, C/ Lleida, 21, 08110 Montcada i Reixac.',
+        'controller' => 'Peluquería Jenver. Titular: [Pendiente de confirmar: nombre o razón social del titular]. C/ Lleida, 21, 08110 Montcada i Reixac.',
         'purpose_label' => 'Finalidad',
         'purpose' => 'Gestionar tu cita y enviarte su confirmación y los avisos sobre ella.',
         'legal_basis_label' => 'Legitimación',
@@ -53,6 +53,8 @@ return [
         'slot_unavailable' => 'Esa hora ya no está disponible. Elige otra.',
         'duplicate' => 'Ya tienes una cita confirmada a esa hora.',
         'too_many_attempts' => 'Demasiados intentos. Espera un minuto y vuelve a probar.',
+        'too_many_today' => 'Se han hecho demasiadas reservas hoy desde esta conexión. Llámanos al 633 912 050.',
+        'too_many_upcoming' => 'Ya tienes 2 citas pendientes. Para reservar otra, cancela una o llámanos al 633 912 050.',
         'received' => 'Hemos recibido tu reserva.',
         'confirmed' => 'Tu cita está confirmada.',
         'cancelled_now' => 'Tu cita se ha cancelado.',

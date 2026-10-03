@@ -12,20 +12,26 @@ use App\Models\Appointment;
 class CancelAppointment
 {
     /**
+     * The update is conditional on the row still being confirmed, so two
+     * simultaneous cancellations (a double click) cancel it, and send the
+     * cancellation emails, only once.
+     *
      * @return bool whether the appointment was cancelled by this call
      *              (false if it was already cancelled)
      */
     public function handle(Appointment $appointment): bool
     {
-        if (! $appointment->isConfirmed()) {
-            return false;
+        $cancelledAt = now();
+
+        $cancelled = Appointment::query()
+            ->whereKey($appointment->getKey())
+            ->where('status', AppointmentStatus::Confirmed)
+            ->update(['status' => AppointmentStatus::Cancelled, 'cancelled_at' => $cancelledAt]) === 1;
+
+        if ($cancelled) {
+            $appointment->forceFill(['status' => AppointmentStatus::Cancelled, 'cancelled_at' => $cancelledAt])->syncOriginal();
         }
 
-        $appointment->update([
-            'status' => AppointmentStatus::Cancelled,
-            'cancelled_at' => now(),
-        ]);
-
-        return true;
+        return $cancelled;
     }
 }

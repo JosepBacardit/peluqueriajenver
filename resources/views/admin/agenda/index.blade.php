@@ -46,6 +46,9 @@
                             · {{ $appointment->service_name }}
                         </p>
                         <p>{{ $appointment->customer_name }} · <a href="tel:{{ preg_replace('/[^0-9+]/', '', $appointment->customer_phone) }}" class="hover:text-gold">{{ $appointment->customer_phone }}</a>@if ($appointment->customer_email) · {{ $appointment->customer_email }}@endif</p>
+                        @if ($appointment->isConfirmed() && $appointment->customer_email && $appointment->customer_notified_at === null)
+                            <p class="text-sm text-amber-300">Correo de confirmación no enviado: el sistema lo reintenta cada 10 minutos. Si sigue así, revisa el email o avisa al cliente por teléfono.</p>
+                        @endif
                         @if ($appointment->notes)
                             <p class="text-sm text-gray-400">{{ $appointment->notes }}</p>
                         @endif

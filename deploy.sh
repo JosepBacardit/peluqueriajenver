@@ -23,9 +23,9 @@
 # the site in maintenance mode waiting for input that cannot arrive from
 # an unattended run.
 #
-# This project has no contact form and no background work of its own, so
-# unlike cobaprojects there is no equivalent of `contact:notify-pending`
-# or a cron entry here - see AGENTS.md "Production deploys".
+# The booking system's email retry (`appointments:notify-pending`) runs
+# from the deploy user's crontab, not from this script - see AGENTS.md
+# "Production deploys" > "Cron".
 
 # -E (errtrace) makes the ERR trap below fire for a failure inside a
 # function (e.g. fix_permissions) too, not just at the top level. Without
@@ -57,6 +57,54 @@ fix_permissions() {
     sudo "$@" find storage bootstrap/cache -type f -exec chmod 664 {} +
 }
 
+# Fails (returns 1) when the .env given as $1 lacks the booking mail
+# settings that `php artisan deploy:check` requires. Run in the preflight,
+# while the site is still live: deploy:check itself only runs inside the
+# maintenance window, with migrations already applied, so catching a
+# missing setting there means an avoidable outage. Mirrors the shape checks
+# of DeployCheckCommand::checkMail (tests/Feature/DeployCheckCommandTest.php
+# runs this function against sample .env files, with plain `sh`, so it is
+# kept POSIX: no [[ ]]).
+check_env_mail() {
+    env_file="$1"
+    failed=0
+
+    mailer="$(sed -n 's/^MAIL_MAILER=//p' "$env_file" | tail -n 1 | tr -d '"'"'")"
+    host="$(sed -n 's/^MAIL_HOST=//p' "$env_file" | tail -n 1 | tr -d '"'"'")"
+    from="$(sed -n 's/^MAIL_FROM_ADDRESS=//p' "$env_file" | tail -n 1 | tr -d '"'"'")"
+    salon="$(sed -n 's/^BOOKING_NOTIFICATION_EMAIL=//p' "$env_file" | tail -n 1 | tr -d '"'"'")"
+
+    case "$mailer" in
+        ''|log|array)
+            echo "MAIL_MAILER in $env_file does not send real email (got \"$mailer\")." >&2
+            failed=1 ;;
+    esac
+    if [ "$mailer" = "smtp" ]; then
+        case "$host" in
+            ''|127.0.0.1|localhost)
+                echo "MAIL_HOST in $env_file is not a real SMTP server (got \"$host\")." >&2
+                failed=1 ;;
+        esac
+    fi
+    case "$from" in
+        hello@example.com)
+            echo "MAIL_FROM_ADDRESS in $env_file is still the skeleton default." >&2
+            failed=1 ;;
+        *@*) ;;
+        *)
+            echo "MAIL_FROM_ADDRESS in $env_file is missing." >&2
+            failed=1 ;;
+    esac
+    case "$salon" in
+        *@*.*) ;;
+        *)
+            echo "BOOKING_NOTIFICATION_EMAIL in $env_file is missing or not an email address." >&2
+            failed=1 ;;
+    esac
+
+    return "$failed"
+}
+
 if [[ "$EUID" -eq 0 ]]; then
     echo "Do not run the deploy as root; use the 'deploy' user that owns $APP_DIR." >&2
     exit 1
@@ -66,6 +114,11 @@ cd "$APP_DIR"
 
 if [[ ! -f .env ]]; then
     echo "Missing $APP_DIR/.env. Copy .env.example, set the production values and run 'php artisan key:generate' first." >&2
+    exit 1
+fi
+
+if ! check_env_mail .env; then
+    echo "Set the booking mail settings in $APP_DIR/.env (see AGENTS.md, \"Before deploying the booking system\") and re-run ./deploy.sh. The site has not been touched." >&2
     exit 1
 fi
 

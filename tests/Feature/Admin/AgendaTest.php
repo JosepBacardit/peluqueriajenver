@@ -64,3 +64,14 @@ test('the agenda requires an authenticated user', function () {
 
     $this->get(route('admin.agenda'))->assertRedirect(route('login'));
 });
+
+test('the agenda flags confirmed appointments whose confirmation email could not be sent', function () {
+    Appointment::factory()->create(['starts_at' => '2030-01-08 10:00', 'ends_at' => '2030-01-08 11:00', 'customer_name' => 'Sin Correo', 'customer_notified_at' => null]);
+    Appointment::factory()->create(['starts_at' => '2030-01-08 12:00', 'ends_at' => '2030-01-08 13:00', 'customer_name' => 'Con Correo', 'customer_notified_at' => now()]);
+    Appointment::factory()->create(['starts_at' => '2030-01-08 14:00', 'ends_at' => '2030-01-08 15:00', 'customer_name' => 'Sin Email', 'customer_email' => null]);
+
+    $html = $this->get(route('admin.agenda'))->getContent();
+
+    expect(substr_count($html, 'Correo de confirmación no enviado'))->toBe(1);
+    expect(strpos($html, 'Correo de confirmación no enviado'))->toBeLessThan(strpos($html, 'Con Correo'));
+});

@@ -59,6 +59,7 @@ beforeEach(function () {
         'mail.mailers.smtp.host' => 'smtp.mail-provider.example',
         'mail.from.address' => 'citas@example.test',
         'booking.salon_notification_email' => 'salon@example.test',
+        'session.secure' => true,
     ]);
 });
 
@@ -161,3 +162,52 @@ test('it fails when a required storage path exists but is not writable', functio
         ->assertExitCode(1)
         ->expectsOutputToContain('storage/framework/views');
 });
+
+test('it fails when the session cookie is not https-only', function () {
+    config(['session.secure' => null]);
+
+    $this->artisan('deploy:check')
+        ->assertExitCode(1)
+        ->expectsOutputToContain('SESSION_SECURE_COOKIE');
+});
+
+test('with --smtp it fails when the smtp server cannot be reached', function () {
+    config([
+        'mail.mailers.smtp.host' => 'smtp.invalid',
+        'mail.mailers.smtp.port' => 25,
+        'mail.mailers.smtp.timeout' => 2,
+    ]);
+
+    $this->artisan('deploy:check --smtp')
+        ->assertExitCode(1)
+        ->expectsOutputToContain('SMTP');
+});
+
+test('outgoing mail has a finite timeout so a dead smtp server cannot hang a booking', function () {
+    $timeout = config('mail.mailers.smtp.timeout');
+
+    expect($timeout)->toBeNumeric();
+    expect((int) $timeout)->toBeGreaterThan(0)->toBeLessThanOrEqual(15);
+});
+
+test('deploy.sh refuses to start when the .env lacks the booking mail settings', function (string $env, int $expectedExit) {
+    $envFile = tempnam(sys_get_temp_dir(), 'env');
+    file_put_contents($envFile, $env);
+
+    // Extract only the function from deploy.sh and run it with plain sh.
+    preg_match('/^check_env_mail\(\) \{.*?^\}/ms',file_get_contents(base_path('deploy.sh')), $function);
+    $functionFile = tempnam(sys_get_temp_dir(), 'fn');
+    file_put_contents($functionFile, $function[0]);
+
+    exec('sh -c '.escapeshellarg('. '.escapeshellarg($functionFile).'; check_env_mail '.escapeshellarg($envFile)).' 2>&1', $output, $exitCode);
+    unlink($envFile);
+    unlink($functionFile);
+
+    expect($exitCode)->toBe($expectedExit, implode("\n", $output));
+})->with([
+    'complete' => ["MAIL_MAILER=smtp\nMAIL_HOST=smtp.mail-provider.example\nMAIL_FROM_ADDRESS=\"citas@example.test\"\nBOOKING_NOTIFICATION_EMAIL=salon@example.test\n", 0],
+    'log mailer' => ["MAIL_MAILER=log\nMAIL_HOST=smtp.mail-provider.example\nMAIL_FROM_ADDRESS=citas@example.test\nBOOKING_NOTIFICATION_EMAIL=salon@example.test\n", 1],
+    'missing salon address' => ["MAIL_MAILER=smtp\nMAIL_HOST=smtp.mail-provider.example\nMAIL_FROM_ADDRESS=citas@example.test\nBOOKING_NOTIFICATION_EMAIL=\n", 1],
+    'skeleton sender' => ["MAIL_MAILER=smtp\nMAIL_HOST=smtp.mail-provider.example\nMAIL_FROM_ADDRESS=\"hello@example.com\"\nBOOKING_NOTIFICATION_EMAIL=salon@example.test\n", 1],
+    'missing host' => ["MAIL_MAILER=smtp\nMAIL_FROM_ADDRESS=citas@example.test\nBOOKING_NOTIFICATION_EMAIL=salon@example.test\n", 1],
+]);
