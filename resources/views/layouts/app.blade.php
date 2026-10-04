@@ -1,12 +1,30 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <!-- Google Tag Manager (required early for tracking) -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-NP6KXF9K');</script>
+    <!-- Google Tag Manager (required early for tracking; gated on cookie consent, see .ai/reviews/reservas.md M4) -->
+    <script>
+      (function () {
+        let loaded = false;
+        function loadGoogleTagManager() {
+          if (loaded) {
+            return;
+          }
+          loaded = true;
+          (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+          new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+          j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+          'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+          })(window,document,'script','dataLayer','GTM-NP6KXF9K');
+        }
+
+        window.__analyticsConsentLoaders = window.__analyticsConsentLoaders || [];
+        window.__analyticsConsentLoaders.push(loadGoogleTagManager);
+
+        if (localStorage.getItem('cookieConsent') === 'accepted') {
+          loadGoogleTagManager();
+        }
+      })();
+    </script>
     <!-- End Google Tag Manager -->
 
     <meta charset="UTF-8">
@@ -103,10 +121,9 @@
     @stack('head')
 </head>
 <body class="bg-[#0A0A0A] text-white font-sans antialiased">
-    <!-- Google Tag Manager (noscript) -->
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NP6KXF9K"
-    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-    <!-- End Google Tag Manager (noscript) -->
+    {{-- The GTM noscript beacon is removed: it fires with no JS at all, so it
+         cannot be gated behind cookie consent like the scripts above (see
+         .ai/reviews/reservas.md M4). --}}
 
     @include('partials.header')
 
@@ -120,29 +137,49 @@
 
     @stack('scripts')
 
-    <!-- Defer analytics until after page load to avoid reflows -->
+    <!-- Defer analytics until after page load to avoid reflows; gated on cookie consent (see .ai/reviews/reservas.md M4) -->
     <script>
-      // Load Google Analytics after page renders
-      window.addEventListener('load', function() {
-        const script = document.createElement('script');
-        script.async = true;
-        script.src = 'https://www.googletagmanager.com/gtag/js?id=G-EX4HPXH0WV';
-        document.head.appendChild(script);
+      (function () {
+        function loadGoogleAnalytics() {
+          const script = document.createElement('script');
+          script.async = true;
+          script.src = 'https://www.googletagmanager.com/gtag/js?id=G-EX4HPXH0WV';
+          document.head.appendChild(script);
 
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-EX4HPXH0WV');
-      });
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-EX4HPXH0WV');
+        }
 
-      // Load Ahrefs Analytics after page renders
-      window.addEventListener('load', function() {
-        const script = document.createElement('script');
-        script.src = 'https://analytics.ahrefs.com/analytics.js';
-        script.setAttribute('data-key', '13MiFXBj6SD9DxTnh4TmCQ');
-        script.async = true;
-        document.body.appendChild(script);
-      });
+        function loadAhrefsAnalytics() {
+          const script = document.createElement('script');
+          script.src = 'https://analytics.ahrefs.com/analytics.js';
+          script.setAttribute('data-key', '13MiFXBj6SD9DxTnh4TmCQ');
+          script.async = true;
+          document.body.appendChild(script);
+        }
+
+        let loaded = false;
+        function loadDeferredAnalytics() {
+          if (loaded) {
+            return;
+          }
+          loaded = true;
+          loadGoogleAnalytics();
+          loadAhrefsAnalytics();
+        }
+
+        window.__analyticsConsentLoaders = window.__analyticsConsentLoaders || [];
+        window.__analyticsConsentLoaders.push(loadDeferredAnalytics);
+
+        // Load Google Analytics and Ahrefs after page renders, same as before.
+        window.addEventListener('load', function() {
+          if (localStorage.getItem('cookieConsent') === 'accepted') {
+            loadDeferredAnalytics();
+          }
+        });
+      })();
     </script>
 </body>
 </html>

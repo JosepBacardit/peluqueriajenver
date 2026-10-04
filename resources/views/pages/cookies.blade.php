@@ -26,12 +26,12 @@
 
             <h3 class="text-xl font-semibold mt-6 mb-3 text-gold/80">Cookies de Análisis</h3>
             <p class="text-gray-300">
-                Utilizamos Google Analytics para recopilar información anónima sobre cómo los usuarios interactúan con nuestro sitio (páginas visitadas, tiempo de permanencia, etc.). Esta información nos ayuda a mejorar la experiencia del usuario.
+                Utilizamos Google Analytics para recopilar información anónima sobre cómo los usuarios interactúan con nuestro sitio (páginas visitadas, tiempo de permanencia, etc.). Esta información nos ayuda a mejorar la experiencia del usuario. Solo se instalan si aceptas las cookies.
             </p>
 
             <h3 class="text-xl font-semibold mt-6 mb-3 text-gold/80">Cookies de Publicidad</h3>
             <p class="text-gray-300">
-                Utilizamos Google Tag Manager para gestionar etiquetas y rastrear conversiones. Estas cookies nos permiten entender qué estrategias son más efectivas.
+                Utilizamos Google Tag Manager para gestionar etiquetas y rastrear conversiones. Estas cookies nos permiten entender qué estrategias son más efectivas. Solo se instalan si aceptas las cookies.
             </p>
 
             <h3 class="text-xl font-semibold mt-6 mb-3 text-gold/80">Cookies de Preferencia</h3>
@@ -78,8 +78,14 @@
         <section>
             <h2 class="text-2xl font-serif font-semibold mt-8 mb-4 text-gold">Tu Consentimiento</h2>
             <p class="text-gray-300">
-                Al utilizar este sitio web, aceptas el uso de cookies conforme a esta política. Si no deseas que se utilicen cookies, puedes deshabilitarlas en tu navegador, aunque esto puede afectar tu experiencia en el sitio.
+                Las cookies técnicas se instalan siempre, porque son necesarias para que la web funcione. Las cookies de análisis (Google Analytics) y de publicidad (Google Tag Manager, Ahrefs Analytics) solo se instalan si pulsas «Aceptar» en el aviso de cookies; si pulsas «Rechazar», o si no decides nada, no se instalan.
             </p>
+            <p class="text-gray-300 mt-4">
+                Puedes cambiar tu decisión en cualquier momento con el siguiente botón. Si habías aceptado, al rechazar eliminamos las cookies de Google Analytics ya instaladas.
+            </p>
+            <button type="button" data-cookie-settings class="btn-gold mt-2">
+                Configurar cookies
+            </button>
         </section>
 
         <section>

@@ -5,7 +5,7 @@
             <div class="flex-1">
                 <p class="text-white text-sm leading-relaxed">
                     <span class="font-semibold text-gold">Aviso de cookies:</span>
-                    Utilizamos cookies para mejorar tu experiencia. Al continuar navegando, aceptas nuestro uso de cookies.
+                    Utilizamos cookies técnicas, necesarias para que la web funcione. Las cookies de análisis y publicidad solo se instalan si pulsas «Aceptar».
                     <a href="{{ route('cookies') }}" class="text-gold hover:text-gold-light underline ml-1">
                         Más información
                     </a>
@@ -36,18 +36,49 @@
             cookieBanner.classList.remove('hidden');
         }
 
+        // Delete the Google Analytics cookies set while consent was accepted.
+        function deleteGoogleAnalyticsCookies() {
+            document.cookie.split(';').forEach(function (entry) {
+                const name = entry.split('=')[0].trim();
+                if (name.indexOf('_ga') !== 0) {
+                    return;
+                }
+                const expired = name + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+                document.cookie = expired;
+                document.cookie = expired + '; domain=' + location.hostname;
+                document.cookie = expired + '; domain=.' + location.hostname;
+            });
+        }
+
         // Accept cookies
         acceptBtn.addEventListener('click', function() {
             localStorage.setItem(cookieConsent, 'accepted');
             cookieBanner.classList.add('hidden');
-            // Enable analytics and tracking scripts here if needed
+            (window.__analyticsConsentLoaders || []).forEach(function (load) {
+                load();
+            });
         });
 
         // Reject cookies
         rejectBtn.addEventListener('click', function() {
+            const hadAccepted = localStorage.getItem(cookieConsent) === 'accepted';
             localStorage.setItem(cookieConsent, 'rejected');
             cookieBanner.classList.add('hidden');
-            // Disable non-essential cookies here if needed
+            if (hadAccepted) {
+                // Analytics is already running in this page: the only reliable
+                // way to stop it and clear its cookies is to reload.
+                deleteGoogleAnalyticsCookies();
+                window.location.reload();
+            }
+        });
+
+        // Reopen the banner from the footer link or the cookies policy page,
+        // so the choice can be changed after the first visit.
+        document.querySelectorAll('[data-cookie-settings]').forEach(function (trigger) {
+            trigger.addEventListener('click', function (event) {
+                event.preventDefault();
+                cookieBanner.classList.remove('hidden');
+            });
         });
     });
 </script>

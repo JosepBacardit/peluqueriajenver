@@ -91,6 +91,8 @@
                 <a href="{{ route('avisos-legales') }}" class="hover:text-gold transition-colors">{{ __('navigation.footer.bottom.legal') }}</a>
                 <span>·</span>
                 <a href="{{ route('cookies') }}" class="hover:text-gold transition-colors">{{ __('navigation.footer.bottom.cookies') }}</a>
+                <span>·</span>
+                <a href="{{ route('cookies') }}" data-cookie-settings class="hover:text-gold transition-colors">{{ __('navigation.footer.bottom.cookie_settings') }}</a>
             </div>
         </div>
     </div>
