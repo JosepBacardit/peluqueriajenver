@@ -20,7 +20,16 @@
         window.__analyticsConsentLoaders = window.__analyticsConsentLoaders || [];
         window.__analyticsConsentLoaders.push(loadGoogleTagManager);
 
-        if (localStorage.getItem('cookieConsent') === 'accepted') {
+        // A blocked localStorage must never load a tracker: treat the throw
+        // as "no confirmed consent".
+        let consentAccepted = false;
+        try {
+          consentAccepted = localStorage.getItem('cookieConsent') === 'accepted';
+        } catch (e) {
+          consentAccepted = false;
+        }
+
+        if (consentAccepted) {
           loadGoogleTagManager();
         }
       })();
@@ -175,7 +184,14 @@
 
         // Load Google Analytics and Ahrefs after page renders, same as before.
         window.addEventListener('load', function() {
-          if (localStorage.getItem('cookieConsent') === 'accepted') {
+          let consentAccepted = false;
+          try {
+            consentAccepted = localStorage.getItem('cookieConsent') === 'accepted';
+          } catch (e) {
+            consentAccepted = false;
+          }
+
+          if (consentAccepted) {
             loadDeferredAnalytics();
           }
         });

@@ -42,3 +42,56 @@ test('the cookies policy no longer claims that browsing the site implies consent
 
     expect($html)->not->toContain('Al utilizar este sitio web, aceptas el uso de cookies');
 });
+
+/*
+ * Independent review (.ai/reviews/cookie-consent.md, finding 1): the GTM
+ * container only has the GA4 tag (confirmed by the user), so there is no
+ * "advertising" cookie category, and Ahrefs — which sets no cookie at all —
+ * must never be described as "installing" one.
+ */
+test('the cookies policy drops the advertising category and never claims Ahrefs installs a cookie', function () {
+    $html = $this->get(route('cookies'))->assertOk()->getContent();
+
+    expect($html)
+        ->not->toContain('Cookies de Publicidad')
+        ->not->toContain('publicidad (Google Tag Manager')
+        ->toContain('Ahrefs')
+        ->toContain('no instala')
+        ->not->toContain('Ahrefs Analytics) solo se instalan');
+});
+
+test('the cookie banner no longer mentions an advertising cookie category', function () {
+    $html = $this->get(route('home'))->assertOk()->getContent();
+
+    expect($html)->not->toContain('análisis y publicidad');
+});
+
+/*
+ * Finding 2: gtag.js defaults to cookie_domain "auto", which sets _ga on
+ * the root domain, not on location.hostname (e.g. www.example.com). The
+ * cleanup must derive the root domain instead of hardcoding it, so it also
+ * works on localhost in local development.
+ */
+test('clearing analytics cookies computes the root domain instead of hardcoding it', function () {
+    $html = $this->get(route('home'))->assertOk()->getContent();
+
+    $start = strpos($html, '// Cookie Banner Logic');
+    expect($start)->not->toBeFalse();
+    $bannerScript = substr($html, $start);
+
+    expect($bannerScript)
+        ->toContain('replace(/^www\.')
+        ->not->toContain('peluqueriajenver.com');
+});
+
+/*
+ * Finding 3: some browsers block localStorage entirely. Every access must
+ * be guarded so a throw never leaves the banner stuck and never loads a
+ * tracker without confirmed consent.
+ */
+test('every localStorage access in the consent banner and layout is guarded with try/catch', function () {
+    $html = $this->get(route('home'))->assertOk()->getContent();
+
+    expect(substr_count($html, 'try {'))->toBeGreaterThanOrEqual(4);
+    expect(substr_count($html, 'catch (e)'))->toBeGreaterThanOrEqual(4);
+});

@@ -26,12 +26,12 @@
 
             <h3 class="text-xl font-semibold mt-6 mb-3 text-gold/80">Cookies de Análisis</h3>
             <p class="text-gray-300">
-                Utilizamos Google Analytics para recopilar información anónima sobre cómo los usuarios interactúan con nuestro sitio (páginas visitadas, tiempo de permanencia, etc.). Esta información nos ayuda a mejorar la experiencia del usuario. Solo se instalan si aceptas las cookies.
+                Utilizamos Google Analytics, cargado a través de Google Tag Manager, para recopilar información anónima sobre cómo los usuarios interactúan con nuestro sitio (páginas visitadas, tiempo de permanencia, etc.). Esta información nos ayuda a mejorar la experiencia del usuario. Solo se instala si aceptas las cookies.
             </p>
 
-            <h3 class="text-xl font-semibold mt-6 mb-3 text-gold/80">Cookies de Publicidad</h3>
+            <h3 class="text-xl font-semibold mt-6 mb-3 text-gold/80">Herramientas de Análisis sin Cookies</h3>
             <p class="text-gray-300">
-                Utilizamos Google Tag Manager para gestionar etiquetas y rastrear conversiones. Estas cookies nos permiten entender qué estrategias son más efectivas. Solo se instalan si aceptas las cookies.
+                Utilizamos Ahrefs Analytics para analizar el tráfico del sitio. No instala cookies ni guarda identificadores en tu dispositivo, pero sí envía a Ahrefs los datos de tu visita (páginas vistas, origen del tráfico). Por eso también la activamos solo si aceptas las cookies.
             </p>
 
             <h3 class="text-xl font-semibold mt-6 mb-3 text-gold/80">Cookies de Preferencia</h3>
@@ -66,7 +66,12 @@
 
             <h3 class="text-xl font-semibold mt-6 mb-3 text-gold/80">Google Tag Manager</h3>
             <p class="text-gray-300">
-                GTM es una herramienta que gestiona etiquetas de seguimiento en nuestro sitio. Puede recopilar datos sobre tu navegación para mejorar nuestros servicios.
+                Google Tag Manager es la herramienta que carga Google Analytics en nuestro sitio. El contenedor que usamos (GTM-NP6KXF9K) solo tiene configurada esta etiqueta de analítica, no etiquetas de publicidad.
+            </p>
+
+            <h3 class="text-xl font-semibold mt-6 mb-3 text-gold/80">Ahrefs Analytics</h3>
+            <p class="text-gray-300">
+                Utilizamos Ahrefs Analytics para medir el tráfico del sitio. Es una herramienta sin cookies: no instala nada en tu dispositivo, pero envía a Ahrefs los datos de tu visita. Para más información, consulta la <a href="https://ahrefs.com/privacy-policy" target="_blank" rel="noopener noreferrer" class="text-gold hover:text-gold-light">política de privacidad de Ahrefs</a>.
             </p>
 
             <h3 class="text-xl font-semibold mt-6 mb-3 text-gold/80">Google Maps</h3>
@@ -78,7 +83,7 @@
         <section>
             <h2 class="text-2xl font-serif font-semibold mt-8 mb-4 text-gold">Tu Consentimiento</h2>
             <p class="text-gray-300">
-                Las cookies técnicas se instalan siempre, porque son necesarias para que la web funcione. Las cookies de análisis (Google Analytics) y de publicidad (Google Tag Manager, Ahrefs Analytics) solo se instalan si pulsas «Aceptar» en el aviso de cookies; si pulsas «Rechazar», o si no decides nada, no se instalan.
+                Las cookies técnicas se instalan siempre, porque son necesarias para que la web funcione. Google Analytics, cargado mediante Google Tag Manager, solo se instala si pulsas «Aceptar» en el aviso de cookies. Ahrefs Analytics no instala ninguna cookie, pero también se activa solo si aceptas, porque envía los datos de tu visita a un tercero. Si pulsas «Rechazar», o si no decides nada, ninguno de los dos se activa.
             </p>
             <p class="text-gray-300 mt-4">
                 Puedes cambiar tu decisión en cualquier momento con el siguiente botón. Si habías aceptado, al rechazar eliminamos las cookies de Google Analytics ya instaladas.

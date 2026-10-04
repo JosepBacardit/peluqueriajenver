@@ -5,7 +5,7 @@
             <div class="flex-1">
                 <p class="text-white text-sm leading-relaxed">
                     <span class="font-semibold text-gold">Aviso de cookies:</span>
-                    Utilizamos cookies técnicas, necesarias para que la web funcione. Las cookies de análisis y publicidad solo se instalan si pulsas «Aceptar».
+                    Utilizamos cookies técnicas, necesarias para que la web funcione. El resto —Google Analytics y Ahrefs Analytics— solo se activa si pulsas «Aceptar».
                     <a href="{{ route('cookies') }}" class="text-gold hover:text-gold-light underline ml-1">
                         Más información
                     </a>
@@ -31,40 +31,71 @@
         const rejectBtn = document.getElementById('cookie-reject');
         const cookieConsent = 'cookieConsent';
 
+        // localStorage can throw (some browsers block it entirely when the
+        // user disables all site data). Treat a throw as "no confirmed
+        // consent": never stuck, never tracking.
+        function getConsent() {
+            try {
+                return localStorage.getItem(cookieConsent);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function setConsent(value) {
+            try {
+                localStorage.setItem(cookieConsent, value);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
         // Check if user has already made a choice
-        if (!localStorage.getItem(cookieConsent)) {
+        if (!getConsent()) {
             cookieBanner.classList.remove('hidden');
         }
 
         // Delete the Google Analytics cookies set while consent was accepted.
+        // gtag.js defaults to cookie_domain: 'auto', which sets _ga/_ga_<id>
+        // on the root domain (without "www."), not on location.hostname.
         function deleteGoogleAnalyticsCookies() {
+            const host = location.hostname;
+            const rootHost = host.replace(/^www\./, '');
+            const domains = [null, host, '.' + host];
+            if (rootHost !== host) {
+                domains.push(rootHost, '.' + rootHost);
+            }
+
             document.cookie.split(';').forEach(function (entry) {
                 const name = entry.split('=')[0].trim();
                 if (name.indexOf('_ga') !== 0) {
                     return;
                 }
-                const expired = name + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
-                document.cookie = expired;
-                document.cookie = expired + '; domain=' + location.hostname;
-                document.cookie = expired + '; domain=.' + location.hostname;
+                domains.forEach(function (domain) {
+                    const expired = name + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+                    document.cookie = domain ? expired + '; domain=' + domain : expired;
+                });
             });
         }
 
         // Accept cookies
         acceptBtn.addEventListener('click', function() {
-            localStorage.setItem(cookieConsent, 'accepted');
+            const confirmed = setConsent('accepted');
             cookieBanner.classList.add('hidden');
-            (window.__analyticsConsentLoaders || []).forEach(function (load) {
-                load();
-            });
+            if (confirmed) {
+                (window.__analyticsConsentLoaders || []).forEach(function (load) {
+                    load();
+                });
+            }
         });
 
         // Reject cookies
         rejectBtn.addEventListener('click', function() {
-            const hadAccepted = localStorage.getItem(cookieConsent) === 'accepted';
-            localStorage.setItem(cookieConsent, 'rejected');
+            const hadAccepted = getConsent() === 'accepted';
+            const confirmed = setConsent('rejected');
             cookieBanner.classList.add('hidden');
-            if (hadAccepted) {
+            if (confirmed && hadAccepted) {
                 // Analytics is already running in this page: the only reliable
                 // way to stop it and clear its cookies is to reload.
                 deleteGoogleAnalyticsCookies();
