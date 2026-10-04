@@ -26,7 +26,7 @@
 
             <h3 class="text-xl font-semibold mt-6 mb-3 text-gold/80">Cookies de Análisis</h3>
             <p class="text-gray-300">
-                Utilizamos Google Analytics, cargado a través de Google Tag Manager, para recopilar información anónima sobre cómo los usuarios interactúan con nuestro sitio (páginas visitadas, tiempo de permanencia, etc.). Esta información nos ayuda a mejorar la experiencia del usuario. Solo se instala si aceptas las cookies.
+                Utilizamos Google Analytics, cargado a través de Google Tag Manager, para recopilar información estadística sobre cómo se usa el sitio (páginas visitadas, tiempo de permanencia, etc.). Esta información nos ayuda a mejorar la experiencia del usuario. Solo se instala si aceptas las cookies.
             </p>
 
             <h3 class="text-xl font-semibold mt-6 mb-3 text-gold/80">Herramientas de Análisis sin Cookies</h3>
