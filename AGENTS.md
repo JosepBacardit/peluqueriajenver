@@ -84,14 +84,23 @@ pre-filled message per page); the salon records those in the admin agenda.
   lives in `App\Booking\AvailabilityCalculator`; every booking (web or
   admin) goes through `App\Actions\CreateAppointment`, which re-checks
   availability under a row lock on `booking_settings` so concurrent
-  bookings cannot overbook. Prices are internal: never render
+  bookings cannot overbook. The salon moves an appointment (same row, id
+  and token) from the agenda's "Editar" link through
+  `App\Actions\RescheduleAppointment`, which takes the same lock first and
+  updates only while the row is still confirmed; a full or closed time is
+  saved only after the panel's explicit "Guardar igualmente" (so the
+  capacity can be exceeded on purpose, only from there), never a past
+  one. Creating an appointment can never exceed it. Prices are internal: never render
   `price_cents` on a public page or a customer email
   (`PublicPagesHaveNoPublicPricingTest` and the booking tests guard this).
 - **Email** is sent synchronously (no queue worker) by
   `App\Booking\AppointmentNotifier`: confirmation with the personal link to
   the customer, notice of web bookings and customer cancellations to
-  `BOOKING_NOTIFICATION_EMAIL`, and cancellation emails. A failed send is
-  logged and never undoes the booking; failed creation notices stay with a
+  `BOOKING_NOTIFICATION_EMAIL`, cancellation emails, and the customer's
+  notice when the salon changes the time or service of their appointment.
+  A failed send is logged and never undoes the booking, the cancellation
+  or the move (the panel warns the salon when the move notice fails;
+  cancellation and move notices are never retried); failed creation notices stay with a
   null `customer_notified_at`/`salon_notified_at` and are retried by
   `php artisan appointments:notify-pending` (cron, see "Production
   deploys").

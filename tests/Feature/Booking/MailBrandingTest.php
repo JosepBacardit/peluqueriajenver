@@ -2,6 +2,7 @@
 
 use App\Mail\AppointmentCancelledMail;
 use App\Mail\AppointmentConfirmedMail;
+use App\Mail\AppointmentRescheduledMail;
 use App\Mail\CustomerCancelledAppointmentMail;
 use App\Mail\NewAppointmentMail;
 use App\Models\Appointment;
@@ -41,6 +42,7 @@ test('every booking email shows the salon\'s brand, not the framework\'s', funct
     'notice to the salon' => NewAppointmentMail::class,
     'cancellation to the customer' => AppointmentCancelledMail::class,
     'cancellation notice to the salon' => CustomerCancelledAppointmentMail::class,
+    'change of time to the customer' => AppointmentRescheduledMail::class,
 ]);
 
 test('the logo in every booking email is an absolute, public URL with alt text', function (string $mailClass) {
@@ -59,4 +61,5 @@ test('the logo in every booking email is an absolute, public URL with alt text',
     'notice to the salon' => NewAppointmentMail::class,
     'cancellation to the customer' => AppointmentCancelledMail::class,
     'cancellation notice to the salon' => CustomerCancelledAppointmentMail::class,
+    'change of time to the customer' => AppointmentRescheduledMail::class,
 ]);

@@ -7,6 +7,7 @@ use App\Models\BookingSetting;
 use App\Models\OpeningHour;
 use App\Models\ScheduleBlock;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 /**
@@ -80,8 +81,13 @@ class AvailabilityCalculator
      * Whether one specific start time can be booked. Admin bookings
      * ($applyPublicRules = false) skip rule 3 but still cannot start in
      * the past.
+     *
+     * $excludeAppointmentId is the appointment being moved: it must not
+     * count against its own new time, or it could never be moved to a
+     * time overlapping the one it holds now (e.g. 15 minutes earlier on a
+     * full day).
      */
-    public function isAvailable(int $durationMinutes, CarbonImmutable $start, CarbonImmutable $now, bool $applyPublicRules): bool
+    public function isAvailable(int $durationMinutes, CarbonImmutable $start, CarbonImmutable $now, bool $applyPublicRules, ?int $excludeAppointmentId = null): bool
     {
         $settings = BookingSetting::current();
         $day = $start->startOfDay();
@@ -111,7 +117,7 @@ class AvailabilityCalculator
             }
         }
 
-        return $this->hasCapacity($start, $end, $this->loadOccupation($start, $end), $settings->capacity);
+        return $this->hasCapacity($start, $end, $this->loadOccupation($start, $end, $excludeAppointmentId), $settings->capacity);
     }
 
     /**
@@ -174,10 +180,12 @@ class AvailabilityCalculator
     /**
      * @return array{appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>}
      */
-    private function loadOccupation(CarbonImmutable $from, CarbonImmutable $to): array
+    private function loadOccupation(CarbonImmutable $from, CarbonImmutable $to, ?int $excludeAppointmentId = null): array
     {
         return [
-            'appointments' => Appointment::query()->confirmed()->overlapping($from, $to)->get(['starts_at', 'ends_at']),
+            'appointments' => Appointment::query()->confirmed()->overlapping($from, $to)
+                ->when($excludeAppointmentId !== null, fn (Builder $query) => $query->whereKeyNot($excludeAppointmentId))
+                ->get(['starts_at', 'ends_at']),
             'blocks' => ScheduleBlock::query()->overlapping($from, $to)->get(['starts_at', 'ends_at', 'capacity_reduction']),
         ];
     }

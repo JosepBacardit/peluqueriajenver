@@ -145,6 +145,19 @@ test('admin rules ignore the interval and the notice but not the past, the sched
     expect($this->calculator->isAvailable(30, at('11:30'), $now, applyPublicRules: false))->toBeFalse();
 });
 
+test('an appointment being moved does not take capacity from its own new time', function () {
+    BookingSetting::current()->update(['capacity' => 1]);
+    $moved = bookAppointment('10:00', '11:00');
+
+    // Moving it 15 minutes earlier overlaps only its own current place.
+    expect($this->calculator->isAvailable(60, at('09:45'), $this->now, applyPublicRules: false))->toBeFalse();
+    expect($this->calculator->isAvailable(60, at('09:45'), $this->now, applyPublicRules: false, excludeAppointmentId: $moved->id))->toBeTrue();
+
+    // Every other appointment still counts.
+    bookAppointment('09:00', '10:00');
+    expect($this->calculator->isAvailable(60, at('09:45'), $this->now, applyPublicRules: false, excludeAppointmentId: $moved->id))->toBeFalse();
+});
+
 test('a full closure covering the whole day removes every time', function () {
     ScheduleBlock::create(['starts_at' => at('00:00'), 'ends_at' => at('00:00', '2030-01-09'), 'capacity_reduction' => null]);
 

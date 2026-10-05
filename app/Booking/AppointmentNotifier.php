@@ -5,6 +5,7 @@ namespace App\Booking;
 use App\Enums\AppointmentSource;
 use App\Mail\AppointmentCancelledMail;
 use App\Mail\AppointmentConfirmedMail;
+use App\Mail\AppointmentRescheduledMail;
 use App\Mail\CustomerCancelledAppointmentMail;
 use App\Mail\NewAppointmentMail;
 use App\Models\Appointment;
@@ -15,8 +16,9 @@ use Throwable;
 /**
  * Sends the booking emails synchronously (there is no queue worker in
  * production). A failure is reported to the log and never undoes the
- * booking or the cancellation; creation notices that failed stay pending
- * (null *_notified_at) for `appointments:notify-pending` to retry.
+ * booking, the cancellation or the move; creation notices that failed
+ * stay pending (null *_notified_at) for `appointments:notify-pending` to
+ * retry.
  */
 class AppointmentNotifier
 {
@@ -50,6 +52,23 @@ class AppointmentNotifier
         if ($cancelledByCustomer && $salonEmail !== null) {
             $this->send($salonEmail, new CustomerCancelledAppointmentMail($appointment));
         }
+    }
+
+    /**
+     * Best effort, without retry, like the cancellation notices: the
+     * appointment has already been moved. The caller tells the salon when
+     * it fails, so they can phone the customer instead.
+     *
+     * @return bool false only when the customer has an email and sending
+     *              it failed
+     */
+    public function sendRescheduleNotice(Appointment $appointment): bool
+    {
+        if ($appointment->customer_email === null) {
+            return true;
+        }
+
+        return $this->send($appointment->customer_email, new AppointmentRescheduledMail($appointment));
     }
 
     private function salonEmail(): ?string

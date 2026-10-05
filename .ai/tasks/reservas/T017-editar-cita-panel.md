@@ -5,8 +5,21 @@
 - **Depende de:** T004 (motor de disponibilidad), T006 (agenda del panel), T010 (notificaciones), T014 (bloqueo de concurrencia ya documentado en `CreateAppointment`)
 - **Modelo:** Claude Opus 5.5 · **Esfuerzo:** `medium` (subir a `high` si el mecanismo de «guardar igualmente» exige una segunda vuelta de validación poco trivial)
 - **Motivo:** cambia el dominio central de reservas (motor de disponibilidad, bloqueo de concurrencia, notificaciones), con una decisión de producto no trivial (permitir sobrepasar capacidad u horario con confirmación explícita).
-- **Estado:** pending
-- **PR / rama:** a decidir por quien la implemente; esta tarea está especificada pero no implementada (decisión del agente principal, 2026-10-05: T015/T016/T018 los implementó un agente Sonnet, T017 queda para un agente Opus aparte).
+- **Estado:** done (pendiente de la comprobación manual en el navegador)
+- **PR / rama:** `feature/booking-admin-tweaks`, sobre T015, T016 y T018 (implementada por un agente Opus 5.5 aparte, 2026-10-05).
+
+## Implementación
+
+Decisiones del usuario aplicadas: se mueve la misma fila (mismo `id` y mismo token); el correo de cambio es *best-effort* y sin reintento, y el panel avisa si falla; «Guardar igualmente» solo existe al mover una cita, nunca al crearla, y no salta nunca la comprobación de hora pasada; los datos de la clienta se editan con las reglas del alta; solo se mueven citas confirmadas y futuras; no hay historial ni texto en `notes`.
+
+Decisiones de implementación:
+
+- **Concurrencia.** `App\Actions\RescheduleAppointment` replica `CreateAppointment`: la transacción empieza con `lockForUpdate()` sobre `booking_settings` (primera consulta, con test), y después relee la cita, comprueba que sigue confirmada y futura y vuelve a calcular la disponibilidad. La escritura es un único `UPDATE … WHERE id = ? AND status = confirmed`, como en `CancelAppointment`: una cancelación concurrente (que no toma el bloqueo) hace que el movimiento no toque ninguna fila y se rechace; dos movimientos concurrentes se serializan por el bloqueo y el último deja todos sus valores, nunca una mezcla.
+- **Motor.** `AvailabilityCalculator::isAvailable()` gana `?int $excludeAppointmentId`, que saca la propia cita de la ocupación. No se ha añadido un parámetro para saltar horario/capacidad (el plan lo proponía «por ejemplo»): con «Guardar igualmente» la Action simplemente no llama al motor, y la comprobación de hora pasada vive en la Action, antes y siempre (`StartTimeInPastException`, sin opción de forzar). `store()` no cambia.
+- **«Guardar igualmente».** El botón lleva como valor el servicio, la fecha y la hora para las que se mostró el aviso (`UpdateAdminAppointmentRequest::slotKey()`); si la persona cambia cualquiera de los tres después del aviso, la nueva elección se vuelve a comprobar y a avisar. El botón va después de «Guardar cambios» en el formulario, para que pulsar Intro en un campo nunca fuerce el guardado. El aviso es `role="alert"`, recibe el foco (`tabindex="-1"` + `autofocus`) y los campos de servicio, fecha y hora lo enlazan con `aria-describedby`.
+- **Servicio.** Si no cambia, la cita conserva el nombre y la duración con los que se reservó (como cuando se edita el servicio después); si cambia, toma el nombre y la duración actuales del nuevo. La cita puede conservar su propio servicio aunque se haya desactivado; cualquier otro tiene que estar activo.
+- **Correo.** Solo se envía si cambian el día, la hora o el servicio y la cita tiene email (al email guardado con el cambio). Editar solo los datos de la clienta no envía nada.
+- **Cita no movible.** `edit` y `update` sobre una cita cancelada o ya empezada redirigen a la agenda de ese día con un aviso y no guardan nada.
 
 ## Objetivo
 
@@ -74,6 +87,8 @@ Una persona del salón puede, desde la agenda del panel, mover una cita confirma
 ## Verificación
 
 `docker compose exec -T -u www-data app php artisan test --compact` (la suite completa, no solo los tests nuevos) · `docker compose exec -T -u www-data app vendor/bin/pint --dirty --format agent`. Revisión manual en `localhost:8082/admin/agenda`: crear una cita de prueba, moverla a un hueco válido y a uno sin capacidad (con y sin forzar), y comprobar el correo en `storage/logs/laravel.log` (mailer `log` en local).
+
+Resultado (2026-10-05): suite completa en verde (304 tests; eran 258) y Pint sin cambios. Tests nuevos: `tests/Feature/Booking/RescheduleAppointmentTest.php` (Action y concurrencia), `tests/Feature/Admin/AdminRescheduleAppointmentTest.php` (panel y correo), y casos añadidos en `AvailabilityCalculatorTest`, `AgendaTest`, `MailBrandingTest` y `MailContentEscapingTest`. El correo se ha renderizado en `storage/app/mail-preview/5-appointment-rescheduled.html` (no comprometido). Queda la revisión manual en el navegador.
 
 ## Riesgos
 

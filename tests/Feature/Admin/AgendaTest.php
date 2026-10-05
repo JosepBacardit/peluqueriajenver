@@ -75,3 +75,14 @@ test('the agenda flags confirmed appointments whose confirmation email could not
     expect(substr_count($html, 'Correo de confirmación no enviado'))->toBe(1);
     expect(strpos($html, 'Correo de confirmación no enviado'))->toBeLessThan(strpos($html, 'Con Correo'));
 });
+
+test('only confirmed appointments that have not started yet offer to be edited', function () {
+    $upcoming = Appointment::factory()->create(['starts_at' => '2030-01-08 10:00', 'ends_at' => '2030-01-08 11:00']);
+    $started = Appointment::factory()->create(['starts_at' => '2030-01-08 07:30', 'ends_at' => '2030-01-08 08:30']);
+    $cancelled = Appointment::factory()->cancelled()->create(['starts_at' => '2030-01-08 12:00', 'ends_at' => '2030-01-08 13:00']);
+
+    $this->get(route('admin.agenda'))
+        ->assertSee('href="'.route('admin.appointments.edit', $upcoming).'"', false)
+        ->assertDontSee('href="'.route('admin.appointments.edit', $started).'"', false)
+        ->assertDontSee('href="'.route('admin.appointments.edit', $cancelled).'"', false);
+});

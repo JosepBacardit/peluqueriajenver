@@ -75,6 +75,8 @@ Route::prefix('admin')->group(function () {
         Route::get('/agenda', [AgendaController::class, 'index'])->name('agenda');
         Route::get('/citas/crear', [AppointmentController::class, 'create'])->name('appointments.create');
         Route::post('/citas', [AppointmentController::class, 'store'])->name('appointments.store');
+        Route::get('/citas/{appointment}/editar', [AppointmentController::class, 'edit'])->name('appointments.edit');
+        Route::put('/citas/{appointment}', [AppointmentController::class, 'update'])->name('appointments.update');
         Route::post('/citas/{appointment}/cancelar', [AppointmentController::class, 'cancel'])->name('appointments.cancel');
 
         Route::resource('servicios', ServiceController::class)

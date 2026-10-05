@@ -55,10 +55,15 @@
                         <p class="text-xs text-gray-400">Origen: {{ $appointment->source->label() }} · Estado: <span class="{{ $appointment->isConfirmed() ? 'text-green-300' : 'text-red-300' }}">{{ $appointment->status->label() }}</span></p>
                     </div>
                     @if ($appointment->isConfirmed())
-                        <form method="POST" action="{{ route('admin.appointments.cancel', $appointment) }}" onsubmit="return confirm('¿Cancelar la cita de {{ e($appointment->customer_name) }}? Su hora quedará libre.');">
-                            @csrf
-                            <button type="submit" class="text-red-300 hover:underline text-sm">Cancelar cita</button>
-                        </form>
+                        <div class="flex flex-col items-end gap-2">
+                            @if ($appointment->starts_at->isFuture())
+                                <a href="{{ route('admin.appointments.edit', $appointment) }}" class="text-gold hover:underline text-sm" aria-label="Editar o mover la cita de {{ $appointment->customer_name }} a las {{ $appointment->starts_at->format('H:i') }}">Editar</a>
+                            @endif
+                            <form method="POST" action="{{ route('admin.appointments.cancel', $appointment) }}" onsubmit="return confirm('¿Cancelar la cita de {{ e($appointment->customer_name) }}? Su hora quedará libre.');">
+                                @csrf
+                                <button type="submit" class="text-red-300 hover:underline text-sm">Cancelar cita</button>
+                            </form>
+                        </div>
                     @endif
                 </div>
             </li>
