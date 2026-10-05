@@ -102,6 +102,66 @@ class DayTimeline
     }
 
     /**
+     * Every tappable free segment's start minute, across every lane of
+     * every open piece, deduplicated (a service filter's candidate times,
+     * PRF-123): the agenda passes this straight to
+     * AvailabilityCalculator::fittingStartMinutes(), so the two never
+     * disagree about which times are even offered as tap targets. A pure
+     * data walk over an already-built timeline — no new computation.
+     *
+     * @param  array{lanes: int, pieces: list<array>}  $timeline  a build() result
+     * @return list<int>
+     */
+    public static function tappableFreeMinutes(array $timeline): array
+    {
+        $minutes = [];
+
+        foreach ($timeline['pieces'] as $piece) {
+            if ($piece['kind'] !== 'open') {
+                continue;
+            }
+
+            foreach ($piece['segments'] as $segment) {
+                if ($segment['type'] === 'free' && $segment['tappable']) {
+                    $minutes[] = $segment['start'];
+                }
+            }
+        }
+
+        return array_values(array_unique($minutes));
+    }
+
+    /**
+     * Flags every tappable free segment whose start is one of
+     * $fittingMinutes with 'fits' => true (PRF-123, PRF-124: the "Cabe"
+     * highlight) — every other segment is left untouched, so the view
+     * treats a missing 'fits' key the same as false. Builds its own lookup
+     * from $fittingMinutes once, rather than a linear search per segment.
+     *
+     * @param  array{lanes: int, pieces: list<array>}  $timeline  a build() result
+     * @param  list<int>  $fittingMinutes  AvailabilityCalculator::fittingStartMinutes()'s result
+     * @return array{lanes: int, pieces: list<array>}
+     */
+    public static function markServiceFit(array $timeline, array $fittingMinutes): array
+    {
+        $fits = array_flip($fittingMinutes);
+
+        foreach ($timeline['pieces'] as &$piece) {
+            if ($piece['kind'] !== 'open') {
+                continue;
+            }
+
+            foreach ($piece['segments'] as &$segment) {
+                if ($segment['type'] === 'free' && $segment['tappable']) {
+                    $segment['fits'] = isset($fits[$segment['start']]);
+                }
+            }
+        }
+
+        return $timeline;
+    }
+
+    /**
      * Pixels from the grid's start for a given number of minutes since it,
      * at 88px/hour. Always derive a segment's height from the difference
      * of two calls to this method (its start and its end), never from

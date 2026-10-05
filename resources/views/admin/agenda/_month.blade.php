@@ -38,7 +38,12 @@
                             $count = (int) ($occupancy[$date->toDateString()] ?? 0);
                             $monthDay = $date->locale('es')->isoFormat('D [de] MMMM');
                         @endphp
-                        <a href="{{ route('admin.agenda', ['vista' => 'dia', 'fecha' => $date->toDateString()]) }}"
+                        {{-- "servicio" (PRF-120, decision 3) survives a trip
+                             through Mes even though Mes has no selector of
+                             its own, so tapping a day back into vista Día
+                             keeps the filter instead of silently dropping
+                             it. --}}
+                        <a href="{{ route('admin.agenda', ['vista' => 'dia', 'fecha' => $date->toDateString(), ...($servicioQuery ?? [])]) }}"
                            role="gridcell"
                            class="min-h-11 flex flex-col items-center justify-center border {{ $isToday ? 'border-gold' : 'border-[#2A2A2A]' }} {{ $isClosed ? 'text-gray-500' : 'text-white hover:bg-gold/10' }}"
                            {!! $isToday ? 'aria-current="date"' : '' !!}

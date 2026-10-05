@@ -18,10 +18,20 @@
      optionally $ariaDateLabel (string, review finding M2: prefixes every
      aria-label in Semana's columns with the day, e.g. "miércoles 7", so a
      screen-reader user knows which day's plaza/cita/hueco they are on;
-     omitted in vista Día, where there is only one day on screen). --}}
+     omitted in vista Día, where there is only one day on screen).
+     Also inherits $servicio (nullable Service, PRF-120: the selected
+     service filter — AgendaController already flagged every segment
+     that fits it with 'fits' => true) and $servicioQuery (array, the
+     "servicio" query fragment, PRF-120: added to every "Nueva cita" link
+     so the filter survives into the create form, preselected, T045) from
+     the including view's own scope — @include shares it automatically,
+     so neither _day.blade.php, _timeline.blade.php nor _week.blade.php
+     need to repeat it explicitly. --}}
 @php
     $bandLabels = ['cerrado' => 'Cerrado', 'fuera-horario' => 'Fuera de horario', 'cierre' => 'Cierre'];
     $datePrefix = ($ariaDateLabel ?? null) !== null ? $ariaDateLabel.', ' : '';
+    $servicioQuery = $servicioQuery ?? [];
+    $servicio = $servicio ?? null;
 @endphp
 <div class="relative flex-1 min-w-0">
     @foreach ($timeline['pieces'] as $piece)
@@ -87,14 +97,26 @@
                     @elseif ($segment['tappable'])
                         @php
                             $slotTime = sprintf('%02d:%02d', intdiv($segment['start'], 60), $segment['start'] % 60);
+                            $fits = $segment['fits'] ?? false;
                         @endphp
                         {{-- One link per free half hour of this lane (review
                              finding N1), each with its own exact time —
-                             never one giant link for the whole free run. --}}
-                        <a href="{{ route('admin.appointments.create', ['fecha' => $day->toDateString(), 'hora' => $slotTime, 'volver' => $volver]) }}"
-                           class="block hover:bg-gold/10"
+                             never one giant link for the whole free run.
+                             When a service is selected and it fits starting
+                             here (PRF-123/124), the link gets a visibly
+                             different border/background — never only a
+                             color swap — plus the word "Cabe" when there is
+                             room ($compact false, vista Día) and always an
+                             aria-label saying so, for Semana's narrow
+                             columns and for anyone not seeing the border. --}}
+                        <a href="{{ route('admin.appointments.create', ['fecha' => $day->toDateString(), 'hora' => $slotTime, 'volver' => $volver, ...$servicioQuery]) }}"
+                           class="flex items-center justify-center text-[9px] leading-none text-gold font-semibold {{ $fits ? 'border-2 border-gold bg-gold/15' : 'hover:bg-gold/10' }}"
                            style="{{ $gridArea }}"
-                           aria-label="{{ $datePrefix }}Hueco libre a las {{ $slotTime }}, plaza {{ $segment['lane'] + 1 }}"></a>
+                           aria-label="{{ $datePrefix }}Hueco libre a las {{ $slotTime }}, plaza {{ $segment['lane'] + 1 }}{{ $fits ? ', cabe '.$servicio->name : '' }}">
+                            @if ($fits && ! $compact)
+                                Cabe
+                            @endif
+                        </a>
                     @else
                         <div style="{{ $gridArea }}" aria-hidden="true"></div>
                     @endif

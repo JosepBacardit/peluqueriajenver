@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Booking\AvailabilityCalculator;
 use App\Booking\DayTimeline;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\BookingSetting;
 use App\Models\OpeningHour;
 use App\Models\ScheduleBlock;
+use App\Models\Service;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Http\Request;
@@ -16,6 +18,8 @@ use Illuminate\View\View;
 
 class AgendaController extends Controller
 {
+    public function __construct(private AvailabilityCalculator $calculator) {}
+
     /**
      * Valid values for the "vista" query parameter (PRF-099).
      */
@@ -33,6 +37,19 @@ class AgendaController extends Controller
         $weekLastDay = $weekStart->addDays(6);
         $month = $day->startOfMonth();
 
+        // Service filter (PRF-120, T043): loaded once, reused both for the
+        // <select>'s options and to validate "servicio" against it — a
+        // malformed or inactive id is silently ignored, never an error.
+        // $servicioQuery is the single query-string fragment every link in
+        // the three views (tabs, Anterior/Siguiente/Hoy, the date form,
+        // Nueva cita, each hueco libre, Mes's day cells) splats in, so the
+        // filter survives navigation (including through Mes, which has no
+        // selector of its own) without repeating the same ['servicio' =>
+        // ...] literal at every one of those call sites.
+        $services = Service::query()->where('is_active', true)->ordered()->get();
+        $servicio = self::servicioFromQuery($request->query('servicio'), $services);
+        $servicioQuery = $servicio !== null ? ['servicio' => $servicio->id] : [];
+
         return view('admin.agenda.index', [
             'vista' => $vista,
             'day' => $day,
@@ -41,14 +58,34 @@ class AgendaController extends Controller
             'month' => $month,
             // "volver" (review finding M1): where Nueva cita/Editar/Cancelar
             // should return to, so acting on a day doesn't silently drop
-            // back to vista Día.
+            // back to vista Día. Deliberately never carries "servicio"
+            // (coordinator's decision 1): it stays its own query parameter
+            // everywhere, same as "hora" already is, so volver's
+            // "vista:fecha" format and its whitelist parsing never change.
             'volver' => "$vista:{$day->toDateString()}",
+            'services' => $services,
+            'servicio' => $servicio,
+            'servicioQuery' => $servicioQuery,
             ...match ($vista) {
-                'semana' => $this->weekData($weekStart),
+                'semana' => $this->weekData($weekStart, $servicio),
                 'mes' => $this->monthData($month),
-                default => $this->dayData($day),
+                default => $this->dayData($day, $servicio),
             },
         ]);
+    }
+
+    /**
+     * The selected service (PRF-120), or null when "servicio" is missing,
+     * not numeric, or does not match one of the already-loaded active
+     * services — never a second query to check it.
+     */
+    public static function servicioFromQuery(mixed $value, Collection $services): ?Service
+    {
+        if (! is_numeric($value)) {
+            return null;
+        }
+
+        return $services->firstWhere('id', (int) $value);
     }
 
     /**
@@ -119,7 +156,7 @@ class AgendaController extends Controller
      *
      * @return array{appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>, gridStart: int, gridEnd: int, timeline: array, nowLineTop: int|null}
      */
-    private function dayData(CarbonImmutable $day): array
+    private function dayData(CarbonImmutable $day, ?Service $servicio): array
     {
         $appointments = Appointment::query()
             ->where('starts_at', '>=', $day)
@@ -138,14 +175,37 @@ class AgendaController extends Controller
         $capacity = BookingSetting::current()->capacity;
         $now = CarbonImmutable::now();
 
+        $timeline = DayTimeline::build($day, $bounds['start'], $bounds['end'], $capacity, $dayRanges, $appointments, $blocks, $now);
+        $timeline = $this->markServiceFit($timeline, $servicio, $day, $dayRanges, $appointments, $blocks, $capacity);
+
         return [
             'appointments' => $appointments,
             'blocks' => $blocks,
             'gridStart' => $bounds['start'],
             'gridEnd' => $bounds['end'],
-            'timeline' => DayTimeline::build($day, $bounds['start'], $bounds['end'], $capacity, $dayRanges, $appointments, $blocks, $now),
+            'timeline' => $timeline,
             'nowLineTop' => DayTimeline::nowLineTop($day, $bounds['start'], $bounds['end'], $now),
         ];
+    }
+
+    /**
+     * PRF-120/123/124: with no service selected, returns $timeline
+     * untouched (no extra work at all). With one, finds which of its
+     * already-tappable free half hours the service fits into — no query,
+     * since AvailabilityCalculator::fittingStartMinutes() works entirely
+     * off the $ranges/$appointments/$blocks the caller already loaded —
+     * and flags them for the view (DayTimeline::markServiceFit()).
+     */
+    private function markServiceFit(array $timeline, ?Service $servicio, CarbonImmutable $day, Collection $ranges, Collection $appointments, Collection $blocks, int $capacity): array
+    {
+        if ($servicio === null) {
+            return $timeline;
+        }
+
+        $candidates = DayTimeline::tappableFreeMinutes($timeline);
+        $fitting = $this->calculator->fittingStartMinutes($servicio->duration_minutes, $candidates, $day, $ranges, $appointments, $blocks, $capacity);
+
+        return DayTimeline::markServiceFit($timeline, $fitting);
     }
 
     /**
@@ -157,7 +217,7 @@ class AgendaController extends Controller
      *
      * @return array{days: list<array{date: CarbonImmutable, appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>, isClosed: bool, hasPartialClosure: bool, isToday: bool, timeline: array}>, gridStart: int, gridEnd: int}
      */
-    private function weekData(CarbonImmutable $weekStart): array
+    private function weekData(CarbonImmutable $weekStart, ?Service $servicio): array
     {
         $weekEnd = $weekStart->addWeek();
 
@@ -194,6 +254,9 @@ class AgendaController extends Controller
             $hasFullClosure = $dayBlocks->contains(fn (ScheduleBlock $b) => $b->capacity_reduction === null);
             $isClosed = ! in_array($date->isoWeekday(), $openWeekdays, true) || $hasFullClosure;
 
+            $timeline = DayTimeline::build($date, $bounds['start'], $bounds['end'], $capacity, $dayRanges, $dayAppointments, $dayBlocks, $now);
+            $timeline = $this->markServiceFit($timeline, $servicio, $date, $dayRanges, $dayAppointments, $dayBlocks, $capacity);
+
             $days[] = [
                 'date' => $date,
                 'appointments' => $dayAppointments,
@@ -201,7 +264,7 @@ class AgendaController extends Controller
                 'isClosed' => $isClosed,
                 'hasPartialClosure' => ! $isClosed && $dayBlocks->contains(fn (ScheduleBlock $b) => $b->capacity_reduction !== null),
                 'isToday' => $date->isSameDay($today),
-                'timeline' => DayTimeline::build($date, $bounds['start'], $bounds['end'], $capacity, $dayRanges, $dayAppointments, $dayBlocks, $now),
+                'timeline' => $timeline,
                 'nowLineTop' => DayTimeline::nowLineTop($date, $bounds['start'], $bounds['end'], $now),
             ];
         }
