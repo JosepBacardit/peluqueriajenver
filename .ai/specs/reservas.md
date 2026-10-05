@@ -29,6 +29,7 @@ La única forma de pedir cita es llamar o escribir por WhatsApp. El botón «Res
 - Botones «Reservar cita» de la portada y las páginas de servicio enlazando a la reserva online (2026-10-05).
 - Adaptación del panel y de la reserva pública al móvil, donde el salón trabaja la mayor parte del tiempo (2026-10-05).
 - Vistas Día, Semana y Mes en la agenda del panel, con selector y navegación compartible por URL (2026-10-05).
+- Rejilla horaria de Día y Semana al estilo Google Calendar, con carriles por capacidad y creación de cita tocando un hueco libre (2026-10-05).
 
 ## No-objetivos
 
@@ -42,7 +43,8 @@ La única forma de pedir cita es llamar o escribir por WhatsApp. El botón «Res
 - Fichas de cliente, contabilidad, productos o puntos. **Pospuesto** a módulos futuros.
 - Permisos distintos entre cuentas del panel. **Descartado**: todas las cuentas pueden hacer lo mismo.
 - Recuperar la contraseña desde la web. **Pospuesto**: se cambia desde la consola del servidor.
-- Crear una cita del panel a partir de un hueco libre mostrado directamente en la agenda (preseleccionando día y hora). **Pospuesto**, decisión del usuario 2026-10-05: se valorará en una iteración siguiente, tras probar en el móvil real del salón el resto de la adaptación móvil (PRF-089 y siguientes).
+- Crear una cita del panel a partir de un hueco libre mostrado directamente en la agenda (preseleccionando día y hora). **Retomado el 2026-10-05**: con la rejilla horaria de Día y Semana (PRF-108 y siguientes) resultaba natural, y el usuario lo aprobó entonces (ver PRF-114).
+- Selector de servicio en la rejilla horaria que resalte los huecos donde cabe su duración. **Pospuesto**, decisión del usuario 2026-10-05 (ver PRF-120): se valorará como tarea posterior opcional, fuera de esta entrega.
 
 ## Especificación funcional
 
@@ -241,14 +243,32 @@ El panel lo usan sobre todo las peluqueras desde el móvil, con una mano, mientr
 Decisión del usuario, 2026-10-05, tras el informe de fase 1 del agente `programador`: la agenda pasa de mostrar solo el día a ofrecer también una vista semanal y una mensual, hechas a mano con Blade (sin librería de calendario ni framework de JS, igual que el resto del panel). La vista Día no cambia: sigue siendo la lista de tarjetas actual.
 
 - **PRF-099.** La agenda **debe** ofrecer un selector Día/Semana/Mes, con zona táctil de al menos 44×44 px, cuya vista activa se refleje en el parámetro `vista` de la URL (junto con `fecha`), para que el enlace se pueda compartir y el botón Atrás del navegador funcione. Un valor de `vista` que no sea «dia», «semana» ni «mes» **debe** tratarse como «dia». La vista por defecto, sin `vista` en la URL, **debe** ser Día; la agenda **no debe** recordar la última vista usada entre visitas.
-- **PRF-100.** En anchos de pantalla de 768 px o más, la vista Semana **debe** mostrar una rejilla de 7 columnas (lunes a domingo) con las citas de cada día agrupadas por hora.
-- **PRF-101.** En anchos de pantalla menores de 768 px, la vista Semana **debe** mostrar una tira de 7 días (zona táctil de al menos 44 px cada uno) para elegir el día, con la agenda de ese día —igual que la vista Día, incluidas sus acciones Llamar, WhatsApp, Editar y Cancelar— mostrada debajo.
+- **PRF-100.** En anchos de pantalla de 768 px o más, la vista Semana **debe** mostrar una rejilla de 7 columnas (lunes a domingo) con las citas de cada día. **Reescrito el 2026-10-05** (ver PRF-118): la rejilla de columnas con listas de texto se sustituye por la rejilla horaria de PRF-108 y siguientes, repetida en 7 columnas.
+- **PRF-101.** En anchos de pantalla menores de 768 px, la vista Semana **debe** mostrar una tira de 7 días (zona táctil de al menos 44 px cada uno) para elegir el día, con la agenda de ese día —igual que la vista Día— mostrada debajo. **Ajustado el 2026-10-05**: la agenda del día elegido es ahora la rejilla horaria de PRF-108 y siguientes (ver PRF-118), no la lista de tarjetas; sus acciones (Llamar, WhatsApp, Editar, Cancelar) se mantienen en la lista de tarjetas debajo de la rejilla.
 - **PRF-102.** La vista Mes **debe** mostrar, en todos los anchos de pantalla, una rejilla mensual con el número de citas confirmadas de cada día.
 - **PRF-103.** Tocar cualquier día de la vista Mes **debe** abrir la vista Día de esa fecha, tenga o no citas.
 - **PRF-104.** Los controles Anterior, Siguiente y Hoy de la agenda **deben** adaptarse a la vista activa: un día en Día (igual que ahora, con el atajo «Mañana»), una semana en Semana y un mes en Mes. El formulario «Ir a la fecha» **debe** conservar la vista activa al cambiar de fecha.
 - **PRF-105.** Un día sin horario semanal (PRF-017) o cubierto por un cierre total (PRF-021) **debe** marcarse como «Cerrado» con texto, no solo con color, en las vistas Semana y Mes. Un cierre de capacidad reducida (sin cerrar el día) también **debe** señalarse, igual que ya hace la vista Día. Decisión del usuario, 2026-10-05, tras la revisión independiente (`.ai/reviews/agenda-calendar-views.md`, M2/L2): las celdas de día de Semana y Mes pueden medir entre 39 y 43 px de ancho a 360 px, manteniendo los 44 px de alto que sí exige PRF-099.
 - **PRF-106.** El día de hoy **debe** distinguirse en las vistas Semana y Mes con un borde u otro indicador que no sea solo el color.
 - **PRF-107.** Las rejillas de la vista Semana (768 px o más) y de la vista Mes **deben** tener una semántica de rejilla accesible (roles `grid`/`columnheader`) y navegarse con el teclado, igual que el calendario de `/reservas` (PRF-028).
+
+### Rejilla horaria de Día y Semana, al estilo Google Calendar (2026-10-05)
+
+Decisión del usuario, 2026-10-05: para encontrar huecos libres al apuntar una cita por teléfono, la vista Día pasa de la lista de tarjetas a una rejilla horaria (eje de horas + citas como bloques), igual que Google Calendar pero en negro y dorado. Semana en escritorio usa la misma rejilla en 7 columnas; Semana en móvil sigue mostrando la tira de 7 días con la rejilla del día elegido debajo. Mes no cambia. La lista de tarjetas de cita (Llamar, WhatsApp, Editar, Cancelar) se mantiene tal cual, debajo de la rejilla.
+
+- **PRF-108.** La vista Día **debe** mostrar una rejilla horaria con el eje de horas a la izquierda, desde la apertura más temprana al cierre más tardío de toda la semana (redondeado a la hora), con líneas de hora y de media hora, a 88 px por hora (44 px por media hora).
+- **PRF-109.** Cada columna de día **debe** tener tantos carriles como la capacidad configurada (hoy 2, leída de `booking_settings`, no fija en el código). Una cita sola **debe** ocupar un carril, no todo el ancho de la columna. Si hay más citas confirmadas simultáneas que la capacidad (por un «Guardar igualmente» de PRF-080), **deben** aparecer carriles adicionales para esas citas, marcadas con el texto «Sobre capacidad»; los carriles **no deben** distinguir peluquera.
+- **PRF-110.** Las citas confirmadas **deben** asignarse a los carriles por el algoritmo de primer carril libre (ordenadas por hora de inicio). Las citas canceladas **no deben** ocupar ningún carril (siguen viéndose, atenuadas, en la lista de tarjetas).
+- **PRF-111.** Cada bloque de cita **debe** mostrar la hora, el servicio y la clienta, con recorte (`ellipsis`) si no caben; el detalle completo **debe** estar en su `aria-label` y su `title`.
+- **PRF-112.** Un hueco entre los tramos de un día que sí tiene horario (por ejemplo, una pausa de mediodía), o antes/después de sus tramos dentro del rango de la rejilla, **debe** verse como una banda sombreada con el texto «Fuera de horario». Un día sin ningún tramo **debe** verse como una banda «Cerrado» ocupando toda la rejilla. Un cierre puntual (PRF-021) total, o que deja la capacidad efectiva en 0, **debe** verse como una banda «Cierre». Ninguno de los tres **debe** depender solo del color.
+- **PRF-113.** Un cierre puntual que reduce la capacidad sin cerrarla del todo **debe** sombrear con «Cierre» solo los carriles por encima de la capacidad efectiva en ese tramo, dejando libres los carriles restantes.
+- **PRF-114.** Un hueco libre de al menos 30 minutos en un carril **debe** ser una zona táctil de al menos 44 px de alto que, al tocarla, abra «Nueva cita» con la fecha y la hora de ese hueco y conserve `volver` (PRF-099). Un hueco libre de menos de 30 minutos **no** necesita ser su propia zona táctil.
+- **PRF-115.** Tocar un bloque de cita **debe** llevar a su tarjeta de detalle en la lista de debajo (con Llamar, WhatsApp, Editar y Cancelar), sin una página ni un panel nuevos.
+- **PRF-116.** El día de hoy **debe** mostrar una línea de «ahora» en su posición horaria dentro de la rejilla.
+- **PRF-117.** Al abrir la vista Día o Semana, la rejilla **debe** desplazarse sola a la hora actual (si el día mostrado es hoy y «ahora» cae dentro del rango) o a la apertura, sin esperar ninguna interacción.
+- **PRF-118.** La vista Semana en pantallas de 768 px o más **debe** usar la misma rejilla horaria en 7 columnas, con el eje de horas una sola vez. En pantallas menores de 768 px, la tira de 7 días **debe** seguir mostrando debajo la rejilla horaria del día elegido (la vista Día).
+- **PRF-119.** La rejilla **debe** ser navegable por teclado, con cada hueco libre y cada bloque de cita como enlace real, en orden cronológico en el HTML, con `aria-label` completo.
+- **PRF-120.** Un selector de servicio que resalte en la rejilla los huecos donde cabe su duración completa **queda pospuesto**: no forma parte de esta entrega; se valorará como tarea posterior opcional.
 
 ## Datos existentes y transición
 
@@ -272,6 +292,7 @@ El remitente de correo real (PRF-070, PRF-071) sigue pendiente del buzón y el s
 - **CA-12 (PRF-076, PRF-088).** El botón «Reservar cita →» de la portada y de cada página de servicio, y el «Reservar online» de la sección «Reserva tu cita», llevan a la página de reservas; los botones de llamada y de WhatsApp se mantienen. Las preguntas frecuentes sobre cómo pedir cita mencionan la reserva online.
 - **CA-13 (PRF-089 a PRF-098).** En 360-414 px de ancho: los botones y enlaces de acción del panel miden al menos 44×44 px; el panel tiene un botón hamburguesa que despliega un menú vertical desplazable con los módulos y «Cerrar sesión» al final, visible también sin JavaScript; los servicios se ven en tarjetas; la agenda ofrece «Mañana» y un botón flotante para crear una cita, y separa Editar de Cancelar; la tarjeta de una cita abre WhatsApp con el teléfono normalizado; el horario semanal no hace *scroll* horizontal; el calendario y las horas de `/reservas` miden al menos 44 px; el botón de cancelar de `/cita/{token}` ocupa todo el ancho.
 - **CA-14 (PRF-099 a PRF-107).** La agenda ofrece un selector Día/Semana/Mes con `vista`/`fecha` en la URL; un valor de `vista` desconocido cae a Día, que no cambia. Semana agrupa las citas de lunes a domingo con una sola consulta (rejilla en escritorio, tira de 7 días más la agenda del día elegido en móvil). Mes muestra el número de citas por día con una consulta agregada, y tocar un día abre su vista Día. Anterior/Siguiente/Hoy y el formulario «Ir a la fecha» se adaptan a la vista activa. Los días cerrados y el día de hoy se distinguen con texto o borde, no solo con color, y las rejillas de Semana (escritorio) y Mes son accesibles por teclado.
+- **CA-15 (PRF-108 a PRF-120).** Día y Semana (escritorio) muestran una rejilla horaria de 88 px/hora, desde la apertura más temprana al cierre más tardío de la semana. Cada columna tiene tantos carriles como la capacidad; una cita ocupa un carril, con carriles extra y el texto «Sobre capacidad» si se supera por un «Guardar igualmente». Fuera de horario, Cerrado y Cierre se ven sombreados con texto. Un hueco libre de al menos 30 minutos se puede tocar para crear una cita con la hora ya puesta; un bloque de cita lleva a su tarjeta de detalle. Hoy muestra la línea de «ahora» y la rejilla se desplaza sola al abrirse. Semana en móvil muestra la misma rejilla del día elegido bajo la tira de 7 días. Mes no cambia. El selector de servicio queda pospuesto.
 
 ## Plan de verificación
 
@@ -376,6 +397,19 @@ El remitente de correo real (PRF-070, PRF-071) sigue pendiente del buzón y el s
 | PRF-105 | Un día sin horario semanal, o con un cierre total, se marca «Cerrado» con texto en Semana y Mes; un cierre de capacidad reducida se señala sin marcar el día cerrado. A 360 px, las celdas de día miden al menos 44 px de alto (el ancho de 39-43 px está aceptado). |
 | PRF-106 | El día de hoy se distingue con un borde en Semana y Mes, no solo con un color de fondo. |
 | PRF-107 | La rejilla de Semana (escritorio) y la de Mes llevan `role="grid"`/`role="columnheader"` y se recorren con el teclado (Tab/Intro sobre los enlaces de cada día). |
+| PRF-108 | Con el horario por defecto (martes-sábado 09:00-19:00), la rejilla de Día va de 09:00 a 19:00, con una línea cada 30 minutos. |
+| PRF-109 | Con capacidad 2, cada columna tiene 2 carriles aunque solo haya una cita. Con 3 citas simultáneas (tras «Guardar igualmente»), aparece un tercer carril con el texto «Sobre capacidad». |
+| PRF-110 | Dos citas que se solapan van a carriles distintos; ninguno menciona una peluquera. Una cita cancelada no ocupa ningún carril. |
+| PRF-111 | Un bloque de cita muestra hora, servicio y clienta; con un nombre largo, se recorta con `ellipsis` y el texto completo está en `aria-label`/`title`. |
+| PRF-112 | Un día con dos tramos (p. ej. 09:00-13:00 y 15:00-19:00) muestra «Fuera de horario» entre ambos. Un lunes sin tramos muestra «Cerrado» en toda la rejilla. Un cierre total puntual muestra «Cierre». |
+| PRF-113 | Un cierre que reduce la capacidad de 2 a 1 sombrea con «Cierre» solo el segundo carril en ese tramo; el primero sigue libre u ocupado según corresponda. |
+| PRF-114 | Tocar un hueco libre de 30 minutos o más abre «Nueva cita» con la fecha y la hora de ese hueco. |
+| PRF-115 | Tocar un bloque de cita lleva a su tarjeta, con Llamar, WhatsApp, Editar y Cancelar. |
+| PRF-116 | En el día de hoy, la rejilla muestra una línea en la hora actual. |
+| PRF-117 | Al abrir la agenda en el día de hoy, la rejilla ya está desplazada a la hora actual sin tocar nada. |
+| PRF-118 | A 1024 px, Semana muestra 7 columnas de la misma rejilla horaria. A 375 px, Semana muestra la tira de 7 días con la rejilla del día elegido debajo. |
+| PRF-119 | Con el teclado (Tab), se puede llegar a cada hueco libre y a cada bloque de cita de la rejilla, en orden cronológico. |
+| PRF-120 | No existe ningún selector de servicio en la rejilla horaria. |
 
 ## Riesgos y marcha atrás
 
