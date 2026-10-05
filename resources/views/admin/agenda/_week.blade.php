@@ -12,7 +12,10 @@
         @foreach ($days as $d)
             @php
                 $isSelected = $d['date']->isSameDay($day);
-                $count = $d['appointments']->count();
+                // Confirmed only (same rule as vista Mes): a cancelled
+                // appointment still shows in the day's agenda below, but
+                // must not read as an upcoming booking on the pill.
+                $count = $d['appointments']->filter->isConfirmed()->count();
             @endphp
             <a href="{{ route('admin.agenda', ['vista' => 'semana', 'fecha' => $d['date']->toDateString()]) }}"
                class="min-h-11 flex flex-col items-center justify-center border text-xs {{ $isSelected ? 'bg-gold text-black border-gold font-semibold' : ($d['isToday'] ? 'border-gold text-white' : 'border-[#2A2A2A] text-white') }} {{ $d['isClosed'] && ! $isSelected ? 'opacity-50' : '' }}"

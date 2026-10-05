@@ -116,3 +116,17 @@ test('the week view day strip meets the 44px touch target', function () {
 
     expect(substr_count($html, 'min-h-11'))->toBeGreaterThanOrEqual(7);
 });
+
+/**
+ * The day strip's count only counts confirmed appointments, the same rule
+ * as the month view's occupancy — a cancelled appointment still shows in
+ * that day's agenda below, but it must not read as "1 cita" on the pill.
+ */
+test('the week view day strip only counts confirmed appointments, not cancelled ones', function () {
+    Appointment::factory()->cancelled()->create(['starts_at' => '2030-01-09 10:00', 'ends_at' => '2030-01-09 10:30']);
+
+    $html = $this->get(route('admin.agenda', ['vista' => 'semana']))->assertOk()->getContent();
+
+    expect($html)->toContain('miércoles 09/01, sin citas');
+    expect($html)->not->toContain('miércoles 09/01, 1 cita');
+});
