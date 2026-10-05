@@ -113,3 +113,12 @@ test('deleting a closure frees its times again', function () {
     expect(ScheduleBlock::count())->toBe(0);
     expect($calculator->availableStartTimes(30, $day, now()->toImmutable()))->not->toBe([]);
 });
+
+/**
+ * Review finding N3 (.ai/reviews/mobile-admin-ux.md, coordinator): the
+ * datetime-local pickers (and every other field, sharing the same input
+ * class) meet the 44px touch target.
+ */
+test('the closure form fields meet the 44px touch target', function () {
+    $this->get(route('admin.blocks.index'))->assertSee('px-3 py-3 focus:border-gold', false);
+});

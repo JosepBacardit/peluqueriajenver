@@ -7,7 +7,9 @@
 <p class="text-sm text-gray-400 mb-6">Para las citas que llegan por teléfono o WhatsApp. Se comprueban el horario y la capacidad, pero no la antelación mínima ni el intervalo de la web.</p>
 
 @php
-    $inputClass = 'w-full bg-black border border-[#2A2A2A] px-3 py-2 focus:border-gold focus:outline-none';
+    // py-3 (not py-2): every field, including the date/time pickers, meets
+    // the 44px touch target (review finding N3).
+    $inputClass = 'w-full bg-black border border-[#2A2A2A] px-3 py-3 focus:border-gold focus:outline-none';
     // aria-invalid and aria-describedby linking a field to its error.
     $fieldAria = fn (string $field): string => $errors->has($field) ? 'aria-invalid="true" aria-describedby="'.$field.'-error"' : '';
 @endphp

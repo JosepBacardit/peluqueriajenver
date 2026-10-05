@@ -98,3 +98,13 @@ test('every opening-hours range row can wrap instead of overflowing on a narrow 
     expect(substr_count($html, 'flex flex-wrap items-center gap-2 text-sm'))->toBe(14); // 7 days x 2 ranges
     expect(substr_count($html, 'type="time"'))->toBe(14 * 2);
 });
+
+/**
+ * Review finding N3 (.ai/reviews/mobile-admin-ux.md, coordinator): the
+ * time inputs measured 31px; py-3 brings every one of them to 44px.
+ */
+test('every time input meets the 44px touch target', function () {
+    $html = $this->get(route('admin.opening-hours.edit'))->assertOk()->getContent();
+
+    expect(substr_count($html, 'bg-black border border-[#2A2A2A] px-2 py-3 min-w-0'))->toBe(14 * 2);
+});

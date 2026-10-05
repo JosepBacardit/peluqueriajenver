@@ -27,14 +27,19 @@
     </svg>
 </a>
 
-<nav aria-label="Cambiar de día" class="flex flex-wrap items-center gap-3 mb-8 text-sm">
-    <a href="{{ route('admin.agenda', ['fecha' => $day->subDay()->toDateString()]) }}" class="btn-outline">← Día anterior</a>
-    <a href="{{ route('admin.agenda') }}" class="btn-outline">Hoy</a>
-    <a href="{{ route('admin.agenda', ['fecha' => \Carbon\CarbonImmutable::today()->addDay()->toDateString()]) }}" class="btn-outline">Mañana</a>
-    <a href="{{ route('admin.agenda', ['fecha' => $day->addDay()->toDateString()]) }}" class="btn-outline">Día siguiente →</a>
+{{-- One compact row (prev/next as icon-only buttons, plus Hoy/Mañana) so
+     it does not wrap to two lines at 375px; the date picker goes on its
+     own row below (review finding N2). --}}
+<nav aria-label="Cambiar de día" class="mb-8 text-sm space-y-3">
+    <div class="flex items-center gap-2">
+        <a href="{{ route('admin.agenda', ['fecha' => $day->subDay()->toDateString()]) }}" class="btn-outline w-11 px-0" aria-label="Día anterior">←</a>
+        <a href="{{ route('admin.agenda') }}" class="btn-outline">Hoy</a>
+        <a href="{{ route('admin.agenda', ['fecha' => \Carbon\CarbonImmutable::today()->addDay()->toDateString()]) }}" class="btn-outline">Mañana</a>
+        <a href="{{ route('admin.agenda', ['fecha' => $day->addDay()->toDateString()]) }}" class="btn-outline w-11 px-0" aria-label="Día siguiente">→</a>
+    </div>
     <form method="GET" action="{{ route('admin.agenda') }}" class="flex items-center gap-2">
         <label for="fecha" class="sr-only">Ir a la fecha</label>
-        <input id="fecha" type="date" name="fecha" value="{{ $day->toDateString() }}" class="bg-black border border-[#2A2A2A] px-2 py-1.5">
+        <input id="fecha" type="date" name="fecha" value="{{ $day->toDateString() }}" class="bg-black border border-[#2A2A2A] px-2 py-3">
         <button type="submit" class="btn-outline">Ir</button>
     </form>
 </nav>
@@ -59,10 +64,7 @@
                             · {{ $appointment->service_name }}
                         </p>
                         <p>
-                            {{ $appointment->customer_name }} ·
-                            <a href="tel:{{ preg_replace('/[^0-9+]/', '', $appointment->customer_phone) }}" class="hover:text-gold">{{ $appointment->customer_phone }}</a>
-                            ·
-                            <a href="{{ $appointment->customerWhatsappUrl() }}" target="_blank" rel="noopener" class="hover:text-gold" aria-label="Abrir WhatsApp con {{ $appointment->customer_name }}">WhatsApp</a>
+                            {{ $appointment->customer_name }} · {{ $appointment->customer_phone }}
                             @if ($appointment->customer_email) · {{ $appointment->customer_email }}@endif
                         </p>
                         @if ($appointment->isConfirmed() && $appointment->customer_email && $appointment->customer_notified_at === null)
@@ -73,17 +75,24 @@
                         @endif
                         <p class="text-xs text-gray-400">Origen: {{ $appointment->source->label() }} · Estado: <span class="{{ $appointment->isConfirmed() ? 'text-green-300' : 'text-red-300' }}">{{ $appointment->status->label() }}</span></p>
                     </div>
-                    @if ($appointment->isConfirmed())
-                        <div class="flex flex-wrap items-start gap-3">
+                    {{-- Calling and WhatsApp are what the salon uses most, so they
+                         are large buttons here instead of small text links in the
+                         line above (review finding N1); kept even on a cancelled
+                         appointment, since the salon may still need to reach the
+                         customer. Editar/Cancelar stay appointment actions only. --}}
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full sm:w-auto">
+                        <a href="tel:{{ preg_replace('/[^0-9+]/', '', $appointment->customer_phone) }}" class="btn-outline text-sm" aria-label="Llamar a {{ $appointment->customer_name }}">Llamar</a>
+                        <a href="{{ $appointment->customerWhatsappUrl() }}" target="_blank" rel="noopener noreferrer" class="btn-outline text-sm" aria-label="Abrir WhatsApp con {{ $appointment->customer_name }}">WhatsApp</a>
+                        @if ($appointment->isConfirmed())
                             @if ($appointment->starts_at->isFuture())
                                 <a href="{{ route('admin.appointments.edit', $appointment) }}" class="btn-outline text-sm" aria-label="Editar o mover la cita de {{ $appointment->customer_name }} a las {{ $appointment->starts_at->format('H:i') }}">Editar</a>
                             @endif
                             <form method="POST" action="{{ route('admin.appointments.cancel', $appointment) }}" onsubmit="return confirm('¿Cancelar la cita de {{ e($appointment->customer_name) }}? Su hora quedará libre.');">
                                 @csrf
-                                <button type="submit" class="btn-danger-outline text-sm">Cancelar cita</button>
+                                <button type="submit" class="btn-danger-outline text-sm w-full">Cancelar cita</button>
                             </form>
-                        </div>
-                    @endif
+                        @endif
+                    </div>
                 </div>
             </li>
         @endforeach

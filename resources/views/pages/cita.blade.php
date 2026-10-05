@@ -54,8 +54,11 @@
                     <p class="text-sm text-gray-300">{{ __('reservas.appointment.cancel_help', ['hours' => $cancellationLimitHours]) }}</p>
                     <form method="POST" action="{{ route('cita.cancel', $appointment->token) }}" class="space-y-3">
                         @csrf
-                        <label class="flex items-center gap-2 text-sm text-gray-200">
-                            <input type="checkbox" name="confirm" value="1" required> {{ __('reservas.appointment.cancel_confirm') }}
+                        {{-- Whole row tappable (min-h-11) with a bigger checkbox,
+                             not just the 20px checkbox itself (review finding N4). --}}
+                        <label class="flex items-center gap-3 min-h-11 py-2 text-sm text-gray-200 cursor-pointer">
+                            <input type="checkbox" name="confirm" value="1" required class="w-5 h-5 shrink-0 accent-gold">
+                            {{ __('reservas.appointment.cancel_confirm') }}
                         </label>
                         @error('confirm') <p class="text-red-400 text-sm">{{ $message }}</p> @enderror
                         <button type="submit" class="btn-outline w-full">{{ __('reservas.appointment.cancel_button') }}</button>

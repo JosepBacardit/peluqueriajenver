@@ -128,3 +128,15 @@ test('fields of a new panel appointment with an error are marked invalid and poi
     expect($html)->toContain('<p id="time-error"');
     expect($html)->not->toMatch('/id="date"[^>]*aria-invalid/');
 });
+
+/**
+ * Review finding N3 (.ai/reviews/mobile-admin-ux.md, coordinator): the
+ * date/time pickers (and every other field, sharing the same input class)
+ * meet the 44px touch target.
+ */
+test('the new-appointment and edit-appointment fields meet the 44px touch target', function () {
+    $appointment = Appointment::factory()->create(['starts_at' => now()->addDay(), 'ends_at' => now()->addDay()->addHour()]);
+
+    $this->get(route('admin.appointments.create'))->assertSee('px-3 py-3 focus:border-gold', false);
+    $this->get(route('admin.appointments.edit', $appointment))->assertSee('px-3 py-3 focus:border-gold', false);
+});

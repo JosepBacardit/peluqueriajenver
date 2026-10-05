@@ -7,7 +7,9 @@
 <p class="text-sm text-gray-400 mb-6">Puedes cambiar el día, la hora, el servicio y los datos de la clienta. Se comprueban el horario y la capacidad; si la nueva hora está llena o fuera de horario, te avisaremos antes de guardar. Si cambias el día, la hora o el servicio y la clienta tiene email, le llegará un correo con los nuevos datos. Si cambias su email, le llegará a la dirección nueva un enlace nuevo a su cita y el anterior dejará de funcionar.</p>
 
 @php
-    $inputClass = 'w-full bg-black border border-[#2A2A2A] px-3 py-2 focus:border-gold focus:outline-none';
+    // py-3 (not py-2): every field, including the date/time pickers, meets
+    // the 44px touch target (review finding N3).
+    $inputClass = 'w-full bg-black border border-[#2A2A2A] px-3 py-3 focus:border-gold focus:outline-none';
     $slotWarning = session('slot_warning');
     $slotReason = App\Booking\UnavailabilityReason::tryFrom($slotWarning['reason'] ?? '');
     // aria-invalid and aria-describedby for a field: its own error message

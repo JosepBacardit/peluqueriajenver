@@ -6,7 +6,9 @@
 <h1 class="font-serif text-3xl text-white mb-2">Cierres y bloqueos</h1>
 <p class="text-sm text-gray-400 mb-6">Un cierre total no deja reservar en ese periodo. Una reducción resta citas a la vez a la capacidad (por ejemplo, 1 cuando una peluquera está de vacaciones). Las citas ya confirmadas no se cancelan solas.</p>
 
-@php($inputClass = 'w-full bg-black border border-[#2A2A2A] px-3 py-2 focus:border-gold focus:outline-none')
+{{-- py-3 (not py-2): every field, including the datetime-local pickers,
+     meets the 44px touch target (review finding N3). --}}
+@php($inputClass = 'w-full bg-black border border-[#2A2A2A] px-3 py-3 focus:border-gold focus:outline-none')
 
 <form method="POST" action="{{ route('admin.blocks.store') }}" class="grid sm:grid-cols-2 gap-4 max-w-3xl border border-[#2A2A2A] p-4 mb-10">
     @csrf

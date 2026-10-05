@@ -26,9 +26,9 @@
                          every field fully visible and usable (PRF-096). --}}
                     <div class="flex flex-wrap items-center gap-2 text-sm">
                         <span class="text-gray-400 w-14 shrink-0">{{ $index === 0 ? 'Tramo 1' : 'Tramo 2' }}</span>
-                        <input type="time" step="300" name="days[{{ $weekday }}][{{ $index }}][opens]" value="{{ $opens }}" aria-label="{{ $day['name'] }}, tramo {{ $index + 1 }}, inicio" class="bg-black border border-[#2A2A2A] px-2 py-1 min-w-0">
+                        <input type="time" step="300" name="days[{{ $weekday }}][{{ $index }}][opens]" value="{{ $opens }}" aria-label="{{ $day['name'] }}, tramo {{ $index + 1 }}, inicio" class="bg-black border border-[#2A2A2A] px-2 py-3 min-w-0">
                         <span class="shrink-0">–</span>
-                        <input type="time" step="300" name="days[{{ $weekday }}][{{ $index }}][closes]" value="{{ $closes }}" aria-label="{{ $day['name'] }}, tramo {{ $index + 1 }}, fin" class="bg-black border border-[#2A2A2A] px-2 py-1 min-w-0">
+                        <input type="time" step="300" name="days[{{ $weekday }}][{{ $index }}][closes]" value="{{ $closes }}" aria-label="{{ $day['name'] }}, tramo {{ $index + 1 }}, fin" class="bg-black border border-[#2A2A2A] px-2 py-3 min-w-0">
                     </div>
                 @endforeach
             </div>

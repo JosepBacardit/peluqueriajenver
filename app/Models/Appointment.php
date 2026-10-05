@@ -87,16 +87,30 @@ class Appointment extends Model
 
     /**
      * wa.me link to message this customer from the agenda (PRF-095), with
-     * the phone normalized to international format: a number with no
-     * country code of its own (9 digits, same as PhoneNumber's minimum) is
-     * assumed Spanish and gets +34; anything else (already starts with "+"
-     * or already has more than 9 digits) is kept as typed, digits only.
+     * the phone normalized to international format: a leading "+" or the
+     * "00" international dialing prefix (same meaning, and how part of the
+     * clientele still writes it — review finding M1) is stripped, since
+     * wa.me wants digits only, no dialing prefix. A number left with no
+     * prefix at all (9 digits or fewer, same as PhoneNumber's minimum) is
+     * assumed Spanish and gets "34" prepended; anything else is kept as
+     * typed, digits only.
      */
     public function customerWhatsappUrl(): string
     {
-        $digits = (string) preg_replace('/\D/', '', $this->customer_phone);
+        $phone = trim($this->customer_phone);
+        $hadPrefix = true;
 
-        if ($digits !== '' && ! str_starts_with(trim($this->customer_phone), '+') && strlen($digits) <= 9) {
+        if (str_starts_with($phone, '00')) {
+            $phone = substr($phone, 2);
+        } elseif (str_starts_with($phone, '+')) {
+            $phone = substr($phone, 1);
+        } else {
+            $hadPrefix = false;
+        }
+
+        $digits = (string) preg_replace('/\D/', '', $phone);
+
+        if (! $hadPrefix && $digits !== '' && strlen($digits) <= 9) {
             $digits = '34'.$digits;
         }
 

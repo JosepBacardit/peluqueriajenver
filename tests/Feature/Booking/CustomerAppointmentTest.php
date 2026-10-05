@@ -61,6 +61,20 @@ test('the cancel button spans the full width on a cancellable appointment', func
         ->assertSee('<button type="submit" class="btn-outline w-full">', false);
 });
 
+/**
+ * Review finding N4 (.ai/reviews/mobile-admin-ux.md, coordinator): the
+ * confirmation checkbox measured 20px; the whole row is now tappable
+ * (min-h-11) with a bigger checkbox.
+ */
+test('the cancel-confirmation row meets the 44px touch target, with a bigger checkbox', function () {
+    $appointment = Appointment::factory()->create(['starts_at' => '2030-01-10 11:00', 'ends_at' => '2030-01-10 12:00']);
+
+    $html = $this->get(route('cita.show', $appointment->token))->assertOk()->getContent();
+
+    expect($html)->toContain('class="flex items-center gap-3 min-h-11 py-2 text-sm text-gray-200 cursor-pointer"');
+    expect($html)->toContain('<input type="checkbox" name="confirm" value="1" required class="w-5 h-5 shrink-0 accent-gold">');
+});
+
 test('cancelling requires ticking the confirmation', function () {
     $appointment = Appointment::factory()->create(['starts_at' => '2030-01-10 11:00', 'ends_at' => '2030-01-10 12:00']);
 
