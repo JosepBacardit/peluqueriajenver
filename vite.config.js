@@ -27,7 +27,16 @@ export default defineConfig({
         // origin explicitly.
         cors: { origin: ['http://localhost:8082'] },
         watch: {
-            ignored: ['**/storage/framework/views/**'],
+            // N3 (review `agenda-service-filter`, coordinator): broadened
+            // from just "storage/framework/views" to every directory the
+            // dev server never needs to react to — vendor/node_modules are
+            // on their own named volumes already (see docker-compose.yml),
+            // but the watcher still polled them (and storage/, .git/,
+            // public/build/) every 300ms otherwise. Complements
+            // app.css's "source(none)" (the first CSS compile's own
+            // slowdown, a separate one-off scan) by cutting the ongoing
+            // per-poll cost too.
+            ignored: ['**/vendor/**', '**/node_modules/**', '**/storage/**', '**/.git/**', '**/public/build/**'],
             // Native filesystem events don't reach the container from the
             // Windows bind mount, so edits went unnoticed until polling was
             // added here.

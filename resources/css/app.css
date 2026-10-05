@@ -1,4 +1,13 @@
-@import 'tailwindcss';
+/* N3 (review `agenda-service-filter`, coordinator): "source(none)" turns
+   off Tailwind 4's automatic source detection, which otherwise walks the
+   whole project root (app/, tests/, .ai/, .claude/, database/, docker/,
+   routes/, storage/, even .git/) looking for class names, not just
+   resources/ — on the Windows bind mount (slow per-file I/O, see
+   AGENTS.md) that walk is what made the dev server's first CSS compile
+   keep getting slower as the project grew (18s -> 30s -> 91s -> 107s).
+   The two explicit @source globs below already cover every place a
+   Tailwind class can appear (Blade views, JS), so nothing is lost. */
+@import 'tailwindcss' source(none);
 
 @source '../**/*.blade.php';
 @source '../js/**/*.js';

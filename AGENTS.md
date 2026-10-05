@@ -456,6 +456,35 @@ first time any of this gets confirmed:
   dev server kept serving stale CSS/JS after edits until the browser was
   forced to rebuild some other way. Fixed by setting `usePolling: true`
   (with `interval: 300`) directly in `vite.config.js`'s `server.watch`.
+- Tailwind 4's dev-server first CSS compile kept getting slower as this
+  project grew (measured 18s, then 30s, then 91s, then 107s just before
+  the fix below) because `resources/css/app.css`'s plain
+  `@import 'tailwindcss';` leaves Tailwind's automatic source detection
+  on: by default it walks the *whole* project root looking for class
+  names, not just `resources/` — every file under `.ai/`, `.claude/`,
+  `app/`, `tests/`, `database/`, `docker/`, `storage/`, even `.git/`, all
+  on the slow Windows bind mount (`vendor/`/`node_modules/` are spared
+  because they are named Docker volumes, see `docker-compose.yml`, but
+  nothing else is). It was also quietly generating CSS for classes no
+  Blade view or JS file ever uses — almost certainly stray text in this
+  repo's many Markdown docs that happens to look like a Tailwind class
+  (e.g. `line-through`, `dark:bg-gray-900`, `max-w-[...]` as a literal
+  placeholder) — confirmed by diffing the built CSS's selectors against
+  `grep -rF` over `resources/` before and after the fix: every selector
+  the fix drops is either one of those never-used names or a class this
+  same round of fixes stopped using on purpose (`border-2`,
+  `bg-gold/15`). Fixed by `@import 'tailwindcss' source(none);` plus the
+  project's own explicit `@source` globs (already there, covering every
+  Blade/JS file), and by widening `vite.config.js`'s `server.watch.
+  ignored` from just `storage/framework/views/**` to also skip
+  `vendor/`, `node_modules/`, the rest of `storage/`, `.git/` and
+  `public/build/` (so the 300ms polling watcher stops stat-ing them on
+  every cycle too). Measured with
+  `curl -s -o /dev/null -w "%{time_total}"` against
+  `http://127.0.0.1:5175/resources/css/app.css` right after a fresh
+  `docker compose restart node`: **107.7s before, 0.77s after** — and
+  `npm run build` itself dropped from roughly a minute and a half to
+  under a second.
 
 ## Working agreements
 
