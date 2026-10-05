@@ -3,8 +3,18 @@
 /*
  * Fonts used to be loaded from fonts.googleapis.com/fonts.gstatic.com,
  * sending every visitor's IP to Google on every page view. They are now
- * self-hosted from public/fonts/ (see resources/css/app.css), so no request
- * should ever reach Google again.
+ * self-hosted from resources/fonts/, built by Vite (see
+ * resources/css/app.css), so no request should ever reach Google again.
+ *
+ * The preloaded filename is matched loosely (optional "-<hash>" before
+ * .woff2) because Vite fingerprints it only in `npm run build`; under
+ * `npm run dev` (as this suite runs against in this project's Docker setup,
+ * since the node service keeps the Vite dev server up) the asset keeps its
+ * plain source filename instead. Either way it must never be the
+ * unhashed, un-Vite-processed /fonts/... path from a previous version of
+ * this change, which 404ed under the dev server (see
+ * .ai/reviews/fonts-applied.md): that server serves app.css from its own
+ * origin, so a path starting with "/" never reached this app.
  */
 test('the served HTML never references Google Fonts', function (string $routeName) {
     $html = $this->get(route($routeName))->assertOk()->getContent();
@@ -12,8 +22,12 @@ test('the served HTML never references Google Fonts', function (string $routeNam
     expect($html)
         ->not->toContain('fonts.googleapis.com')
         ->not->toContain('fonts.gstatic.com')
-        ->toContain('/fonts/playfair-display-latin-400-normal.woff2')
-        ->toContain('/fonts/inter-latin-400-normal.woff2');
+        ->not->toContain('"/fonts/');
+
+    foreach (['playfair-display-latin-400-normal', 'inter-latin-400-normal'] as $font) {
+        expect(preg_match('/'.preg_quote($font, '/').'(-\w+)?\.woff2/', $html))
+            ->toBe(1, "Expected to find a preload for {$font}.woff2 (optionally hashed) in the HTML.");
+    }
 })->with([
     'home',
     'contacto',
@@ -43,3 +57,27 @@ test('the critical CSS sets body and headings to the font variables, not a hardc
         ->toContain('font-family: var(--font-sans);')
         ->toContain('font-family: var(--font-serif);');
 })->with(['home', 'contacto']);
+
+/*
+ * Review fonts-applied.md finding 1: --font-sans/--font-serif are declared
+ * twice (the critical <style> in layouts/app.blade.php and @theme in
+ * resources/css/app.css). The critical one is unlayered, so by the Cascade
+ * Layers spec it always wins over @theme (which Tailwind compiles into
+ * @layer theme): if the two ever diverge, the @theme copy silently stops
+ * describing what's actually rendered. Reads both source files directly
+ * (no HTTP, no Vite dev/build dependency) so this holds regardless of
+ * which Vite mode is running.
+ */
+test('the two --font-sans/--font-serif declarations stay identical', function () {
+    $critical = file_get_contents(resource_path('views/layouts/app.blade.php'));
+    $theme = file_get_contents(resource_path('css/app.css'));
+
+    foreach (['--font-sans', '--font-serif'] as $variable) {
+        preg_match('/'.preg_quote($variable, '/').":\s*([^;]+);/", $critical, $criticalMatch);
+        preg_match('/'.preg_quote($variable, '/').":\s*([^;]+);/", $theme, $themeMatch);
+
+        expect($criticalMatch[1] ?? null)->not->toBeNull();
+        expect($themeMatch[1] ?? null)->not->toBeNull();
+        expect(trim($themeMatch[1]))->toBe(trim($criticalMatch[1]));
+    }
+});

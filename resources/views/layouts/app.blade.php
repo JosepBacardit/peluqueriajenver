@@ -72,16 +72,27 @@
     <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
 
     {{--
-        Fonts are self-hosted (public/fonts/, @font-face rules in
+        Fonts are self-hosted (resources/fonts/, @font-face rules in
         resources/css/app.css) so no request and no visitor IP ever reaches
         Google's font servers. Only the two weights needed before first
         paint of the hero text (Playfair Display 400, Inter 400) are
         preloaded here; the rest load with the rest of app.css below.
         crossorigin is required even for a same-origin font preload, or
         the browser fetches it twice.
+
+        Vite::asset() (not asset()) so this resolves to the exact URL the
+        browser will later request for the @font-face src: Vite's own
+        hashed /build/assets/... URL in both `npm run dev` (proxied through
+        the dev server) and `npm run build`, matching the url() in app.css,
+        which references the same resources/fonts/ file with a relative
+        path so Vite fingerprints it too. A plain asset('fonts/...') (a
+        public/ path) broke under `npm run dev`: app.css is then served
+        from the Vite dev server's own origin (localhost:5175 locally), so
+        a path starting with "/" resolved against that origin instead of
+        this site's, 404ing every font.
     --}}
-    <link rel="preload" as="font" type="font/woff2" href="{{ asset('fonts/playfair-display-latin-400-normal.woff2') }}" crossorigin>
-    <link rel="preload" as="font" type="font/woff2" href="{{ asset('fonts/inter-latin-400-normal.woff2') }}" crossorigin>
+    <link rel="preload" as="font" type="font/woff2" href="{{ Vite::asset('resources/fonts/playfair-display-latin-400-normal.woff2') }}" crossorigin>
+    <link rel="preload" as="font" type="font/woff2" href="{{ Vite::asset('resources/fonts/inter-latin-400-normal.woff2') }}" crossorigin>
 
     {{--
         Bug found in browser (not by the independent reviewer, see
@@ -126,6 +137,14 @@
         size-adjust: 107.12%;
       }
 
+      {{--
+          Being unlayered, this :root always wins over @theme's --font-sans/
+          --font-serif in resources/css/app.css (review fonts-applied.md
+          finding 1), so this copy is the one that actually applies
+          everywhere, including Tailwind's font-sans/font-serif utilities.
+          Keep both lists identical, character for character, or the
+          @theme copy becomes a silent lie about what's really rendered.
+      --}}
       :root {
         --font-serif: 'Playfair Display', 'Playfair Display Fallback', Georgia, serif;
         --font-sans: 'Inter', 'Inter Fallback', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
