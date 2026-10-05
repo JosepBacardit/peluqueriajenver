@@ -33,7 +33,7 @@
         </p>
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <a href="tel:+34633912050" class="btn-gold text-sm md:text-base">
+            <a href="{{ route('reservas') }}" class="btn-gold text-sm md:text-base">
                 Reservar cita →
             </a>
             <a href="https://wa.me/34633912050?text=Hola!%20Me%20gustaría%20agendar%20cita%20para%20corte%20en%20Peluquería%20Jenver" target="_blank" rel="noopener noreferrer" class="btn-outline text-sm md:text-base">

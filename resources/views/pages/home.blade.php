@@ -37,7 +37,7 @@
 
         <!-- CTA Buttons -->
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <a href="tel:+34633912050" class="btn-gold text-sm md:text-base">
+            <a href="{{ route('reservas') }}" class="btn-gold text-sm md:text-base">
                 {{ __('home.hero.cta_primary') }}
             </a>
             <a href="#servicios" class="btn-outline text-sm md:text-base">
