@@ -18,7 +18,8 @@
      * link meets the minimum mobile touch target (PRF-089), even on pages
      * that only set text size (text-sm) and no padding of their own. Pages
      * that already override padding (home, contacto, service pages) keep
-     * their own px-*/py-* values, which are all >= this floor.
+     * their own values for horizontal and vertical padding, which are all
+     * greater than or equal to this floor.
      */
     .btn-gold {
         @apply inline-flex items-center justify-center min-h-11 bg-gold hover:bg-gold-light text-black font-semibold px-5 py-3 transition-colors duration-200;

@@ -63,3 +63,31 @@ test('the danger button style meets the 44px minimum touch target', function () 
     expect($match)->not->toBeEmpty('`.btn-danger-outline` is missing from app.css');
     expect($match[1])->toMatch('/\bmin-h-11\b/')->toMatch('/\binline-flex\b/')->toMatch('/\bred-/');
 });
+
+/**
+ * Below 768px (md:hidden) the panel shows a fixed bottom tab bar with the
+ * same five modules as the top nav (which becomes hidden md:flex), so it
+ * stays reachable with the thumb (PRF-090). The active module is marked in
+ * both navs (one of which is display:none at any given width).
+ */
+test('the panel shows a fixed bottom navigation for phones with the five modules and the active one marked', function () {
+    $this->actingAs(User::factory()->create());
+
+    $html = $this->get(route('admin.services.index'))->assertOk()->getContent();
+
+    // The desktop nav is now hidden below md, the bottom nav only below md.
+    expect($html)->toContain('hidden md:flex')->toContain('md:hidden');
+    expect(substr_count($html, 'fixed inset-x-0 bottom-0'))->toBe(1);
+    // Once in the nav's inline style, once in <main>'s arbitrary Tailwind
+    // class (pb-[calc(4.5rem+env(safe-area-inset-bottom))]), so content
+    // never ends up underneath the bar or the iPhone home indicator.
+    expect(substr_count($html, 'env(safe-area-inset-bottom)'))->toBe(2);
+
+    // Both navs render the 5 modules and mark "Servicios" as active.
+    expect(substr_count($html, '>Servicios<'))->toBeGreaterThanOrEqual(2);
+    expect(substr_count($html, 'aria-current="page"'))->toBe(2);
+
+    // Every module has its own icon, hidden from assistive tech (the
+    // visible label is the accessible name).
+    expect(substr_count($html, 'aria-hidden="true"'))->toBeGreaterThanOrEqual(5);
+});
