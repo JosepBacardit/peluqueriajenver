@@ -1,7 +1,8 @@
-{{-- The Día agenda content: cierres of the day, then its appointments.
-     Extracted from index.blade.php (T030) so vista Semana can reuse it
-     unchanged for the mobile day strip's selected day. Expects
-     $appointments and $blocks. --}}
+{{-- The Día agenda content: cierres of the day, the timeline grid
+     (PRF-108 and on), then the appointment cards. Extracted from
+     index.blade.php (T030) so vista Semana can reuse it unchanged for the
+     mobile day strip's selected day. Expects $appointments, $blocks,
+     $timeline, $gridStart and $gridEnd. --}}
 @foreach ($blocks as $block)
     <p class="mb-4 border border-amber-500/40 bg-amber-500/10 text-amber-200 px-4 py-2 text-sm">
         {{ $block->isFullClosure() ? 'Cierre total' : 'Capacidad reducida en '.$block->capacity_reduction }}:
@@ -9,12 +10,14 @@
     </p>
 @endforeach
 
+@include('admin.agenda._timeline')
+
 @if ($appointments->isEmpty())
     <p class="text-gray-300">No hay citas este día.</p>
 @else
     <ul class="space-y-3">
         @foreach ($appointments as $appointment)
-        <li class="border border-[#2A2A2A] p-4 {{ $appointment->isConfirmed() ? 'bg-[#111111]' : 'opacity-60' }}">
+        <li id="cita-{{ $appointment->id }}" class="border border-[#2A2A2A] p-4 scroll-mt-4 {{ $appointment->isConfirmed() ? 'bg-[#111111]' : 'opacity-60' }}">
             <div class="flex flex-wrap justify-between gap-4">
                 <div class="space-y-1">
                     <p class="text-lg">

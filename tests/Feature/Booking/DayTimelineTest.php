@@ -13,7 +13,7 @@ uses(RefreshDatabase::class);
  */
 test('weekBounds spans the earliest opening to the latest closing of the week, in minutes since midnight', function () {
     // Default schedule: Tuesday-Saturday 09:00-19:00.
-    $bounds = DayTimeline::weekBounds();
+    $bounds = DayTimeline::weekBounds(OpeningHour::all());
 
     expect($bounds)->toBe(['start' => 9 * 60, 'end' => 19 * 60]);
 });
@@ -22,7 +22,7 @@ test('weekBounds rounds out to the hour when opening times are not already on th
     OpeningHour::query()->delete();
     OpeningHour::create(['weekday' => 2, 'opens_at' => '08:30:00', 'closes_at' => '19:15:00']);
 
-    $bounds = DayTimeline::weekBounds();
+    $bounds = DayTimeline::weekBounds(OpeningHour::all());
 
     expect($bounds)->toBe(['start' => 8 * 60, 'end' => 20 * 60]);
 });
@@ -30,7 +30,7 @@ test('weekBounds rounds out to the hour when opening times are not already on th
 test('weekBounds falls back to a default range when there is no opening-hours data at all', function () {
     OpeningHour::query()->delete();
 
-    $bounds = DayTimeline::weekBounds();
+    $bounds = DayTimeline::weekBounds(OpeningHour::all());
 
     expect($bounds)->toBe(['start' => 9 * 60, 'end' => 19 * 60]);
 });

@@ -121,14 +121,18 @@ test('the agenda requires an authenticated user', function () {
 });
 
 test('the agenda flags confirmed appointments whose confirmation email could not be sent', function () {
-    Appointment::factory()->create(['starts_at' => '2030-01-08 10:00', 'ends_at' => '2030-01-08 11:00', 'customer_name' => 'Sin Correo', 'customer_notified_at' => null]);
+    $sinCorreo = Appointment::factory()->create(['starts_at' => '2030-01-08 10:00', 'ends_at' => '2030-01-08 11:00', 'customer_name' => 'Sin Correo', 'customer_notified_at' => null]);
     Appointment::factory()->create(['starts_at' => '2030-01-08 12:00', 'ends_at' => '2030-01-08 13:00', 'customer_name' => 'Con Correo', 'customer_notified_at' => now()]);
     Appointment::factory()->create(['starts_at' => '2030-01-08 14:00', 'ends_at' => '2030-01-08 15:00', 'customer_name' => 'Sin Email', 'customer_email' => null]);
 
     $html = $this->get(route('admin.agenda'))->getContent();
 
     expect(substr_count($html, 'Correo de confirmación no enviado'))->toBe(1);
-    expect(strpos($html, 'Correo de confirmación no enviado'))->toBeLessThan(strpos($html, 'Con Correo'));
+    // Scoped to the card list below the timeline grid (its customer names
+    // also appear once in the grid's own blocks, above the cards): within
+    // "Sin Correo"'s own card, the warning comes before the next card's.
+    $cardsSection = substr($html, strpos($html, 'id="cita-'.$sinCorreo->id.'"'));
+    expect(strpos($cardsSection, 'Correo de confirmación no enviado'))->toBeLessThan(strpos($cardsSection, 'Con Correo'));
 });
 
 test('only confirmed appointments that have not started yet offer to be edited', function () {

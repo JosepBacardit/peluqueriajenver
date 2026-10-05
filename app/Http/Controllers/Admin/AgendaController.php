@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Booking\DayTimeline;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
+use App\Models\BookingSetting;
 use App\Models\OpeningHour;
 use App\Models\ScheduleBlock;
 use Carbon\CarbonImmutable;
@@ -108,27 +110,46 @@ class AgendaController extends Controller
     }
 
     /**
-     * @return array{appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>}
+     * Besides the appointments/blocks the cards below the grid already
+     * needed, this loads every opening-hours row once (for the shared
+     * week-wide grid bounds, PRF-108, and this weekday's own ranges) and
+     * the capacity (for the fixed lane count, PRF-109) to build the
+     * timeline grid — 4 queries total, none repeated per block or per
+     * lane.
+     *
+     * @return array{appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>, gridStart: int, gridEnd: int, timeline: array}
      */
     private function dayData(CarbonImmutable $day): array
     {
+        $appointments = Appointment::query()
+            ->where('starts_at', '>=', $day)
+            ->where('starts_at', '<', $day->addDay())
+            ->orderBy('starts_at')
+            ->orderBy('id')
+            ->get();
+        $blocks = ScheduleBlock::query()->overlapping($day, $day->addDay())->orderBy('starts_at')->get();
+        $allRanges = OpeningHour::query()->get();
+        $bounds = DayTimeline::weekBounds($allRanges);
+        $dayRanges = $allRanges->where('weekday', $day->isoWeekday())->sortBy('opens_at')->values();
+        $capacity = BookingSetting::current()->capacity;
+
         return [
-            'appointments' => Appointment::query()
-                ->where('starts_at', '>=', $day)
-                ->where('starts_at', '<', $day->addDay())
-                ->orderBy('starts_at')
-                ->orderBy('id')
-                ->get(),
-            'blocks' => ScheduleBlock::query()->overlapping($day, $day->addDay())->orderBy('starts_at')->get(),
+            'appointments' => $appointments,
+            'blocks' => $blocks,
+            'gridStart' => $bounds['start'],
+            'gridEnd' => $bounds['end'],
+            'timeline' => DayTimeline::build($day, $bounds['start'], $bounds['end'], $capacity, $dayRanges, $appointments, $blocks),
         ];
     }
 
     /**
      * One query for the week's appointments and one for its blocks
      * (PRF-100, PRF-101): both grouped in PHP per day, never queried once
-     * per day of the week.
+     * per day of the week. The timeline grid (T036) adds two more fixed
+     * queries (every opening-hours row, and the capacity) reused for all
+     * 7 days and for the shared grid bounds — still none repeated per day.
      *
-     * @return array{days: list<array{date: CarbonImmutable, appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>, isClosed: bool, hasPartialClosure: bool, isToday: bool}>}
+     * @return array{days: list<array{date: CarbonImmutable, appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>, isClosed: bool, hasPartialClosure: bool, isToday: bool, timeline: array}>, gridStart: int, gridEnd: int}
      */
     private function weekData(CarbonImmutable $weekStart): array
     {
@@ -142,13 +163,18 @@ class AgendaController extends Controller
             ->get();
 
         $blocks = ScheduleBlock::query()->overlapping($weekStart, $weekEnd)->orderBy('starts_at')->get();
-        $openWeekdays = self::openWeekdays();
+        $allRanges = OpeningHour::query()->get();
+        $openWeekdays = $allRanges->pluck('weekday')->unique()->all();
+        $bounds = DayTimeline::weekBounds($allRanges);
+        $capacity = BookingSetting::current()->capacity;
         $today = CarbonImmutable::today();
 
         $days = [];
         for ($date = $weekStart; $date->lt($weekEnd); $date = $date->addDay()) {
             $nextDate = $date->addDay();
+            $dayAppointments = $appointments->filter(fn (Appointment $a) => $a->starts_at->gte($date) && $a->starts_at->lt($nextDate))->values();
             $dayBlocks = $blocks->filter(fn (ScheduleBlock $b) => $b->starts_at->lt($nextDate) && $b->ends_at->gt($date))->values();
+            $dayRanges = $allRanges->where('weekday', $date->isoWeekday())->sortBy('opens_at')->values();
             // A full closure (review finding H1, PRF-105) closes the day
             // the same as having no opening-hours range; a partial one
             // (capacity reduction) does not, but is still worth flagging,
@@ -158,15 +184,16 @@ class AgendaController extends Controller
 
             $days[] = [
                 'date' => $date,
-                'appointments' => $appointments->filter(fn (Appointment $a) => $a->starts_at->gte($date) && $a->starts_at->lt($nextDate))->values(),
+                'appointments' => $dayAppointments,
                 'blocks' => $dayBlocks,
                 'isClosed' => $isClosed,
                 'hasPartialClosure' => ! $isClosed && $dayBlocks->contains(fn (ScheduleBlock $b) => $b->capacity_reduction !== null),
                 'isToday' => $date->isSameDay($today),
+                'timeline' => DayTimeline::build($date, $bounds['start'], $bounds['end'], $capacity, $dayRanges, $dayAppointments, $dayBlocks),
             ];
         }
 
-        return ['days' => $days];
+        return ['days' => $days, 'gridStart' => $bounds['start'], 'gridEnd' => $bounds['end']];
     }
 
     /**
