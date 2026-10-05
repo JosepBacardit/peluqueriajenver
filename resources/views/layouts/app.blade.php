@@ -75,10 +75,18 @@
         Fonts are self-hosted (resources/fonts/, @font-face rules in
         resources/css/app.css) so no request and no visitor IP ever reaches
         Google's font servers. Only the two weights needed before first
-        paint of the hero text (Playfair Display 400, Inter 400) are
-        preloaded here; the rest load with the rest of app.css below.
-        crossorigin is required even for a same-origin font preload, or
-        the browser fetches it twice.
+        paint of the hero text are preloaded here; the rest load with the
+        rest of app.css below. crossorigin is required even for a
+        same-origin font preload, or the browser fetches it twice.
+
+        Playfair Display 700, not 400: the <h1> is the only Playfair
+        element above the fold on every page that has a hero section (home
+        and the 4 service pages), and it is always font-serif + font-bold
+        (see .section-title in app.css, and every other font-serif use in
+        resources/views, for the same reason: Playfair Display 400/regular
+        is not used anywhere on the site today). Inter 400 covers the
+        hero's body text (subtitle, nav, buttons), which has no bold/
+        semibold weight above the fold.
 
         Vite::asset() (not asset()) so this resolves to the exact URL the
         browser will later request for the @font-face src: Vite's own
@@ -91,7 +99,7 @@
         a path starting with "/" resolved against that origin instead of
         this site's, 404ing every font.
     --}}
-    <link rel="preload" as="font" type="font/woff2" href="{{ Vite::asset('resources/fonts/playfair-display-latin-400-normal.woff2') }}" crossorigin>
+    <link rel="preload" as="font" type="font/woff2" href="{{ Vite::asset('resources/fonts/playfair-display-latin-700-normal.woff2') }}" crossorigin>
     <link rel="preload" as="font" type="font/woff2" href="{{ Vite::asset('resources/fonts/inter-latin-400-normal.woff2') }}" crossorigin>
 
     {{--

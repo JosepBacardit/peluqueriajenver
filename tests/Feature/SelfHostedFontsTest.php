@@ -24,7 +24,7 @@ test('the served HTML never references Google Fonts', function (string $routeNam
         ->not->toContain('fonts.gstatic.com')
         ->not->toContain('"/fonts/');
 
-    foreach (['playfair-display-latin-400-normal', 'inter-latin-400-normal'] as $font) {
+    foreach (['playfair-display-latin-700-normal', 'inter-latin-400-normal'] as $font) {
         expect(preg_match('/'.preg_quote($font, '/').'(-\w+)?\.woff2/', $html))
             ->toBe(1, "Expected to find a preload for {$font}.woff2 (optionally hashed) in the HTML.");
     }
@@ -39,6 +39,26 @@ test('the served HTML never references Google Fonts', function (string $routeNam
     'belleza-estetica',
     'avisos-legales',
 ]);
+
+/*
+ * Only Playfair Display 700 and Inter 400 are used above the fold: the <h1>
+ * is the only Playfair element in every hero section (home and the 4
+ * service pages), always font-serif + font-bold (Playfair 400/regular is
+ * not used anywhere on the site), and the hero's body text/nav/buttons use
+ * Inter at its default (400) weight. Preloading any other weight would
+ * just delay these two.
+ */
+test('exactly Playfair Display 700 and Inter 400 are preloaded, not Playfair 400', function () {
+    $html = $this->get(route('home'))->assertOk()->getContent();
+
+    preg_match_all('/<link rel="preload" as="font"[^>]*href="([^"]+)"/', $html, $matches);
+    $hrefs = collect($matches[1]);
+
+    expect($hrefs)->toHaveCount(2);
+    expect($hrefs->contains(fn ($href) => str_contains($href, 'playfair-display-latin-700-normal')))->toBeTrue();
+    expect($hrefs->contains(fn ($href) => str_contains($href, 'inter-latin-400-normal')))->toBeTrue();
+    expect($hrefs->contains(fn ($href) => str_contains($href, 'playfair-display-latin-400-normal')))->toBeFalse();
+});
 
 /*
  * Found in the browser, not by the independent reviewer (see
