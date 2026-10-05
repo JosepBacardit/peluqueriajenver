@@ -14,20 +14,21 @@ Los 4 Mailables (`app/Mail/AppointmentConfirmedMail.php`, `AppointmentCancelledM
 
 ## Plan
 
-1. `php artisan vendor:publish --tag=laravel-mail` (o copiar a mano los archivos del tema) para obtener `resources/views/vendor/mail/html/themes/default.css`, `header.blade.php`, `footer.blade.php`, `message.blade.php`, etc.
-2. Crear un tema propio `jenver` (no tocar `default`, para que una futura actualización del framework no lo pise): `resources/views/vendor/mail/html/themes/jenver.css` con fondo negro/gris oscuro, acentos dorados y tipografía legible en los clientes de correo habituales (sin CSS moderno: Outlook de escritorio usa el motor de Word).
-3. `header.blade.php` del tema: logo `public/images/logo-jenver-optimized-v2.png` referenciado con `asset()` (URL absoluta), `alt="Peluquería Jenver"`, enlazado a `https://www.peluqueriajenver.com`.
-4. `footer.blade.php` del tema: dirección (C/ Lleida, 21 · Montcada i Reixac), teléfono (633 912 050) y «© {{ now()->year }} Peluquería Jenver» en vez del pie de Laravel.
-5. `config/mail.php`: añadir `'markdown' => ['theme' => 'jenver', 'paths' => [resource_path('views/vendor/mail')]]`.
-6. Las 4 vistas `resources/views/mail/*.blade.php` no cambian de contenido.
+Ejecutado con una simplificación respecto al plan original de fase 1 (principio de simplicidad quirúrgica): en vez de un tema con nombre propio (`jenver`) en paralelo al `default`, se publica y se edita directamente `resources/views/vendor/mail/`, que es ya exclusivo de este proyecto en cuanto se publica (una actualización de `laravel/framework` no lo toca) — así no hace falta ningún cambio en `config/mail.php`.
+
+1. `php artisan vendor:publish --tag=laravel-mail`, que crea `resources/views/vendor/mail/html/` y `text/` con los archivos del tema por defecto.
+2. `resources/views/vendor/mail/html/themes/default.css`: franja de cabecera en negro (`#000000`), títulos y enlaces en dorado oscuro (`#a07830`, mismo valor que `--color-gold-dark` de `resources/css/app.css`, por contraste de lectura sobre blanco), botón principal en dorado (`#c9a84c`, `--color-gold`) con texto oscuro (igual que `.btn-gold` del sitio), borde del panel en dorado.
+3. `resources/views/vendor/mail/html/message.blade.php` y `text/message.blade.php`: cabecera con el logo `public/images/logo-jenver-optimized-v2.png` vía `asset()` (URL absoluta), `alt="Peluquería Jenver"`, dentro del enlace a `config('app.url')`; pie con «Peluquería Jenver · C/ Lleida, 21 · 08110 Montcada i Reixac · 633 912 050» y «© {año} Peluquería Jenver. Todos los derechos reservados.» en vez del pie de Laravel. No hace falta tocar `header.blade.php`: su condición `trim($slot) === 'Laravel'` ya deja de activarse en cuanto el slot es la etiqueta `<img>` del logo.
+4. Las 4 vistas `resources/views/mail/*.blade.php` no cambian de contenido.
+5. No se toca `config/mail.php`: Laravel usa `resources/views/vendor/mail` automáticamente en cuanto existe, sin declarar ningún tema nuevo.
 
 ## Plan de pruebas
 
-Ampliar `tests/Feature/Booking/MailContentEscapingTest.php` (o un test nuevo `MailBrandingTest.php`) que renderice los 4 Mailables y compruebe: ausencia de `laravel.com` y de «Laravel» en el pie, presencia de «Peluquería Jenver» en el pie, y que la URL del logo es absoluta (empieza por `http`).
+`tests/Feature/Booking/MailBrandingTest.php` (nuevo), con los 4 Mailables: ausencia de `laravel.com` y de «Laravel»; presencia de «Peluquería Jenver», de la dirección y del teléfono; presencia del color dorado inlineado (`#c9a84c`); y que el `<img class="logo">` tiene `src` absoluta (`config('app.url')` como prefijo) y `alt="Peluquería Jenver"`.
 
 ## Verificación
 
-`docker compose exec -T -u www-data app php artisan test --compact` · `docker compose exec -T -u www-data app vendor/bin/pint --dirty --format agent`. Además, renderizar el HTML de los 4 correos a un archivo (sin comprometerlo) para revisión visual manual en Gmail y Outlook.
+`docker compose exec -T -u www-data app php artisan test --compact` (258 tests, verde) · `docker compose exec -T -u www-data app vendor/bin/pint --dirty --format agent` (sin cambios). Los 4 correos se han renderizado a `storage/app/mail-preview/*.html` (no comprometido, `storage/app/.gitignore` ya lo excluye) para la revisión visual manual en Gmail y Outlook que debe hacer el usuario.
 
 ## Riesgos
 
