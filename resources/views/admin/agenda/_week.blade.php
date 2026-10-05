@@ -68,8 +68,10 @@
     {{-- Header row: a spacer matching the hour axis width, then the 7 day
          headers — the one part of this view that is genuinely tabular, so
          it keeps the role="row"/"columnheader" pair (review finding M3's
-         pattern). --}}
-    <div class="flex border-b border-[#2A2A2A]" role="row">
+         pattern). "sticky" (review finding N4) so the day names stay
+         visible while scrolling a tall week instead of scrolling away
+         with the grid's own internal scrollbox, which no longer exists. --}}
+    <div class="flex border-b border-[#2A2A2A] sticky top-0 z-20 bg-black" role="row">
         <div class="w-11 shrink-0" aria-hidden="true"></div>
         <div class="flex-1 flex">
             @foreach ($days as $d)
@@ -90,16 +92,21 @@
         </div>
     </div>
 
-    {{-- Hour axis + 7 day columns, scrolled together to "ahora" on load
-         (the script lives once, in _timeline.blade.php's pattern — here
-         inlined since Semana has its own scroll container id). --}}
-    <div id="week-timeline-scroll" class="flex overflow-y-auto" style="max-height: 70vh">
+    {{-- Hour axis + 7 day columns (review finding N4: no longer its own
+         "overflow-y-auto; max-height: 70vh" scrollbox — the grid takes its
+         full natural height and the page itself scrolls to "ahora" on
+         load, same as vista Día). --}}
+    <div id="week-timeline-scroll" class="flex">
         @include('admin.agenda._timeline-hour-axis')
         @foreach ($days as $d)
             {{-- "day" and "volver" are overridden per column here: each
                  column's free slots must create on (and return to) that
-                 column's own date, not the mobile strip's selected $day. --}}
-            @include('admin.agenda._timeline-column', ['timeline' => $d['timeline'], 'compact' => true, 'nowLineTop' => $d['nowLineTop'], 'day' => $d['date'], 'volver' => 'semana:'.$d['date']->toDateString()])
+                 column's own date, not the mobile strip's selected $day.
+                 "ariaDateLabel" (review finding M2) prefixes every
+                 aria-label in this column with its own day, so a screen
+                 reader user knows which of the 7 columns a "Plaza N",
+                 cita or hueco libre belongs to. --}}
+            @include('admin.agenda._timeline-column', ['timeline' => $d['timeline'], 'compact' => true, 'nowLineTop' => $d['nowLineTop'], 'day' => $d['date'], 'volver' => 'semana:'.$d['date']->toDateString(), 'ariaDateLabel' => $weekdays[$d['date']->isoWeekday()].' '.$d['date']->day])
         @endforeach
     </div>
 </div>
@@ -110,7 +117,8 @@
         (function () {
             var container = document.getElementById('week-timeline-scroll');
             if (container) {
-                container.scrollTop = Math.max(0, {{ $weekNowLineTop }} - 100);
+                var target = container.getBoundingClientRect().top + window.scrollY + {{ $weekNowLineTop }} - 100;
+                window.scrollTo(0, Math.max(0, target));
             }
         })();
     </script>

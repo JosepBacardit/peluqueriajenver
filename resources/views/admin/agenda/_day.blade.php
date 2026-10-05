@@ -12,6 +12,11 @@
 
 @include('admin.agenda._timeline')
 
+{{-- Review finding L4: the "Saltar a las citas" skip link above the grid
+     targets this id, so a keyboard user can jump straight past the (now
+     globally-chronological, but still long) grid tab sequence to the
+     actual appointment cards. --}}
+<div id="citas-del-dia">
 @if ($appointments->isEmpty())
     <p class="text-gray-300">No hay citas este día.</p>
 @else
@@ -63,3 +68,4 @@
         @endforeach
     </ul>
 @endif
+</div>

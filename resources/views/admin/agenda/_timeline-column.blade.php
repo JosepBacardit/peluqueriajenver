@@ -1,15 +1,27 @@
 {{-- One day's timeline column (PRF-108 to PRF-113): bands for
-     cerrado/fuera-horario/cierre, and for each "open" piece, one flex
-     column per lane stacking its free/appointment/cierre-parcial
-     segments in normal document flow — every segment's height is exact
-     (DayTimeline::pxFromMinutes), so the lanes stay aligned to the shared
-     hour axis without any absolute positioning.
+     cerrado/fuera-horario/cierre, and for each "open" piece, a CSS grid
+     (one column per lane, one row per distinct boundary minute, sized in
+     "fr" units so proportions never drift from integer rounding) placing
+     every free/appointment/cierre-parcial segment by explicit grid-row/
+     grid-column. $piece['segments'] is already in global chronological
+     order (review finding L4) — DOM order here is the tab order, so a
+     keyboard/screen-reader user reaches citas in the order they actually
+     happen, not "Plaza 1" in full, then "Plaza 2" in full. Because of
+     that, segments can no longer be wrapped in one contiguous
+     role="group" per lane (a lane's segments are not contiguous in the
+     DOM any more); each segment's own aria-label says its plaza instead
+     (review finding N6).
      Expects $timeline (DayTimeline::build() result), $compact (bool:
-     hides the service name in narrow contexts, PRF-111) and, optionally,
-     $nowLineTop (int px, PRF-116 — omit or pass null when this column's
-     day is not today or "ahora" is outside the grid). --}}
+     hides the service name in narrow contexts, PRF-111), $day, $volver,
+     optionally $nowLineTop (int px, PRF-116 — omit or pass null when this
+     column's day is not today or "ahora" is outside the grid) and
+     optionally $ariaDateLabel (string, review finding M2: prefixes every
+     aria-label in Semana's columns with the day, e.g. "miércoles 7", so a
+     screen-reader user knows which day's plaza/cita/hueco they are on;
+     omitted in vista Día, where there is only one day on screen). --}}
 @php
     $bandLabels = ['cerrado' => 'Cerrado', 'fuera-horario' => 'Fuera de horario', 'cierre' => 'Cierre'];
+    $datePrefix = ($ariaDateLabel ?? null) !== null ? $ariaDateLabel.', ' : '';
 @endphp
 <div class="relative flex-1 min-w-0">
     @foreach ($timeline['pieces'] as $piece)
@@ -19,53 +31,73 @@
                 {{ $bandLabels[$piece['bandType']] }}
             </div>
         @else
-            <div class="flex" style="height: {{ $piece['height'] }}px">
-                @foreach ($piece['laneSegments'] as $lane => $segments)
-                    {{-- A screen reader reads each lane's segments together
-                         (PRF-119): "role=group" plus a label says which
-                         plaza they belong to, since lanes never mean a
-                         particular hairdresser — only capacity. --}}
-                    <div class="flex-1 min-w-0 flex flex-col border-l border-[#1A1A1A] first:border-l-0" role="group" aria-label="Plaza {{ $lane + 1 }}">
-                        @foreach ($segments as $segment)
-                            @if ($segment['type'] === 'appointment')
-                                @php
-                                    $appointment = $segment['appointment'];
-                                @endphp
-                                <a href="#cita-{{ $appointment->id }}"
-                                   class="block overflow-hidden px-1 py-0.5 text-[11px] leading-tight bg-[#1c1c1c] border {{ $segment['overCapacity'] ? 'border-amber-400' : 'border-gold/40' }} hover:border-gold"
-                                   style="height: {{ $segment['height'] }}px"
-                                   title="{{ $appointment->starts_at->format('H:i') }}–{{ $appointment->ends_at->format('H:i') }} {{ $appointment->service_name }}, {{ $appointment->customer_name }}"
-                                   aria-label="{{ $appointment->starts_at->format('H:i') }} {{ $appointment->service_name }}, {{ $appointment->customer_name }}{{ $segment['overCapacity'] ? ', sobre capacidad' : '' }}">
-                                    <span class="block font-semibold text-gold truncate">{{ $appointment->starts_at->format('H:i') }}</span>
-                                    <span class="block truncate">{{ $appointment->customer_name }}@unless ($compact) · {{ $appointment->service_name }}@endunless</span>
-                                    @if ($segment['overCapacity'])
-                                        <span class="block text-[9px] text-amber-300 truncate">Sobre capacidad</span>
-                                    @endif
-                                </a>
-                            @elseif ($segment['type'] === 'cierre-parcial')
-                                <div class="flex items-center justify-center text-[9px] leading-none text-amber-200"
-                                     style="height: {{ $segment['height'] }}px; background-image: repeating-linear-gradient(45deg, rgba(217,180,80,.12) 0 6px, transparent 6px 12px);">
-                                    @if ($segment['height'] >= 20)
-                                        Cierre
-                                    @endif
-                                </div>
-                            @elseif ($segment['tappable'])
-                                @php
-                                    $slotTime = sprintf('%02d:%02d', intdiv($segment['startMinute'], 60), $segment['startMinute'] % 60);
-                                @endphp
-                                {{-- Free slot of 30 min or more (PRF-114): tap to create a
-                                     booking at this exact time. Shorter gaps are not their
-                                     own target — DayTimeline already marks them not
-                                     tappable (not big enough for 44px). --}}
-                                <a href="{{ route('admin.appointments.create', ['fecha' => $day->toDateString(), 'hora' => $slotTime, 'volver' => $volver]) }}"
-                                   class="block hover:bg-gold/10"
-                                   style="height: {{ $segment['height'] }}px"
-                                   aria-label="Hueco libre a las {{ $slotTime }}, plaza {{ $lane + 1 }}"></a>
-                            @else
-                                <div style="height: {{ $segment['height'] }}px"></div>
+            {{-- Hour/half-hour lines across the whole lane width (review
+                 finding N2), like Google Calendar: two stacked gradients,
+                 the hour one listed first so it visually wins where both
+                 coincide. background-position-y is offset by this piece's
+                 own top modulo each period, so the lines land on the same
+                 absolute minute marks across every piece, not restarting
+                 at each piece's own top. --}}
+            <div class="grid"
+                 style="height: {{ $piece['height'] }}px;
+                        grid-template-rows: {{ $piece['gridTemplateRows'] }};
+                        grid-template-columns: repeat({{ $piece['maxLanes'] }}, 1fr);
+                        background-image: linear-gradient(to bottom, rgba(255,255,255,.18) 0 1px, transparent 1px 100%), linear-gradient(to bottom, rgba(255,255,255,.08) 0 1px, transparent 1px 100%);
+                        background-size: 100% {{ \App\Booking\DayTimeline::PX_PER_HOUR }}px, 100% {{ \App\Booking\DayTimeline::PX_PER_HOUR / 2 }}px;
+                        background-position-y: -{{ $piece['top'] % \App\Booking\DayTimeline::PX_PER_HOUR }}px, -{{ $piece['top'] % (\App\Booking\DayTimeline::PX_PER_HOUR / 2) }}px;">
+                @foreach ($piece['segments'] as $segment)
+                    @php
+                        $gridArea = 'grid-row: '.$segment['gridRowStart'].' / '.$segment['gridRowEnd'].'; grid-column: '.($segment['lane'] + 1).';';
+                    @endphp
+                    @if ($segment['type'] === 'appointment')
+                        @php
+                            $appointment = $segment['appointment'];
+                        @endphp
+                        {{-- A single truncated line, "HH:MM Clienta" (and the
+                             service, if room): review finding N3. A short
+                             block (e.g. 15 min, 22px) used to break its
+                             second line in half; there is no faked minimum
+                             height here (that would misrepresent the real
+                             start time), so a very short appointment still
+                             only shows this one line — its full detail stays
+                             a tap away, on its card below. --}}
+                        <a href="#cita-{{ $appointment->id }}"
+                           class="flex items-center overflow-hidden px-1 text-[11px] leading-tight bg-[#1c1c1c] border {{ $segment['overCapacity'] ? 'border-amber-400' : 'border-gold/40' }} hover:border-gold"
+                           style="{{ $gridArea }}"
+                           title="{{ $appointment->starts_at->format('H:i') }}–{{ $appointment->ends_at->format('H:i') }} {{ $appointment->service_name }}, {{ $appointment->customer_name }}"
+                           aria-label="{{ $datePrefix }}{{ $appointment->starts_at->format('H:i') }} {{ $appointment->service_name }}, {{ $appointment->customer_name }}{{ $segment['overCapacity'] ? ', sobre capacidad' : '' }}, plaza {{ $segment['lane'] + 1 }}">
+                            <span class="block truncate w-full">
+                                <span class="font-semibold text-gold">{{ $appointment->starts_at->format('H:i') }}</span>
+                                {{ $appointment->customer_name }}@unless ($compact) · {{ $appointment->service_name }}@endunless
+                            </span>
+                        </a>
+                    @elseif ($segment['type'] === 'cierre-parcial')
+                        {{-- Always carries an aria-label (review finding L3):
+                             a short partial-closure band (under ~20px) used
+                             to show no text and no accessible name at all,
+                             silent to anyone not seeing its stripe pattern. --}}
+                        <div class="flex items-center justify-center text-[9px] leading-none text-amber-200"
+                             style="{{ $gridArea }}; background-image: repeating-linear-gradient(45deg, rgba(217,180,80,.12) 0 6px, transparent 6px 12px);"
+                             aria-label="{{ $datePrefix }}Cierre parcial, plaza {{ $segment['lane'] + 1 }}"
+                             title="Cierre parcial">
+                            @if ($segment['height'] >= 20)
+                                Cierre
                             @endif
-                        @endforeach
-                    </div>
+                        </div>
+                    @elseif ($segment['tappable'])
+                        @php
+                            $slotTime = sprintf('%02d:%02d', intdiv($segment['start'], 60), $segment['start'] % 60);
+                        @endphp
+                        {{-- One link per free half hour of this lane (review
+                             finding N1), each with its own exact time —
+                             never one giant link for the whole free run. --}}
+                        <a href="{{ route('admin.appointments.create', ['fecha' => $day->toDateString(), 'hora' => $slotTime, 'volver' => $volver]) }}"
+                           class="block hover:bg-gold/10"
+                           style="{{ $gridArea }}"
+                           aria-label="{{ $datePrefix }}Hueco libre a las {{ $slotTime }}, plaza {{ $segment['lane'] + 1 }}"></a>
+                    @else
+                        <div style="{{ $gridArea }}" aria-hidden="true"></div>
+                    @endif
                 @endforeach
             </div>
         @endif

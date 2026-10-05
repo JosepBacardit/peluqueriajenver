@@ -191,7 +191,10 @@ test('the week view desktop grid links each appointment block to its card below'
     $html = $this->get(route('admin.agenda', ['vista' => 'semana', 'fecha' => '2030-01-09']))->assertOk()->getContent();
 
     expect($html)->toContain('href="#cita-'.$appointment->id.'"');
-    expect($html)->toContain('aria-label="11:00 Peinado, Marta Ruiz"');
+    // Review finding M2: Semana's columns prefix every aria-label with
+    // their own day; review finding N6 (no visible lane header fits a
+    // narrow column): the plaza is folded into the aria-label instead.
+    expect($html)->toContain('aria-label="miércoles 9, 11:00 Peinado, Marta Ruiz, plaza 1"');
     expect($html)->toContain('id="cita-'.$appointment->id.'"'); // the card it jumps to
 });
 
@@ -237,11 +240,12 @@ test('a free slot in a desktop column other than the selected day creates on tha
 test('the hour axis is shared once across the desktop week grid, not repeated per column', function () {
     $html = $this->get(route('admin.agenda', ['vista' => 'semana']))->assertOk()->getContent();
 
-    // Once for the mobile selected-day grid, once for the desktop header
-    // row's corner spacer (same width, so the day headers line up with
-    // the columns below) and once for the desktop body's actual axis:
-    // never once per column (7) on top of these.
-    expect(substr_count($html, 'w-11 shrink-0'))->toBe(3);
+    // Once for the mobile selected-day grid's own axis, once for that same
+    // grid's "Plaza 1 · Plaza 2" header spacer (review finding N6), once
+    // for the desktop header row's corner spacer (same width, so the day
+    // headers line up with the columns below) and once for the desktop
+    // body's actual axis: never once per column (7) on top of these.
+    expect(substr_count($html, 'w-11 shrink-0'))->toBe(4);
 });
 
 /**
