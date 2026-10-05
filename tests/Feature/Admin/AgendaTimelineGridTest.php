@@ -5,6 +5,7 @@ use App\Models\Service;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -104,4 +105,29 @@ test('no "ahora" line when "ahora" falls outside today\'s grid range', function 
 
     expect($html)->not->toContain('>Ahora<');
     expect($html)->not->toContain('scrollTop');
+});
+
+/**
+ * The timeline grid is built entirely from data already loaded for the
+ * day (appointments, blocks, opening hours, capacity): a fixed number of
+ * queries, never one per appointment, block or lane.
+ */
+test('vista Día loads the timeline grid with a fixed number of queries, not one per appointment', function () {
+    foreach (range(9, 18) as $hour) {
+        Appointment::factory()->create(['starts_at' => "2030-01-08 {$hour}:00", 'ends_at' => "2030-01-08 {$hour}:15"]);
+    }
+
+    DB::enableQueryLog();
+    $this->get(route('admin.agenda'))->assertOk();
+    $queries = DB::getQueryLog();
+
+    $appointmentQueries = collect($queries)->filter(fn ($q) => str_contains($q['query'], 'from "appointments"'))->count();
+    $blockQueries = collect($queries)->filter(fn ($q) => str_contains($q['query'], 'from "schedule_blocks"'))->count();
+    $openingHourQueries = collect($queries)->filter(fn ($q) => str_contains($q['query'], 'from "opening_hours"'))->count();
+    $bookingSettingQueries = collect($queries)->filter(fn ($q) => str_contains($q['query'], 'from "booking_settings"'))->count();
+
+    expect($appointmentQueries)->toBe(1);
+    expect($blockQueries)->toBe(1);
+    expect($openingHourQueries)->toBe(1);
+    expect($bookingSettingQueries)->toBe(1);
 });

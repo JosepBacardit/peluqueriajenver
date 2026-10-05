@@ -38,6 +38,8 @@ Vistas nuevas:
 
 `tests/Feature/Admin/AgendaTest.php`: ajustado un test existente que asumía que el nombre de una clienta solo aparecía una vez en la página (ahora aparece también en su bloque de la rejilla, antes de su tarjeta).
 
+Añadido al cerrar la entrega (T040): `tests/Feature/Admin/AgendaTimelineGridTest.php` › «vista Día loads the timeline grid with a fixed number of queries, not one per appointment» — con 10 citas en el día, 1 sola consulta a `appointments`, `schedule_blocks`, `opening_hours` y `booking_settings`, nunca una por cita, por bloque o por carril.
+
 ## Verificación
 
 `docker compose exec -T -u www-data app php artisan test --compact --filter="AgendaTest|AgendaWeekViewTest|AgendaMonthViewTest|AgendaCalendarAccessibilityTest|AdminAppointmentTest|AdminRescheduleAppointmentTest"` → 127 tests en verde (405 aserciones) · suite completa: **447 tests en verde** (1700 aserciones; partía de 422) · `docker compose exec -T -u www-data app vendor/bin/pint --dirty --format agent` → `{"result":"pass"}`.
