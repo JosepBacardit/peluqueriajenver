@@ -21,3 +21,17 @@ test('Google Maps embeds only load when "Ver mapa" is clicked', function (string
         ->toContain('Ver mapa')
         ->toContain('Abrir en Google Maps');
 })->with(['home', 'contacto', 'cookies']);
+
+/*
+ * Independent review (.ai/reviews/google-maps-consent.md, finding 1): the
+ * dynamically created iframe had no accessible name (WCAG 2.1, 2.4.1), and
+ * finding 2: a dynamically created iframe's loading="lazy" has no effect,
+ * since it is only ever inserted after the click.
+ */
+test('the dynamically created map iframe gets an accessible title and drops the dead loading attribute', function () {
+    $html = $this->get(route('home'))->assertOk()->getContent();
+
+    expect($html)
+        ->toContain("iframe.title = 'Mapa de ubicación de Peluquería Jenver'")
+        ->not->toContain("iframe.loading = 'lazy'");
+});

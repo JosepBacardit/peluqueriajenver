@@ -219,15 +219,20 @@
 
         const iframe = document.createElement('iframe');
         iframe.src = container.getAttribute('data-embed-src');
+        iframe.title = 'Mapa de ubicación de Peluquería Jenver';
         iframe.width = '100%';
         iframe.height = '100%';
         iframe.style.position = 'absolute';
         iframe.style.inset = '0';
         iframe.style.border = '0';
         iframe.style.filter = 'grayscale(100%) invert(10%)';
-        iframe.loading = 'lazy';
         iframe.referrerPolicy = 'no-referrer-when-downgrade';
         iframe.setAttribute('allowfullscreen', '');
+        // The "Ver mapa" button is removed right below: move the focus to
+        // the iframe once it loads so it is never left on a detached element.
+        iframe.addEventListener('load', function () {
+          iframe.focus();
+        });
         container.appendChild(iframe);
 
         const placeholder = container.querySelector('[data-google-map-placeholder]');
