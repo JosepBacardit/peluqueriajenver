@@ -129,7 +129,7 @@
         <h2 class="section-title text-center mb-12">Preguntas Frecuentes</h2>
         @include('partials.faq', ['preguntas' => [
             ['q' => '¿Hacéis manicura semipermanente?', 'a' => 'Sí, ofrecemos manicura con esmalte semipermanente de larga duración.'],
-            ['q' => '¿Es necesario pedir cita para los servicios de estética?', 'a' => 'Sí, recomendamos reservar cita para garantizar tu atención. Puedes llamar o escribirnos por WhatsApp.'],
+            ['q' => __('servicios.belleza_estetica.faq.cita_question'), 'a' => __('servicios.belleza_estetica.faq.cita_answer')],
             ['q' => '¿Qué técnica usáis para el diseño de cejas?', 'a' => 'Usamos la técnica de hilo y pinzas para un acabado preciso y natural adaptado a tu rostro.'],
         ]])
     </div>

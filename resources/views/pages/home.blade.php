@@ -344,7 +344,10 @@
         </p>
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="tel:+34633912050" class="btn-gold text-sm md:text-base font-semibold px-8 py-3">
+            <a href="{{ route('reservas') }}" class="btn-gold text-sm md:text-base font-semibold px-8 py-3">
+                {{ __('home.reserva.online_cta') }}
+            </a>
+            <a href="tel:+34633912050" class="btn-outline text-sm md:text-base font-semibold px-8 py-3">
                 {{ __('home.reserva.phone_cta') }}
             </a>
             <a href="https://wa.me/34633912050?text=Hola!%20Quería%20pedir%20cita%20en%20Peluquería%20Jenver" target="_blank" rel="noopener noreferrer" class="btn-outline text-sm md:text-base font-semibold px-8 py-3">

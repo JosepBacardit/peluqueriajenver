@@ -13,10 +13,10 @@ $faq = [
         ],
         [
             "@type" => "Question",
-            "name" => "¿Puedo agendar cita online?",
+            "name" => __('home.faq.online_question'),
             "acceptedAnswer" => [
                 "@type" => "Answer",
-                "text" => "Sí, puedes contactarnos por WhatsApp al 633 912 050 o llamarnos directamente. Nuestro horario es de martes a sábado de 9:00 a 19:00."
+                "text" => __('home.faq.online_answer')
             ]
         ],
         [

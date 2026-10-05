@@ -9,8 +9,9 @@ test('the header and hero booking buttons lead to the booking page on the home p
 
     $bookingLinks = substr_count($html, 'href="'.route('reservas').'" class="btn-gold');
 
-    // Header CTA (desktop + mobile) plus the hero "Reservar cita" button.
-    expect($bookingLinks)->toBe(3);
+    // Header CTA (desktop + mobile), the hero "Reservar cita" button and
+    // the "Reservar online" button of the "Reserva tu cita" section.
+    expect($bookingLinks)->toBe(4);
     // The phone number in the top bar, and the other call-to-call CTAs
     // further down the page (free diagnosis, "Llamar ahora"), are kept.
     expect($html)->toContain('href="tel:+34633912050"');
@@ -59,4 +60,25 @@ test('the structured data declares the booking page as the reserve action and ke
     expect($salon['potentialAction']['target']['urlTemplate'])->toBe(route('reservas'));
     expect($salon['telephone'])->toBe('+34633912050');
     expect($salon['contactPoint']['telephone'])->toBe('+34633912050');
+});
+
+test('the "Reserva tu cita" section of the home page offers online booking and keeps the phone and WhatsApp', function () {
+    $html = $this->get('/')->assertOk()->getContent();
+    preg_match('#<section id="reserva".*?</section>#s', $html, $section);
+
+    expect($section)->not->toBeEmpty();
+    expect($section[0])->toMatch('#<a href="'.preg_quote(route('reservas'), '#').'"[^>]*>\s*Reservar online\s*</a>#');
+    expect($section[0])->toContain('href="tel:+34633912050"');
+    expect($section[0])->toContain('href="https://wa.me/34633912050');
+});
+
+test('the questions about booking mention online booking without promising it for every service', function () {
+    $home = $this->get('/')->assertOk()->getContent();
+    preg_match('#<script type="application/ld\+json">\s*(\{"@context":"https://schema.org","@type":"FAQPage".*?)\s*</script>#s', $home, $faqSchema);
+    $questions = collect(json_decode($faqSchema[1], true)['mainEntity'])->pluck('acceptedAnswer.text', 'name');
+
+    expect($questions['¿Puedo pedir cita online?'])->toContain('página de reservas')->toContain('WhatsApp');
+
+    $this->get(route('belleza-estetica'))->assertOk()
+        ->assertSee('Puedes reservar online los servicios que aparecen en nuestra página de reservas, o llamarnos o escribirnos por WhatsApp.');
 });

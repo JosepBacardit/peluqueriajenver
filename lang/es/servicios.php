@@ -470,6 +470,13 @@ return [
         ],
     ],
 
+    'belleza_estetica' => [
+        'faq' => [
+            'cita_question' => '¿Es necesario pedir cita para los servicios de estética?',
+            'cita_answer' => 'Sí, recomendamos reservar cita para garantizar tu atención. Puedes reservar online los servicios que aparecen en nuestra página de reservas, o llamarnos o escribirnos por WhatsApp.',
+        ],
+    ],
+
     'complementarios' => [
         'meta' => [
             'title' => 'Servicios Complementarios | Depilación, Manicura, Cejas | Peluquería Jenver',
