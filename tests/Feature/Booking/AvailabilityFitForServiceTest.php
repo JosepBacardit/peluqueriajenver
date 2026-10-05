@@ -9,6 +9,7 @@ use App\Models\ScheduleBlock;
 use App\Models\Service;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
@@ -55,7 +56,7 @@ function fitBlock(string $from, string $to, ?int $reduction, string $date = '203
  * the day's opening ranges, its appointments of any status and the blocks
  * overlapping it, plus the capacity.
  *
- * @return array{day: CarbonImmutable, ranges: Illuminate\Support\Collection, appointments: Illuminate\Support\Collection, blocks: Illuminate\Support\Collection, capacity: int}
+ * @return array{day: CarbonImmutable, ranges: Collection, appointments: Collection, blocks: Collection, capacity: int}
  */
 function agendaContext(string $date): array
 {

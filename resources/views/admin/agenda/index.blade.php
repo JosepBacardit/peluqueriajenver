@@ -104,21 +104,28 @@
      service with its duration. Submits on change with minimal vanilla JS;
      the "Ver" button is a no-JS fallback. Not shown in Mes, which has no
      rejilla to highlight — but the filter still survives a visit there
-     (decision 3: Mes's own links carry $servicioQuery forward). --}}
+     (decision 3: Mes's own links carry $servicioQuery forward).
+     Review finding M1: at 360 px, a long service name used to push the
+     row past the viewport (no min-width: 0 on the <select>, no
+     flex-wrap) — "Ver" could even end up clipped off-screen. "flex-wrap"
+     lets "Ver" drop to its own line instead of forcing a horizontal
+     scrollbar; "min-w-0 flex-1" lets the <select> itself shrink below
+     its content's natural width (a flex item's default min-width is
+     "auto", i.e. its content, which is exactly what let it overflow). --}}
 @if ($vista !== 'mes')
-    <form method="GET" action="{{ route('admin.agenda') }}" class="flex items-center gap-2 text-sm mb-6">
+    <form method="GET" action="{{ route('admin.agenda') }}" class="flex flex-wrap items-center gap-2 text-sm mb-6">
         <input type="hidden" name="fecha" value="{{ $day->toDateString() }}">
         @if ($vista !== 'dia')
             <input type="hidden" name="vista" value="{{ $vista }}">
         @endif
-        <label for="servicio" class="text-gray-400">Servicio</label>
-        <select id="servicio" name="servicio" class="bg-black border border-[#2A2A2A] px-2 py-3" onchange="this.form.submit()">
+        <label for="servicio" class="text-gray-400 shrink-0">Servicio</label>
+        <select id="servicio" name="servicio" class="min-w-0 flex-1 bg-black border border-[#2A2A2A] px-2 py-3" onchange="this.form.submit()">
             <option value="">Cualquiera</option>
             @foreach ($services as $serviceOption)
                 <option value="{{ $serviceOption->id }}" @selected($servicio?->id === $serviceOption->id)>{{ $serviceOption->name }} ({{ $serviceOption->duration_label }})</option>
             @endforeach
         </select>
-        <button type="submit" class="btn-outline">Ver</button>
+        <button type="submit" class="btn-outline shrink-0">Ver</button>
     </form>
 @endif
 

@@ -132,33 +132,110 @@ class DayTimeline
     }
 
     /**
-     * Flags every tappable free segment whose start is one of
-     * $fittingMinutes with 'fits' => true (PRF-123, PRF-124: the "Cabe"
-     * highlight) — every other segment is left untouched, so the view
-     * treats a missing 'fits' key the same as false. Builds its own lookup
-     * from $fittingMinutes once, rather than a linear search per segment.
+     * Flags every tappable free segment with 'fits' => true where the
+     * service really belongs (review finding N1 of the coordinator's
+     * agenda-service-filter review): $fittingMinutes alone says the
+     * service fits *by capacity* at that start minute — true across every
+     * lane at once, since capacity is not a lane concept (PRF-121) — but
+     * highlighting every lane there regardless is visually misleading
+     * when the lane's own appointment would collide with it (e.g. a
+     * service starting at 11:00 "fits" at 11:00-12:00 by capacity even in
+     * a lane holding an 11:40 appointment, because *some other* lane is
+     * free the whole time).
+     *
+     * So for each candidate minute, only the lanes with no appointment
+     * anywhere in [minute, minute + $durationMinutes) are highlighted. If
+     * none of them stays free the whole time (appointments staggered
+     * across different lanes, each interrupting its own lane at a
+     * different moment, never simultaneously enough to break capacity),
+     * the first free lane at that minute (the same one the first-free-lane
+     * algorithm itself would assign a new appointment to) is highlighted
+     * anyway, same as a day with only one lane total (capacity 1) always
+     * is, continuous or not — there is nowhere "safer" to point to.
+     *
+     * Every other free/tappable segment is explicitly set to 'fits' =>
+     * false (never left unset): the view only needs to check the key, not
+     * guess whether it is missing because this method never ran at all or
+     * because it chose not to flag it.
+     *
+     * Deliberately presentation-only: never touches AvailabilityCalculator
+     * or its rules, only how DayTimeline's own already-built lanes relate
+     * to a capacity verdict decided elsewhere.
      *
      * @param  array{lanes: int, pieces: list<array>}  $timeline  a build() result
      * @param  list<int>  $fittingMinutes  AvailabilityCalculator::fittingStartMinutes()'s result
      * @return array{lanes: int, pieces: list<array>}
      */
-    public static function markServiceFit(array $timeline, array $fittingMinutes): array
+    public static function markServiceFit(array $timeline, array $fittingMinutes, int $durationMinutes): array
     {
-        $fits = array_flip($fittingMinutes);
+        $fitMinutes = array_flip($fittingMinutes);
 
         foreach ($timeline['pieces'] as &$piece) {
             if ($piece['kind'] !== 'open') {
                 continue;
             }
 
+            // Every confirmed appointment's busy minutes, by lane, and
+            // every free+tappable segment's lane(s), by start minute
+            // (ascending, so the lowest lane index is always first — the
+            // "first free lane" fallback needs exactly that order).
+            $busyByLane = [];
+            $freeLanesByMinute = [];
+
             foreach ($piece['segments'] as &$segment) {
-                if ($segment['type'] === 'free' && $segment['tappable']) {
-                    $segment['fits'] = isset($fits[$segment['start']]);
+                if ($segment['type'] === 'appointment') {
+                    $busyByLane[$segment['lane']][] = [$segment['start'], $segment['end']];
+                } elseif ($segment['type'] === 'free' && $segment['tappable']) {
+                    $segment['fits'] = false;
+                    $freeLanesByMinute[$segment['start']][] = $segment['lane'];
                 }
+            }
+            unset($segment);
+
+            foreach ($freeLanesByMinute as $minute => &$lanes) {
+                sort($lanes);
+            }
+            unset($lanes);
+
+            foreach ($freeLanesByMinute as $minute => $lanes) {
+                if (! isset($fitMinutes[$minute])) {
+                    continue;
+                }
+
+                $end = $minute + $durationMinutes;
+                $continuouslyFreeLanes = array_values(array_filter(
+                    $lanes,
+                    fn (int $lane) => ! self::laneBusyDuring($busyByLane[$lane] ?? [], $minute, $end)
+                ));
+                $highlight = array_flip($continuouslyFreeLanes !== [] ? $continuouslyFreeLanes : [$lanes[0]]);
+
+                foreach ($piece['segments'] as &$segment) {
+                    if ($segment['type'] === 'free' && $segment['tappable'] && $segment['start'] === $minute) {
+                        $segment['fits'] = isset($highlight[$segment['lane']]);
+                    }
+                }
+                unset($segment);
             }
         }
 
         return $timeline;
+    }
+
+    /**
+     * Whether any of $busyIntervals (a lane's appointments, each
+     * [start, end)) overlaps [start, end).
+     *
+     * @param  list<array{0: int, 1: int}>  $busyIntervals
+     */
+    private static function laneBusyDuring(array $busyIntervals, int $start, int $end): bool
+    {
+        foreach ($busyIntervals as [$busyStart, $busyEnd]) {
+            if ($busyStart < $end && $busyEnd > $start) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

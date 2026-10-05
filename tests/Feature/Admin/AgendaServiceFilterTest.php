@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Appointment;
+use App\Models\BookingSetting;
 use App\Models\Service;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -39,6 +40,25 @@ test('the selector is not shown in vista Mes', function () {
 });
 
 /**
+ * Review finding M1: the row used to have no "flex-wrap"/"min-w-0", so a
+ * long service name could push "Ver" past the 360 px viewport. A real
+ * <select> cannot be measured without a browser, but "min-w-0" is what
+ * lets it shrink below its content's own width (a flex item's default
+ * min-width is "auto", i.e. its content) and "flex-wrap" is what lets
+ * "Ver" drop to its own line instead of forcing a horizontal scrollbar —
+ * exercised here with a ~40-character name, longer than any real service.
+ */
+test('the service selector row can wrap and its <select> can shrink, even with a long service name', function () {
+    Service::factory()->create(['name' => 'Coloración completa con tratamiento capilar']);
+
+    $html = $this->get(route('admin.agenda'))->assertOk()->getContent();
+
+    expect($html)->toContain('class="flex flex-wrap items-center gap-2 text-sm mb-6"');
+    expect($html)->toContain('class="min-w-0 flex-1 bg-black border border-[#2A2A2A] px-2 py-3"');
+    expect($html)->toContain('Coloración completa con tratamiento capilar');
+});
+
+/**
  * PRF-123/124 (T044): a service fits every free half hour up to the one
  * that still leaves it room before closing (09:00-19:00); it highlights in
  * every free lane (coordinator's decision 2), not just one.
@@ -64,12 +84,27 @@ test('selecting a service highlights "Cabe" only where it fits, in every free la
 });
 
 /**
+ * Review finding N2: a full gold border on every fitting half hour made a
+ * short service turn the whole grid gold, with nothing standing out.
+ * Replaced with a quieter left stripe and a faint background — still two
+ * properties, never only a color swap.
+ */
+test('a fitting hueco gets a subtle left stripe, not a full border', function () {
+    $service = Service::factory()->create(['duration_minutes' => 30]);
+
+    $html = $this->get(route('admin.agenda', ['servicio' => $service->id]))->assertOk()->getContent();
+
+    expect($html)->toContain('border-l-4 border-gold bg-gold/10');
+    expect($html)->not->toContain('border-2 border-gold bg-gold/15');
+});
+
+/**
  * PRF-121: capacity still governs "cabe", not a particular lane — with
  * capacity reduced to 1 and an existing appointment, a service long enough
  * to overlap it no longer fits there, in any lane.
  */
 test('a service that would exceed capacity does not fit, regardless of lane', function () {
-    \App\Models\BookingSetting::current()->update(['capacity' => 1]);
+    BookingSetting::current()->update(['capacity' => 1]);
     Appointment::factory()->create(['starts_at' => '2030-01-08 10:00', 'ends_at' => '2030-01-08 10:30']);
     $service = Service::factory()->create(['name' => 'Corte', 'duration_minutes' => 60]);
 
@@ -84,6 +119,32 @@ test('a service that would exceed capacity does not fit, regardless of lane', fu
     // capacity 1 leaves no room for a second, simultaneous service there.
     expect($html)->toContain('aria-label="Hueco libre a las 09:30, plaza 1"');
     expect($html)->not->toContain('aria-label="Hueco libre a las 09:30, plaza 1, cabe Corte"');
+});
+
+/**
+ * Review finding N1 (coordinator, agenda-service-filter): a service
+ * "fits by capacity" at a start minute even in a lane whose own
+ * appointment would collide with it, as long as some other lane stays
+ * free the whole time — highlighting that lane too would visually
+ * promise a slot it does not really have. Mirrors the exact scenario
+ * the coordinator found in local data: an hour-long service at 11:00,
+ * a 15-minute appointment at 11:40 in plaza 1.
+ */
+test('"Cabe" only highlights the lane that is actually free for the whole service, not just by capacity', function () {
+    Appointment::factory()->create([
+        'starts_at' => '2030-01-08 11:40', 'ends_at' => '2030-01-08 11:55',
+        'customer_name' => 'Josep',
+    ]);
+    $service = Service::factory()->create(['name' => 'Corte', 'duration_minutes' => 60]);
+
+    $html = $this->get(route('admin.agenda', ['servicio' => $service->id]))->assertOk()->getContent();
+
+    // Plaza 1 holds the 11:40 appointment: an hour from 11:00 would reach
+    // 12:00, colliding with it — not highlighted there, even though the
+    // half hour fits by capacity (plaza 2 is free the whole hour).
+    expect($html)->toContain('aria-label="Hueco libre a las 11:00, plaza 1"');
+    expect($html)->not->toContain('aria-label="Hueco libre a las 11:00, plaza 1, cabe Corte"');
+    expect($html)->toContain('aria-label="Hueco libre a las 11:00, plaza 2, cabe Corte"');
 });
 
 /**

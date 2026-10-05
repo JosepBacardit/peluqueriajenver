@@ -103,14 +103,21 @@
                              finding N1), each with its own exact time —
                              never one giant link for the whole free run.
                              When a service is selected and it fits starting
-                             here (PRF-123/124), the link gets a visibly
-                             different border/background — never only a
-                             color swap — plus the word "Cabe" when there is
-                             room ($compact false, vista Día) and always an
-                             aria-label saying so, for Semana's narrow
-                             columns and for anyone not seeing the border. --}}
+                             here (PRF-123/124, and only in a lane really
+                             free for the whole service — review finding N1
+                             of the agenda-service-filter review), the link
+                             gets a subtle left stripe and a faint
+                             background — never only a color swap — plus
+                             the word "Cabe" when there is room ($compact
+                             false, vista Día) and always an aria-label
+                             saying so, for Semana's narrow columns and for
+                             anyone not seeing the stripe. Review finding N2
+                             (same review): a full gold border on every
+                             fitting half hour made a short service turn the
+                             whole grid gold, with nothing standing out; the
+                             stripe is deliberately a smaller, quieter cue. --}}
                         <a href="{{ route('admin.appointments.create', ['fecha' => $day->toDateString(), 'hora' => $slotTime, 'volver' => $volver, ...$servicioQuery]) }}"
-                           class="flex items-center justify-center text-[9px] leading-none text-gold font-semibold {{ $fits ? 'border-2 border-gold bg-gold/15' : 'hover:bg-gold/10' }}"
+                           class="flex items-center justify-center text-[9px] leading-none {{ $fits ? 'border-l-4 border-gold bg-gold/10 text-gold font-semibold' : 'hover:bg-gold/10' }}"
                            style="{{ $gridArea }}"
                            aria-label="{{ $datePrefix }}Hueco libre a las {{ $slotTime }}, plaza {{ $segment['lane'] + 1 }}{{ $fits ? ', cabe '.$servicio->name : '' }}">
                             @if ($fits && ! $compact)
