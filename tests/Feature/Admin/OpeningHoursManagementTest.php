@@ -86,3 +86,15 @@ test('impossible ranges are rejected and the week stays unchanged', function (ar
     'not a multiple of 5 minutes' => [[5 => [['opens' => '09:03', 'closes' => '19:00']]], 'days.5.0.opens'],
     'not a time' => [[5 => [['opens' => 'nine', 'closes' => '19:00']]], 'days.5.0.opens'],
 ]);
+
+/**
+ * PRF-096: at 360px the label, the two time inputs and the dash of a
+ * range row must not force horizontal scroll or get clipped. The row
+ * wraps instead of overflowing.
+ */
+test('every opening-hours range row can wrap instead of overflowing on a narrow screen', function () {
+    $html = $this->get(route('admin.opening-hours.edit'))->assertOk()->getContent();
+
+    expect(substr_count($html, 'flex flex-wrap items-center gap-2 text-sm'))->toBe(14); // 7 days x 2 ranges
+    expect(substr_count($html, 'type="time"'))->toBe(14 * 2);
+});

@@ -19,11 +19,16 @@
                         $opens = old("days.$weekday.$index.opens", $day['ranges'][$index]['opens'] ?? '');
                         $closes = old("days.$weekday.$index.closes", $day['ranges'][$index]['closes'] ?? '');
                     @endphp
-                    <div class="flex items-center gap-2 text-sm">
-                        <span class="text-gray-400 w-14">{{ $index === 0 ? 'Tramo 1' : 'Tramo 2' }}</span>
-                        <input type="time" step="300" name="days[{{ $weekday }}][{{ $index }}][opens]" value="{{ $opens }}" aria-label="{{ $day['name'] }}, tramo {{ $index + 1 }}, inicio" class="bg-black border border-[#2A2A2A] px-2 py-1">
-                        <span>–</span>
-                        <input type="time" step="300" name="days[{{ $weekday }}][{{ $index }}][closes]" value="{{ $closes }}" aria-label="{{ $day['name'] }}, tramo {{ $index + 1 }}, fin" class="bg-black border border-[#2A2A2A] px-2 py-1">
+                    {{-- flex-wrap: at 360px the two native time inputs plus
+                         the label and the dash do not always fit in one
+                         row; wrapping the closing time below, instead of
+                         clipping it or forcing horizontal scroll, keeps
+                         every field fully visible and usable (PRF-096). --}}
+                    <div class="flex flex-wrap items-center gap-2 text-sm">
+                        <span class="text-gray-400 w-14 shrink-0">{{ $index === 0 ? 'Tramo 1' : 'Tramo 2' }}</span>
+                        <input type="time" step="300" name="days[{{ $weekday }}][{{ $index }}][opens]" value="{{ $opens }}" aria-label="{{ $day['name'] }}, tramo {{ $index + 1 }}, inicio" class="bg-black border border-[#2A2A2A] px-2 py-1 min-w-0">
+                        <span class="shrink-0">–</span>
+                        <input type="time" step="300" name="days[{{ $weekday }}][{{ $index }}][closes]" value="{{ $closes }}" aria-label="{{ $day['name'] }}, tramo {{ $index + 1 }}, fin" class="bg-black border border-[#2A2A2A] px-2 py-1 min-w-0">
                     </div>
                 @endforeach
             </div>
