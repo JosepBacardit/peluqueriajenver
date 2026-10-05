@@ -58,7 +58,7 @@
                             <input type="checkbox" name="confirm" value="1" required> {{ __('reservas.appointment.cancel_confirm') }}
                         </label>
                         @error('confirm') <p class="text-red-400 text-sm">{{ $message }}</p> @enderror
-                        <button type="submit" class="btn-outline">{{ __('reservas.appointment.cancel_button') }}</button>
+                        <button type="submit" class="btn-outline w-full">{{ __('reservas.appointment.cancel_button') }}</button>
                     </form>
                 @else
                     <p class="text-gray-300">{{ __('reservas.messages.too_late_to_cancel') }}</p>

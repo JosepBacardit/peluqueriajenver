@@ -50,6 +50,17 @@ test('the customer can cancel within the cancellation limit and the time is free
     $this->get(route('cita.show', $appointment->token))->assertSee('Tu cita se ha cancelado.');
 });
 
+/**
+ * PRF-098: easy to tap on a phone, the main action on this page for a
+ * customer who can still cancel.
+ */
+test('the cancel button spans the full width on a cancellable appointment', function () {
+    $appointment = Appointment::factory()->create(['starts_at' => '2030-01-10 11:00', 'ends_at' => '2030-01-10 12:00']);
+
+    $this->get(route('cita.show', $appointment->token))
+        ->assertSee('<button type="submit" class="btn-outline w-full">', false);
+});
+
 test('cancelling requires ticking the confirmation', function () {
     $appointment = Appointment::factory()->create(['starts_at' => '2030-01-10 11:00', 'ends_at' => '2030-01-10 12:00']);
 
