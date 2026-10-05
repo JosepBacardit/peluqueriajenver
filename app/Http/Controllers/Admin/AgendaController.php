@@ -24,15 +24,17 @@ class AgendaController extends Controller
         $vista = self::viewFromQuery($request->query('vista'));
         $day = self::dayFromQuery($request->query('fecha'));
         $weekStart = $day->startOfWeek(CarbonInterface::MONDAY);
+        $month = $day->startOfMonth();
 
         return view('admin.agenda.index', [
             'vista' => $vista,
             'day' => $day,
             'weekStart' => $weekStart,
             'weekEnd' => $weekStart->addDays(6),
-            'month' => $day->startOfMonth(),
+            'month' => $month,
             ...match ($vista) {
                 'semana' => $this->weekData($weekStart),
+                'mes' => $this->monthData($month),
                 default => $this->dayData($day),
             },
         ]);
@@ -114,6 +116,35 @@ class AgendaController extends Controller
         }
 
         return ['days' => $days];
+    }
+
+    /**
+     * One aggregate query for the month's occupancy (PRF-102): never one
+     * query per day, and never loading every appointment of the month.
+     *
+     * @return array{occupancy: Collection<string, int>, openWeekdays: list<int>, fullClosures: Collection<int, ScheduleBlock>}
+     */
+    private function monthData(CarbonImmutable $month): array
+    {
+        $monthEnd = $month->addMonth();
+
+        $occupancy = Appointment::query()->confirmed()
+            ->where('starts_at', '>=', $month)
+            ->where('starts_at', '<', $monthEnd)
+            ->selectRaw('DATE(starts_at) as date, COUNT(*) as total')
+            ->groupBy('date')
+            ->pluck('total', 'date');
+
+        $fullClosures = ScheduleBlock::query()
+            ->whereNull('capacity_reduction')
+            ->overlapping($month, $monthEnd)
+            ->get(['starts_at', 'ends_at']);
+
+        return [
+            'occupancy' => $occupancy,
+            'openWeekdays' => self::openWeekdays(),
+            'fullClosures' => $fullClosures,
+        ];
     }
 
     /**

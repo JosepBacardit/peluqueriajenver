@@ -88,6 +88,8 @@
 <div class="pb-24 md:pb-0">
     @if ($vista === 'semana')
         @include('admin.agenda._week')
+    @elseif ($vista === 'mes')
+        @include('admin.agenda._month')
     @else
         @include('admin.agenda._day')
     @endif
