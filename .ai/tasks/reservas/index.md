@@ -7,7 +7,8 @@
   - PR 3, `feature/booking-public`: T007–T009;
   - PR 4, `feature/booking-notifications`: T010–T012.
   - Ajustes tras la revisión visual del usuario (2026-10-05), `feature/booking-admin-tweaks` apilada sobre `feature/booking-review-fixes`: T015–T018.
-- **Estado general:** implementación (T001–T012), revisión (T013) y resolución (T014) hechas. Queda pendiente el hallazgo M4 de la revisión (analítica y consentimiento, decisión del usuario) y los datos del cliente que bloquean publicar. De los ajustes 2026-10-05: T015–T018 hechos, revisados (`.ai/reviews/booking-admin-tweaks.md`) y con los hallazgos resueltos en T019. Quedan pendientes las comprobaciones manuales: correos en Gmail y Outlook y el recorrido completo del panel en el navegador (filas `partial` de la matriz).
+  - Adaptación móvil del panel y la reserva pública (2026-10-05), `feature/mobile-admin-ux` apilada sobre `feature/booking-admin-tweaks` (una vez fusionada): T020–T026.
+- **Estado general:** implementación (T001–T012), revisión (T013) y resolución (T014) hechas. Queda pendiente el hallazgo M4 de la revisión (analítica y consentimiento, decisión del usuario) y los datos del cliente que bloquean publicar. De los ajustes 2026-10-05: T015–T018 hechos, revisados (`.ai/reviews/booking-admin-tweaks.md`) y con los hallazgos resueltos en T019. Quedan pendientes las comprobaciones manuales: correos en Gmail y Outlook y el recorrido completo del panel en el navegador (filas `partial` de la matriz). Adaptación móvil (T020–T026): en curso.
 
 ## Tareas
 
@@ -32,6 +33,13 @@
 | T017 | [Mover y editar una cita desde el panel](T017-editar-cita-panel.md) | ARCHITECTURAL | PRF-077–086 | T004, T006, T010, T014 | Claude Opus 5.5 | `medium` | Pest + Pint + navegador | done |
 | T018 | [Botones «Reservar cita» del inicio y servicios](T018-cta-reservar.md) | SIMPLE | PRF-076 | T009 | Claude Sonnet 5 | `low` | Pest + Pint | done |
 | T019 | [Resolver la revisión de los ajustes](T019-resolver-revision-ajustes.md) | FEATURE | PRF-070–075, 077–088 | T015–T018 | Claude Opus 5.5 | `medium` | Pest + Pint + navegador | done |
+| T020 | [Objetivo táctil mínimo en botones y enlaces de acción](T020-objetivo-tactil.md) | SIMPLE | PRF-089, 094 | T017 | Claude Sonnet 5.5 | `low` | Pest + Pint | done |
+| T021 | [Navegación inferior fija del panel en móvil](T021-nav-inferior.md) | FEATURE | PRF-090 | T001 | Claude Sonnet 5.5 | `medium` | Pest + Pint + navegador | pending |
+| T022 | [Servicios en tarjetas en todos los anchos](T022-servicios-tarjetas.md) | FEATURE | PRF-091 | T002 | Claude Sonnet 5.5 | `low` | Pest + Pint | pending |
+| T023 | [Agenda pensada para el pulgar](T023-agenda-pulgar.md) | FEATURE | PRF-092–095 | T006, T017 | Claude Sonnet 5.5 | `medium` | Pest + Pint + navegador | pending |
+| T024 | [Horario semanal sin recorte en 360 px](T024-horario-360.md) | SIMPLE | PRF-096 | T003 | Claude Sonnet 5.5 | `low` | Pest + Pint + navegador | pending |
+| T025 | [Calendario y horas públicas: zona táctil](T025-calendario-tactil.md) | SIMPLE | PRF-097 | T007 | Claude Sonnet 5.5 | `low` | Pest + Pint + navegador | pending |
+| T026 | [Botón de cancelar a ancho completo en /cita](T026-cancelar-ancho-completo.md) | SIMPLE | PRF-098 | T008 | Claude Sonnet 5.5 | `low` | Pest + Pint | pending |
 
 Nota de ejecución: las tareas T001–T012 las ejecutó una misma instancia del agente `programador` (Claude Opus 5.5), por indicación del agente principal, en lugar de alternar modelos por tarea.
 
@@ -88,6 +96,14 @@ Nota de ejecución: las tareas T001–T012 las ejecutó una misma instancia del 
 | PRF-076 | comportamiento | T018 | `BookingLinksAndSeoTest` | covered |
 | PRF-088 | comportamiento | T019 | `BookingLinksAndSeoTest`; pendiente la revisión visual de la sección en el navegador | partial |
 | PRF-077 a PRF-087 | comportamiento y prohibición | T017, T019 | `RescheduleAppointmentTest`, `AdminRescheduleAppointmentTest`, `AvailabilityCalculatorTest`, `AgendaTest`, `MailBrandingTest`, `MailContentEscapingTest`, `MailSenderTest`; pendiente el recorrido completo en el navegador (guardar, teclado y lector de pantalla) | partial |
+| PRF-089, PRF-094 | comportamiento | T020 | `AdminLayoutTest` (estilos compartidos `.btn-gold`/`.btn-outline`/`.btn-danger-outline`); pendiente medir a 375 px en el navegador | partial |
+| PRF-090 | comportamiento | T021 | `AdminLayoutTest`; pendiente comprobar a 375 px y 1024 px en el navegador | pending |
+| PRF-091 | comportamiento y prohibición | T022 | `ServiceManagementTest`; pendiente comprobar a 375 px en el navegador | pending |
+| PRF-092, PRF-093 | comportamiento | T023 | `AgendaTest`; pendiente comprobar a 375 px en el navegador (botón flotante, navegación inferior) | pending |
+| PRF-095 | comportamiento y prohibición | T023 | `AppointmentTest` (normalización del teléfono para WhatsApp) | pending |
+| PRF-096 | prohibición | T024 | pendiente comprobar a 360 px en el navegador | pending |
+| PRF-097 | comportamiento | T025 | pendiente medir a 375 px en el navegador | pending |
+| PRF-098 | comportamiento | T026 | `CustomerAppointmentTest` | pending |
 
 ## Casos revisados que no aplican
 

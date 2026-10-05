@@ -27,6 +27,7 @@ La única forma de pedir cita es llamar o escribir por WhatsApp. El botón «Res
 - Remitente y marca de los correos salientes con la identidad del salón (2026-10-05).
 - Edición de una cita confirmada desde el panel: día, hora, servicio y datos de la clienta (2026-10-05).
 - Botones «Reservar cita» de la portada y las páginas de servicio enlazando a la reserva online (2026-10-05).
+- Adaptación del panel y de la reserva pública al móvil, donde el salón trabaja la mayor parte del tiempo (2026-10-05).
 
 ## No-objetivos
 
@@ -40,6 +41,7 @@ La única forma de pedir cita es llamar o escribir por WhatsApp. El botón «Res
 - Fichas de cliente, contabilidad, productos o puntos. **Pospuesto** a módulos futuros.
 - Permisos distintos entre cuentas del panel. **Descartado**: todas las cuentas pueden hacer lo mismo.
 - Recuperar la contraseña desde la web. **Pospuesto**: se cambia desde la consola del servidor.
+- Crear una cita del panel a partir de un hueco libre mostrado directamente en la agenda (preseleccionando día y hora). **Pospuesto**, decisión del usuario 2026-10-05: se valorará en una iteración siguiente, tras probar en el móvil real del salón el resto de la adaptación móvil (PRF-089 y siguientes).
 
 ## Especificación funcional
 
@@ -218,6 +220,21 @@ La imagen del logo de los correos es una excepción a la regla general de servir
 - **PRF-076.** El botón «Reservar cita →» del inicio de la portada y el de cada página de servicio **deben** llevar a la página de reservas, igual que el de la cabecera (PRF-056). Los botones que invitan explícitamente a llamar (por ejemplo, «Llamar ahora») y los de WhatsApp se mantienen como están.
 - **PRF-088.** La sección «Reserva tu cita» de la portada **debe** ofrecer también un botón «Reservar online» que lleve a la página de reservas, sin quitar el teléfono ni WhatsApp, y las preguntas frecuentes sobre cómo pedir cita **deben** mencionar la reserva online sin prometer nada que el sistema no haga (por ejemplo, que se pueda reservar online cualquier servicio). Decisión del usuario, 2026-10-05 (revisión `booking-admin-tweaks`, L10).
 
+### Adaptación móvil del panel y la reserva pública (2026-10-05)
+
+El panel lo usan sobre todo las peluqueras desde el móvil, con una mano, mientras atienden citas que llegan por teléfono o WhatsApp. La reserva pública la usan sobre todo las clientas desde el móvil. Decisión del usuario, 2026-10-05, tras la auditoría móvil de fase 1 del agente `programador`.
+
+- **PRF-089.** Los botones y los enlaces de acción frecuente del panel (Editar, Cancelar cita, Eliminar, Guardar, Nueva cita, los módulos del menú, Cerrar sesión) **deben** tener una zona táctil de al menos 44×44 px.
+- **PRF-090.** En anchos de pantalla menores de 768 px, el panel **debe** mostrar una navegación inferior fija con los cinco módulos, utilizable con el pulgar, con la página activa marcada; en pantallas de 768 px o más se mantiene el menú superior actual. La navegación inferior **no debe** tapar el contenido de la pantalla ni quedar oculta tras la zona segura del dispositivo (recorte inferior del iPhone).
+- **PRF-091.** La lista de servicios **debe** mostrarse como tarjetas, en todos los anchos de pantalla, sin tabla con *scroll* horizontal.
+- **PRF-092.** La agenda **debe** ofrecer un acceso directo a «Mañana», además de «Hoy» y de ir a un día anterior, siguiente o concreto.
+- **PRF-093.** La agenda **debe** tener, en anchos de pantalla menores de 768 px, un botón flotante para crear una cita nueva, siempre visible sin desplazarse por la lista de citas, que no tape la navegación inferior ni la última cita.
+- **PRF-094.** En la tarjeta de cada cita, «Editar» y «Cancelar cita» **deben** tener zonas táctiles independientes y visualmente distintas entre sí (PRF-089), para no confundir una acción destructiva con una que no lo es.
+- **PRF-095.** Cuando la cita tiene teléfono, su tarjeta en la agenda **debe** ofrecer, además de llamar, abrir WhatsApp con la clienta en un toque, con el teléfono normalizado a formato internacional (prefijo `+34` cuando no lleve ninguno) y sin romperse con un teléfono mal formado.
+- **PRF-096.** El horario semanal **no debe** producir *scroll* horizontal ni recortar los campos de hora en anchos de pantalla de 360 px.
+- **PRF-097.** El calendario y las horas de la página de reservas **deben** tener una zona táctil de al menos 44 px de alto.
+- **PRF-098.** El botón para cancelar la cita en la página personal de la clienta **debe** ocupar todo el ancho disponible en el móvil, para que sea fácil de tocar.
+
 ## Datos existentes y transición
 
 No hay citas, servicios ni cuentas previos. Al desplegar se crean el horario inicial (PRF-019) y los ajustes iniciales (PRF-020). No se crean servicios: los da de alta el salón. Hasta que exista al menos un servicio reservable, la página de reservas muestra el mensaje de PRF-027. Antes de publicar hay que crear al menos una cuenta del panel, configurar el correo y la dirección del salón (PRF-055) y completar los datos pendientes de la política de privacidad (PRF-059). Las citas que lleguen por teléfono o WhatsApp deben apuntarse en el panel para que ocupen su hueco.
@@ -238,6 +255,7 @@ El remitente de correo real (PRF-070, PRF-071) sigue pendiente del buzón y el s
 - **CA-10 (PRF-070 a PRF-075).** Los correos muestran «Peluquería Jenver» como remitente y como marca (colores, logo o nombre, pie propio), sin ningún rastro de la plantilla por defecto. El despliegue falla si el nombre de la aplicación o el remitente siguen siendo los de la plantilla.
 - **CA-11 (PRF-077 a PRF-087).** El salón mueve una cita confirmada futura (día, hora y servicio) y puede editar los datos de la clienta a la vez. Un hueco sin capacidad, fuera de horario o en un cierre avisa con el motivo y exige confirmar antes de guardar. La clienta recibe el aviso con el mismo enlace; un fallo de envío no deshace el cambio ni se reintenta. Si cambia su email, recibe en la dirección nueva un enlace nuevo y el anterior deja de funcionar; si ese correo falla, el panel lo avisa y se reintenta. Una cita cancelada o pasada no se puede mover, un formulario desfasado no se guarda, y no queda ningún rastro del cambio en sus datos.
 - **CA-12 (PRF-076, PRF-088).** El botón «Reservar cita →» de la portada y de cada página de servicio, y el «Reservar online» de la sección «Reserva tu cita», llevan a la página de reservas; los botones de llamada y de WhatsApp se mantienen. Las preguntas frecuentes sobre cómo pedir cita mencionan la reserva online.
+- **CA-13 (PRF-089 a PRF-098).** En 360-414 px de ancho: los botones y enlaces de acción del panel miden al menos 44×44 px; el panel tiene una navegación inferior fija por debajo de 768 px, sin tapar contenido; los servicios se ven en tarjetas; la agenda ofrece «Mañana» y un botón flotante para crear una cita, y separa Editar de Cancelar; la tarjeta de una cita abre WhatsApp con el teléfono normalizado; el horario semanal no hace *scroll* horizontal; el calendario y las horas de `/reservas` miden al menos 44 px; el botón de cancelar de `/cita/{token}` ocupa todo el ancho.
 
 ## Plan de verificación
 
@@ -323,6 +341,16 @@ El remitente de correo real (PRF-070, PRF-071) sigue pendiente del buzón y el s
 | PRF-086 | Dos cambios simultáneos sobre la misma cita (o un cambio y una cancelación a la vez) → el resultado final es el de uno de los dos, nunca una mezcla. Guardar un formulario abierto antes de otro cambio → no se guarda y se avisa. |
 | PRF-087 | Cambiar el email de una cita → enlace nuevo; el anterior da «no encontrado»; la dirección nueva recibe un correo con la cita y el enlace nuevo (uno solo si también se mueve). Simular un fallo → el panel avisa y la tarea periódica lo reenvía. |
 | PRF-088 | La sección «Reserva tu cita» de la portada lleva a la página de reservas sin perder teléfono ni WhatsApp; las preguntas frecuentes sobre pedir cita mencionan la reserva online. |
+| PRF-089 | A 375 px, medir con el inspector «Editar», «Cancelar cita», «Guardar», «Nueva cita», un módulo del menú y «Cerrar sesión» → todos miden al menos 44×44 px. |
+| PRF-090 | A 375 px, cualquier pantalla del panel → navegación inferior fija con los 5 módulos, el activo marcado. A 1024 px → el menú superior de siempre, sin barra inferior. |
+| PRF-091 | A 375 px, abrir Servicios con 3 servicios → se ven como tarjetas, sin `scroll` horizontal ni `<table>`. |
+| PRF-092 | En la agenda, pulsar «Mañana» → va al día siguiente al de hoy. |
+| PRF-093 | A 375 px, en una agenda con varias citas, hacer `scroll` hasta el final → el botón flotante de nueva cita sigue visible y no tapa la última cita ni la navegación inferior. |
+| PRF-094 | En la tarjeta de una cita, «Editar» y «Cancelar cita» → estilos y color distintos, con separación entre ambos. |
+| PRF-095 | Cita con teléfono «633 912 050» → el enlace de WhatsApp de su tarjeta es `https://wa.me/34633912050`. Cita con teléfono ya con prefijo (`+34633912050`) → no se duplica el prefijo. |
+| PRF-096 | A 360 px, abrir Horario → ninguna fila de tramo produce `scroll` horizontal ni recorta los campos de hora. |
+| PRF-097 | A 375 px, medir las celdas del calendario y los botones de hora de `/reservas` → al menos 44 px de alto. |
+| PRF-098 | A 375 px, abrir `/cita/{token}` de una cita cancelable → el botón «Cancelar cita» ocupa todo el ancho disponible. |
 
 ## Riesgos y marcha atrás
 

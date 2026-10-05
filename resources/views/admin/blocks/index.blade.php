@@ -57,7 +57,7 @@
                 <form method="POST" action="{{ route('admin.blocks.destroy', $block) }}" onsubmit="return confirm('¿Eliminar este cierre? Sus horas volverán a estar disponibles.');">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="text-red-300 hover:underline text-sm">Eliminar</button>
+                    <button type="submit" class="btn-danger-outline text-sm">Eliminar</button>
                 </form>
             </li>
         @endforeach

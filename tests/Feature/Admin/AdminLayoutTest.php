@@ -28,3 +28,38 @@ test('every admin screen shows the module navigation and the logout button', fun
     'opening hours' => 'admin.opening-hours.edit',
     'settings' => 'admin.settings.edit',
 ]);
+
+/**
+ * The shared button components must give every "Guardar"/"Entrar"/etc.
+ * action at least a 44px touch target (PRF-089), without the pages that
+ * override the padding for their own CTAs (home, contacto, service pages)
+ * having to change anything.
+ */
+test('the shared button styles meet the 44px minimum touch target', function () {
+    $css = file_get_contents(resource_path('css/app.css'));
+
+    preg_match('/\.btn-gold\s*\{([^}]*)\}/', $css, $goldMatch);
+    preg_match('/\.btn-outline\s*\{([^}]*)\}/', $css, $outlineMatch);
+
+    expect($goldMatch)->not->toBeEmpty('`.btn-gold` is missing from app.css');
+    expect($outlineMatch)->not->toBeEmpty('`.btn-outline` is missing from app.css');
+
+    foreach (['btn-gold' => $goldMatch[1], 'btn-outline' => $outlineMatch[1]] as $name => $body) {
+        expect($body)->toMatch('/\bmin-h-11\b/', "`.$name` must set min-h-11 (44px)");
+        expect($body)->toMatch('/\binline-flex\b/', "`.$name` must be a flex container for min-h-11 to apply");
+    }
+});
+
+/**
+ * "Cancelar cita" and "Eliminar" are destructive and must look and feel
+ * different from "Editar"/"Guardar", with their own 44px touch target
+ * (PRF-089, PRF-094).
+ */
+test('the danger button style meets the 44px minimum touch target', function () {
+    $css = file_get_contents(resource_path('css/app.css'));
+
+    preg_match('/\.btn-danger-outline\s*\{([^}]*)\}/', $css, $match);
+
+    expect($match)->not->toBeEmpty('`.btn-danger-outline` is missing from app.css');
+    expect($match[1])->toMatch('/\bmin-h-11\b/')->toMatch('/\binline-flex\b/')->toMatch('/\bred-/');
+});

@@ -40,7 +40,7 @@
                 <form method="POST" action="{{ route('logout') }}" class="ml-auto flex items-center gap-3 text-sm">
                     @csrf
                     <span class="text-gray-400 hidden sm:inline">{{ auth()->user()->name }}</span>
-                    <button type="submit" class="text-gray-300 hover:text-gold underline">Cerrar sesión</button>
+                    <button type="submit" class="btn-outline text-xs px-3">Cerrar sesión</button>
                 </form>
             </div>
         </header>
