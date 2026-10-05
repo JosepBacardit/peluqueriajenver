@@ -18,7 +18,7 @@
                     @php($value = $time->format('H:i'))
                     <label class="cursor-pointer">
                         <input type="radio" name="time" value="{{ $value }}" class="peer sr-only" required @checked(old('time') === $value)>
-                        <span class="block text-center py-2 border border-[#2A2A2A] peer-checked:bg-gold peer-checked:text-black peer-checked:border-gold peer-focus-visible:ring-2 peer-focus-visible:ring-gold hover:border-gold">{{ $value }}</span>
+                        <span class="min-h-11 flex items-center justify-center border border-[#2A2A2A] peer-checked:bg-gold peer-checked:text-black peer-checked:border-gold peer-focus-visible:ring-2 peer-focus-visible:ring-gold hover:border-gold">{{ $value }}</span>
                     </label>
                 @endforeach
             </div>

@@ -113,6 +113,18 @@ test('choosing a day lists only its free times and the booking form', function (
         ->assertSee('href="'.route('privacidad').'"', false);
 });
 
+/**
+ * PRF-097: the calendar day cells and the time-slot buttons must meet the
+ * 44px minimum touch target on a phone.
+ */
+test('the calendar days and the time slots meet the 44px minimum touch target', function () {
+    Appointment::factory()->create(['starts_at' => '2030-01-08 10:00', 'ends_at' => '2030-01-08 11:00']);
+
+    $html = $this->get(route('reservas', ['servicio' => $this->service->id, 'fecha' => '2030-01-08']))->assertOk()->getContent();
+
+    expect(substr_count($html, 'min-h-11 flex items-center justify-center border'))->toBeGreaterThan(30); // every day cell of the month, available or not, plus every time slot
+});
+
 test('a customer books a free time and lands on the appointment page', function () {
     $response = $this->post(route('reservas.store'), bookingPayload());
 

@@ -37,10 +37,10 @@
                 @endphp
                 @if ($isAvailable)
                     <a href="{{ route('reservas', ['servicio' => $service->id, 'mes' => $month->format('Y-m'), 'fecha' => $date->toDateString()]) }}#horas"
-                       class="py-2 border {{ $isSelected ? 'bg-gold text-black border-gold font-semibold' : 'border-gold/40 text-white hover:bg-gold/20' }}"
+                       class="min-h-11 flex items-center justify-center border {{ $isSelected ? 'bg-gold text-black border-gold font-semibold' : 'border-gold/40 text-white hover:bg-gold/20' }}"
                        @if ($isSelected) aria-current="date" @endif>{{ $number }}</a>
                 @else
-                    <span class="py-2 border border-transparent text-gray-600" aria-disabled="true">{{ $number }}</span>
+                    <span class="min-h-11 flex items-center justify-center border border-transparent text-gray-600" aria-disabled="true">{{ $number }}</span>
                 @endif
             @endfor
         </div>
