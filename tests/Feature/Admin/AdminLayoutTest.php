@@ -65,29 +65,69 @@ test('the danger button style meets the 44px minimum touch target', function () 
 });
 
 /**
- * Below 768px (md:hidden) the panel shows a fixed bottom tab bar with the
- * same five modules as the top nav (which becomes hidden md:flex), so it
- * stays reachable with the thumb (PRF-090). The active module is marked in
+ * Below 768px (md:hidden) the panel shows a hamburger button that opens a
+ * dropdown menu with the same five modules as the top nav (which becomes
+ * hidden md:flex), so the menu can grow well past 5 apartados without
+ * running out of room the way a bottom tab bar would (decision of
+ * 2026-10-05, replaces the bottom bar). The active module is marked in
  * both navs (one of which is display:none at any given width).
  */
-test('the panel shows a fixed bottom navigation for phones with the five modules and the active one marked', function () {
+test('the panel shows a hamburger menu for phones with the five modules and the active one marked', function () {
     $this->actingAs(User::factory()->create());
 
     $html = $this->get(route('admin.services.index'))->assertOk()->getContent();
 
-    // The desktop nav is now hidden below md, the bottom nav only below md.
+    // The desktop nav is now hidden below md, the hamburger only below md.
     expect($html)->toContain('hidden md:flex')->toContain('md:hidden');
-    expect(substr_count($html, 'fixed inset-x-0 bottom-0'))->toBe(1);
-    // Once in the nav's inline style, once in <main>'s arbitrary Tailwind
-    // class (pb-[calc(4.5rem+env(safe-area-inset-bottom))]), so content
-    // never ends up underneath the bar or the iPhone home indicator.
-    expect(substr_count($html, 'env(safe-area-inset-bottom)'))->toBe(2);
 
-    // Both navs render the 5 modules and mark "Servicios" as active.
-    expect(substr_count($html, '>Servicios<'))->toBeGreaterThanOrEqual(2);
+    // The button: 44x44, aria-expanded/aria-controls/aria-label.
+    expect($html)->toContain('id="admin-menu-btn"')
+        ->toContain('w-11 h-11')
+        ->toContain('aria-controls="admin-menu"')
+        ->toMatch('/aria-expanded="(true|false)"/')
+        ->toMatch('/aria-label="(Abrir|Cerrar) menú"/');
+
+    // The dropdown menu itself: scrollable, so it never runs off the
+    // screen once the panel grows to 10-12 apartados.
+    expect($html)->toContain('id="admin-menu"')->toContain('overflow-y-auto');
+
+    // Both navs render the 5 modules and mark "Servicios" as active, each
+    // link at least 44px tall in the dropdown.
+    expect(substr_count($html, '>Servicios<'))->toBeGreaterThanOrEqual(1);
+    expect($html)->toContain('Servicios</a>');
     expect(substr_count($html, 'aria-current="page"'))->toBe(2);
+    expect($html)->toContain('min-h-11');
+
+    // "Cerrar sesión" is inside the dropdown, at the end, visually
+    // separated (its own form, with a border above it).
+    expect($html)->toMatch('/<form method="POST" action="[^"]*logout"[^>]*class="mt-2 border-t[^>]*>.*Cerrar sesión/s');
 
     // Every module has its own icon, hidden from assistive tech (the
     // visible label is the accessible name).
     expect(substr_count($html, 'aria-hidden="true"'))->toBeGreaterThanOrEqual(5);
+
+    // The hamburger's own open/close icons are also decorative.
+    expect($html)->toContain('id="admin-menu-icon-open"')->toContain('id="admin-menu-icon-close"');
+});
+
+/**
+ * Progressive enhancement (justification for "sin JS, el menú tiene que
+ * seguir siendo accesible"): the dropdown has no `hidden` class in the
+ * markup and the button starts "expanded", so without JavaScript the menu
+ * is simply always visible — every module and "Cerrar sesión" stay
+ * reachable with no button dependency. The inline script (present on every
+ * authenticated page) is what collapses it once JS does run.
+ */
+test('the dropdown menu is visible by default, so it still works without JavaScript', function () {
+    $this->actingAs(User::factory()->create());
+
+    $html = $this->get(route('admin.agenda'))->assertOk()->getContent();
+
+    preg_match('/<nav id="admin-menu"[^>]*class="([^"]*)"/', $html, $match);
+
+    // "md:hidden" (collapses only below the md breakpoint) is expected;
+    // a standalone "hidden" token (display:none at every width) is not.
+    expect(explode(' ', $match[1] ?? ''))->not->toContain('hidden');
+    expect($html)->toContain('aria-expanded="true"');
+    expect($html)->toContain('<script>');
 });

@@ -17,9 +17,12 @@
     <a href="{{ route('admin.appointments.create', ['fecha' => $day->toDateString()]) }}" class="hidden md:inline-flex btn-gold text-sm">Nueva cita</a>
 </div>
 
+{{-- There is no bottom bar any more (the panel nav is a hamburger now),
+     so the floating button only needs to clear the iPhone safe area, not
+     a reserved bar height. --}}
 <a href="{{ route('admin.appointments.create', ['fecha' => $day->toDateString()]) }}"
    class="md:hidden fixed right-4 z-40 flex items-center justify-center w-14 h-14 rounded-full bg-gold text-black shadow-lg shadow-black/40 hover:bg-gold-light"
-   style="bottom: calc(4.5rem + env(safe-area-inset-bottom))"
+   style="bottom: calc(1.5rem + env(safe-area-inset-bottom))"
    aria-label="Nueva cita">
     <svg class="w-6 h-6" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
         <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -44,18 +47,22 @@
     </form>
 </nav>
 
-@foreach ($blocks as $block)
-    <p class="mb-4 border border-amber-500/40 bg-amber-500/10 text-amber-200 px-4 py-2 text-sm">
-        {{ $block->isFullClosure() ? 'Cierre total' : 'Capacidad reducida en '.$block->capacity_reduction }}:
-        {{ $block->starts_at->format('d/m H:i') }} → {{ $block->ends_at->format('d/m H:i') }}@if ($block->reason) · {{ $block->reason }}@endif
-    </p>
-@endforeach
+{{-- pb-24 (phones only): keeps the floating "+" button from sitting on
+     top of the last appointment card once the list is scrolled to the
+     bottom (PRF-093). --}}
+<div class="pb-24 md:pb-0">
+    @foreach ($blocks as $block)
+        <p class="mb-4 border border-amber-500/40 bg-amber-500/10 text-amber-200 px-4 py-2 text-sm">
+            {{ $block->isFullClosure() ? 'Cierre total' : 'Capacidad reducida en '.$block->capacity_reduction }}:
+            {{ $block->starts_at->format('d/m H:i') }} → {{ $block->ends_at->format('d/m H:i') }}@if ($block->reason) · {{ $block->reason }}@endif
+        </p>
+    @endforeach
 
-@if ($appointments->isEmpty())
-    <p class="text-gray-300">No hay citas este día.</p>
-@else
-    <ul class="space-y-3">
-        @foreach ($appointments as $appointment)
+    @if ($appointments->isEmpty())
+        <p class="text-gray-300">No hay citas este día.</p>
+    @else
+        <ul class="space-y-3">
+            @foreach ($appointments as $appointment)
             <li class="border border-[#2A2A2A] p-4 {{ $appointment->isConfirmed() ? 'bg-[#111111]' : 'opacity-60' }}">
                 <div class="flex flex-wrap justify-between gap-4">
                     <div class="space-y-1">
@@ -95,7 +102,8 @@
                     </div>
                 </div>
             </li>
-        @endforeach
-    </ul>
-@endif
+            @endforeach
+        </ul>
+    @endif
+</div>
 @endsection

@@ -1,5 +1,7 @@
 # T021 — Navegación inferior fija del panel en móvil
 
+> **Sustituida por T028 (2026-10-05).** El usuario cambió de opinión: el panel va a crecer con más apartados y una barra inferior fija no escala bien pasados 5-6 módulos. El menú de PRF-090 pasó a ser un botón hamburguesa con un desplegable que se puede recorrer con *scroll*. Esta tarea se conserva como historial de la decisión original; el código y los tests que describe ya no existen tal cual — ver `T028-menu-hamburguesa.md` para el estado actual.
+
 - **Tipo:** FEATURE
 - **Puntos de referencia:** PRF-090
 - **Depende de:** T001 (layout y los cinco módulos)
