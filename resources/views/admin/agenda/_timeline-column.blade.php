@@ -22,7 +22,9 @@
                     <div class="flex-1 min-w-0 flex flex-col border-l border-[#1A1A1A] first:border-l-0">
                         @foreach ($segments as $segment)
                             @if ($segment['type'] === 'appointment')
-                                @php($appointment = $segment['appointment'])
+                                @php
+                                    $appointment = $segment['appointment'];
+                                @endphp
                                 <a href="#cita-{{ $appointment->id }}"
                                    class="block overflow-hidden px-1 py-0.5 text-[11px] leading-tight bg-[#1c1c1c] border {{ $segment['overCapacity'] ? 'border-amber-400' : 'border-gold/40' }} hover:border-gold"
                                    style="height: {{ $segment['height'] }}px"
@@ -41,8 +43,19 @@
                                         Cierre
                                     @endif
                                 </div>
+                            @elseif ($segment['tappable'])
+                                @php
+                                    $slotTime = sprintf('%02d:%02d', intdiv($segment['startMinute'], 60), $segment['startMinute'] % 60);
+                                @endphp
+                                {{-- Free slot of 30 min or more (PRF-114): tap to create a
+                                     booking at this exact time. Shorter gaps are not their
+                                     own target — DayTimeline already marks them not
+                                     tappable (not big enough for 44px). --}}
+                                <a href="{{ route('admin.appointments.create', ['fecha' => $day->toDateString(), 'hora' => $slotTime, 'volver' => $volver]) }}"
+                                   class="block hover:bg-gold/10"
+                                   style="height: {{ $segment['height'] }}px"
+                                   aria-label="Hueco libre a las {{ $slotTime }}, plaza {{ $lane + 1 }}"></a>
                             @else
-                                {{-- free: empty for now, T037 makes it a tappable link to "Nueva cita". --}}
                                 <div style="height: {{ $segment['height'] }}px"></div>
                             @endif
                         @endforeach

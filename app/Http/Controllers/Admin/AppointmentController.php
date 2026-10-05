@@ -35,7 +35,20 @@ class AppointmentController extends Controller
             // Review finding M1: where to return to after saving, instead
             // of always landing on vista Día.
             'volver' => self::volverParam($request->query('volver')),
+            // PRF-114: prefilled from a free slot tapped on the timeline
+            // grid; a missing or malformed value just leaves the field
+            // empty, same as before this existed.
+            'time' => self::timeParam($request->query('hora')),
         ]);
+    }
+
+    /**
+     * A valid "HH:MM" (00-23:00-59), or null — never trusts the raw query
+     * value past this check.
+     */
+    private static function timeParam(mixed $value): ?string
+    {
+        return is_string($value) && preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $value) === 1 ? $value : null;
     }
 
     public function store(StoreAdminAppointmentRequest $request, CreateAppointment $createAppointment, AppointmentNotifier $notifier): RedirectResponse

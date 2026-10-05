@@ -156,6 +156,13 @@ restart to be picked up, just that delay. `docker compose exec app php -r
 "opcache_reset();"` does **not** speed this up — it resets a separate
 OPcache instance private to that one-off CLI process, not php-fpm's. To see
 a change immediately instead of waiting: `docker compose restart app`.
+This also applies to compiled Blade views (`storage/framework/views/*.php`):
+`php artisan view:clear` deletes and regenerates them on disk, but php-fpm's
+OPcache can keep serving the bytecode it already had cached for that same
+path for up to the 60s window, so a Blade fix can appear not to have taken
+effect (or a stale error can keep reappearing) right after `view:clear`
+alone — `docker compose restart app` is the reliable fix, same as for any
+other `.php` file.
 
 **First start:** the `mysql` service starts empty. Run
 `docker compose exec app php artisan migrate` once after the first

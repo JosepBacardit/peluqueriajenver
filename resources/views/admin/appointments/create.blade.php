@@ -43,7 +43,7 @@
         </div>
         <div>
             <label for="time" class="block text-sm mb-1">Hora</label>
-            <input id="time" name="time" type="time" step="300" required value="{{ old('time') }}" class="{{ $inputClass }}" {!! $fieldAria('time') !!}>
+            <input id="time" name="time" type="time" step="300" required value="{{ old('time', $time) }}" class="{{ $inputClass }}" {!! $fieldAria('time') !!}>
             @error('time') <p id="time-error" class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
         </div>
     </div>
