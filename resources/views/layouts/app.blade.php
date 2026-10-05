@@ -71,24 +71,17 @@
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
 
-    <!-- DNS prefetch y preconnect para Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-    <!-- Preload crítico de fuentes woff2 para evitar FOUT -->
-    <link rel="preload" as="font" type="font/woff2" href="https://fonts.gstatic.com/s/playfairdisplay/v30/nuFiD-vYS-_2YttRW7dM7IitM_b85eLs6Gs.woff2" crossorigin>
-    <link rel="preload" as="font" type="font/woff2" href="https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3i6t4kDjJwO5Do-5d-PXqqKOnQigVc.woff2" crossorigin>
-
-    <!-- Preconnect and preload fonts for early discovery -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-    <!-- Preload font CSS to hint browser to prioritize download -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap">
-
-    <!-- Load Google Fonts asynchronously to avoid render blocking -->
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"></noscript>
+    {{--
+        Fonts are self-hosted (public/fonts/, @font-face rules in
+        resources/css/app.css) so no request and no visitor IP ever reaches
+        Google's font servers. Only the two weights needed before first
+        paint of the hero text (Playfair Display 400, Inter 400) are
+        preloaded here; the rest load with the rest of app.css below.
+        crossorigin is required even for a same-origin font preload, or
+        the browser fetches it twice.
+    --}}
+    <link rel="preload" as="font" type="font/woff2" href="{{ asset('fonts/playfair-display-latin-400-normal.woff2') }}" crossorigin>
+    <link rel="preload" as="font" type="font/woff2" href="{{ asset('fonts/inter-latin-400-normal.woff2') }}" crossorigin>
 
     <!-- System font stack with metrics that match Google Fonts -->
     <style>

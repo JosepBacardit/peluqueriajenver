@@ -3,6 +3,68 @@
 @source '../**/*.blade.php';
 @source '../js/**/*.js';
 
+/*
+ * Self-hosted fonts (public/fonts/), so no visitor IP reaches Google. Files
+ * are the "latin" subset woff2 from the official @fontsource npm packages
+ * (@fontsource/inter@5.2.6, @fontsource/playfair-display@5.3.0, OFL-1.1
+ * licensed, see public/fonts/OFL-inter.txt and OFL-playfair-display.txt),
+ * covering the weights and styles actually used on the site: Inter 300/400/
+ * 500/600 normal, Playfair Display 400/700 normal. Playfair's italic was
+ * requested from Google before but never applied anywhere (no element pairs
+ * font-serif with italic), so it is dropped here; Inter's italic paragraphs
+ * (home.blade.php reviews) already render with the browser's synthetic
+ * italic today, unchanged by this. The "latin" subset covers Spanish and
+ * Catalan: á/é/í/ó/ú/ü/ñ/ç and the "l·l" middot all fall in U+0000-00FF,
+ * already inside this subset's unicode-range, so "latin-ext" is not needed.
+ */
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 300;
+    font-display: swap;
+    src: url('/fonts/inter-latin-300-normal.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/inter-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('/fonts/inter-latin-500-normal.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('/fonts/inter-latin-600-normal.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Playfair Display';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/playfair-display-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Playfair Display';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('/fonts/playfair-display-latin-700-normal.woff2') format('woff2');
+}
+
 @theme {
     --font-sans: 'Inter', system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
     --font-serif: 'Playfair Display', Georgia, serif;
