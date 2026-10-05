@@ -5,7 +5,7 @@
      take over the whole page; the inline script below scrolls it to
      "ahora" on load, or leaves it at the top (the opening time) when
      there is no "ahora" line to show. --}}
-<div id="timeline-scroll" class="border border-[#2A2A2A] mb-6 overflow-y-auto" style="max-height: 70vh">
+<div id="timeline-scroll" class="border border-[#2A2A2A] mb-6 overflow-y-auto" style="max-height: 70vh" role="region" aria-label="Disponibilidad del día">
     <div class="flex">
         @include('admin.agenda._timeline-hour-axis')
         @include('admin.agenda._timeline-column', ['compact' => false])

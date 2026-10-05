@@ -131,3 +131,27 @@ test('the agenda nav lays out in a single row from md up', function () {
 
     expect($html)->toContain('md:flex-row md:items-center md:justify-between');
 });
+
+/**
+ * T040: each lane groups its segments under role="group" with a "Plaza N"
+ * label, so a screen reader user knows which capacity slot it belongs to
+ * — lanes never name a hairdresser (PRF-109).
+ */
+test('each lane in the Día timeline is labelled "Plaza N", not a hairdresser', function () {
+    $html = $this->get(route('admin.agenda'))->assertOk()->getContent();
+
+    expect($html)->toContain('role="group" aria-label="Plaza 1"');
+    expect($html)->toContain('role="group" aria-label="Plaza 2"');
+});
+
+/**
+ * T040: the Día and Semana (desktop) timelines are landmark regions, so a
+ * screen reader user can jump straight to them.
+ */
+test('the Día and Semana timeline grids are landmark regions', function () {
+    $dia = $this->get(route('admin.agenda'))->assertOk()->getContent();
+    $semana = $this->get(route('admin.agenda', ['vista' => 'semana']))->assertOk()->getContent();
+
+    expect($dia)->toContain('role="region" aria-label="Disponibilidad del día"');
+    expect($semana)->toContain('role="region" aria-label="Semana del 07/01 al 13/01/2030"');
+});

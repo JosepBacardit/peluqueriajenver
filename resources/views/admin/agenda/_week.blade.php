@@ -64,7 +64,7 @@
 {{-- Desktop: the same hourly timeline grid as Día, repeated in 7 columns
      (PRF-100, PRF-118), with the hour axis shared once on the left. This
      replaces the earlier list-based 7-column overview entirely. --}}
-<div class="hidden md:block border border-[#2A2A2A] overflow-hidden" aria-label="Semana del {{ $weekStart->format('d/m') }} al {{ $weekEnd->format('d/m/Y') }}">
+<div class="hidden md:block border border-[#2A2A2A] overflow-hidden" role="region" aria-label="Semana del {{ $weekStart->format('d/m') }} al {{ $weekEnd->format('d/m/Y') }}">
     {{-- Header row: a spacer matching the hour axis width, then the 7 day
          headers — the one part of this view that is genuinely tabular, so
          it keeps the role="row"/"columnheader" pair (review finding M3's

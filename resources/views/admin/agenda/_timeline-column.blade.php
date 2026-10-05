@@ -21,7 +21,11 @@
         @else
             <div class="flex" style="height: {{ $piece['height'] }}px">
                 @foreach ($piece['laneSegments'] as $lane => $segments)
-                    <div class="flex-1 min-w-0 flex flex-col border-l border-[#1A1A1A] first:border-l-0">
+                    {{-- A screen reader reads each lane's segments together
+                         (PRF-119): "role=group" plus a label says which
+                         plaza they belong to, since lanes never mean a
+                         particular hairdresser — only capacity. --}}
+                    <div class="flex-1 min-w-0 flex flex-col border-l border-[#1A1A1A] first:border-l-0" role="group" aria-label="Plaza {{ $lane + 1 }}">
                         @foreach ($segments as $segment)
                             @if ($segment['type'] === 'appointment')
                                 @php
