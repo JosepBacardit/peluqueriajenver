@@ -19,6 +19,11 @@
 @else
 <form method="POST" action="{{ route('admin.appointments.store') }}" class="space-y-5 max-w-2xl">
     @csrf
+    {{-- Review finding M1: carried through to store() so it redirects back
+         to the view/date the salon was on, not always vista Día. --}}
+    @if ($volver)
+        <input type="hidden" name="volver" value="{{ old('volver', $volver) }}">
+    @endif
 
     <div>
         <label for="service_id" class="block text-sm mb-1">Servicio</label>
@@ -68,9 +73,15 @@
         @error('notes') <p id="notes-error" class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
     </div>
 
+    @php
+        // $volver is already validated ("vista:fecha" or null) by the
+        // controller, so splitting it here is safe (review finding M1).
+        $volverParts = $volver ? explode(':', $volver, 2) : null;
+        $backRoute = $volverParts ? ['vista' => $volverParts[0], 'fecha' => $volverParts[1]] : ['fecha' => $day->toDateString()];
+    @endphp
     <div class="flex gap-4 items-center">
         <button type="submit" class="btn-gold">Guardar cita</button>
-        <a href="{{ route('admin.agenda', ['fecha' => $day->toDateString()]) }}" class="text-gray-300 hover:text-gold">Volver a la agenda</a>
+        <a href="{{ route('admin.agenda', $backRoute) }}" class="text-gray-300 hover:text-gold">Volver a la agenda</a>
     </div>
 </form>
 @endif

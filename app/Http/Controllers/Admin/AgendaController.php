@@ -24,14 +24,23 @@ class AgendaController extends Controller
         $vista = self::viewFromQuery($request->query('vista'));
         $day = self::dayFromQuery($request->query('fecha'));
         $weekStart = $day->startOfWeek(CarbonInterface::MONDAY);
+        // The week's last day (Sunday), inclusive — only for the "Semana
+        // del ... al ..." label and the desktop grid's aria-label. Distinct
+        // from weekData()'s $weekEnd, the exclusive bound its queries use
+        // (review finding L1).
+        $weekLastDay = $weekStart->addDays(6);
         $month = $day->startOfMonth();
 
         return view('admin.agenda.index', [
             'vista' => $vista,
             'day' => $day,
             'weekStart' => $weekStart,
-            'weekEnd' => $weekStart->addDays(6),
+            'weekEnd' => $weekLastDay,
             'month' => $month,
+            // "volver" (review finding M1): where Nueva cita/Editar/Cancelar
+            // should return to, so acting on a day doesn't silently drop
+            // back to vista Día.
+            'volver' => "$vista:{$day->toDateString()}",
             ...match ($vista) {
                 'semana' => $this->weekData($weekStart),
                 'mes' => $this->monthData($month),
@@ -53,15 +62,49 @@ class AgendaController extends Controller
      */
     public static function dayFromQuery(mixed $value): CarbonImmutable
     {
-        if (is_string($value) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
-            $day = CarbonImmutable::createFromFormat('!Y-m-d', $value);
-
-            if ($day !== null && $day->format('Y-m-d') === $value) {
-                return $day;
-            }
+        if (self::isValidDateString($value)) {
+            return CarbonImmutable::createFromFormat('!Y-m-d', $value);
         }
 
         return CarbonImmutable::today();
+    }
+
+    /**
+     * Decodes and validates the "volver" parameter (review finding M1): a
+     * "vista:fecha" string built by the agenda views, telling
+     * AppointmentController where to send the salon back after creating,
+     * moving or cancelling an appointment. Both parts are checked against
+     * the same whitelist/format as "vista" and "fecha" above (never an
+     * arbitrary string), and the result is only ever used to build a
+     * route() call to admin.agenda — never as a raw redirect URL, so this
+     * can't become an open redirect.
+     *
+     * @return array{vista: string, fecha: string}|null null when missing or invalid.
+     */
+    public static function volverFromQuery(mixed $value): ?array
+    {
+        if (! is_string($value) || ! str_contains($value, ':')) {
+            return null;
+        }
+
+        [$vista, $fecha] = explode(':', $value, 2);
+
+        if (! in_array($vista, self::VIEWS, true) || ! self::isValidDateString($fecha)) {
+            return null;
+        }
+
+        return ['vista' => $vista, 'fecha' => $fecha];
+    }
+
+    private static function isValidDateString(mixed $value): bool
+    {
+        if (! is_string($value) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return false;
+        }
+
+        $day = CarbonImmutable::createFromFormat('!Y-m-d', $value);
+
+        return $day !== null && $day->format('Y-m-d') === $value;
     }
 
     /**
@@ -85,7 +128,7 @@ class AgendaController extends Controller
      * (PRF-100, PRF-101): both grouped in PHP per day, never queried once
      * per day of the week.
      *
-     * @return array{days: list<array{date: CarbonImmutable, appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>, isClosed: bool, isToday: bool}>}
+     * @return array{days: list<array{date: CarbonImmutable, appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>, isClosed: bool, hasPartialClosure: bool, isToday: bool}>}
      */
     private function weekData(CarbonImmutable $weekStart): array
     {
@@ -105,12 +148,20 @@ class AgendaController extends Controller
         $days = [];
         for ($date = $weekStart; $date->lt($weekEnd); $date = $date->addDay()) {
             $nextDate = $date->addDay();
+            $dayBlocks = $blocks->filter(fn (ScheduleBlock $b) => $b->starts_at->lt($nextDate) && $b->ends_at->gt($date))->values();
+            // A full closure (review finding H1, PRF-105) closes the day
+            // the same as having no opening-hours range; a partial one
+            // (capacity reduction) does not, but is still worth flagging,
+            // same as vista Día's amber banner.
+            $hasFullClosure = $dayBlocks->contains(fn (ScheduleBlock $b) => $b->capacity_reduction === null);
+            $isClosed = ! in_array($date->isoWeekday(), $openWeekdays, true) || $hasFullClosure;
 
             $days[] = [
                 'date' => $date,
                 'appointments' => $appointments->filter(fn (Appointment $a) => $a->starts_at->gte($date) && $a->starts_at->lt($nextDate))->values(),
-                'blocks' => $blocks->filter(fn (ScheduleBlock $b) => $b->starts_at->lt($nextDate) && $b->ends_at->gt($date))->values(),
-                'isClosed' => ! in_array($date->isoWeekday(), $openWeekdays, true),
+                'blocks' => $dayBlocks,
+                'isClosed' => $isClosed,
+                'hasPartialClosure' => ! $isClosed && $dayBlocks->contains(fn (ScheduleBlock $b) => $b->capacity_reduction !== null),
                 'isToday' => $date->isSameDay($today),
             ];
         }

@@ -52,3 +52,79 @@ test('semana and mes navigation buttons reuse the 44px Día button style', funct
 
     expect(substr_count($html, 'class="btn-outline w-11 px-0"'))->toBe(2);
 })->with(['semana', 'mes']);
+
+/**
+ * Review finding M3: the week view's desktop grid (header row + content
+ * row) and its mobile day strip both group their cells under role="row",
+ * completing the role="grid" ARIA pattern (previously only
+ * role="grid"/"columnheader", with no row/gridcell structure underneath).
+ */
+test('the week view groups its cells in role rows and gridcells', function () {
+    $html = $this->get(route('admin.agenda', ['vista' => 'semana']))->assertOk()->getContent();
+
+    // 1 row for the mobile 7-day strip + 2 rows for the desktop grid
+    // (header row, content row).
+    expect(substr_count($html, 'role="row"'))->toBe(3);
+    // 7 gridcells in the mobile strip + 7 in the desktop content row (the
+    // desktop header cells are role="columnheader", not gridcell).
+    expect(substr_count($html, 'role="gridcell"'))->toBe(14);
+});
+
+/**
+ * Review finding M3: same completion for vista Mes.
+ */
+test('the month view groups its cells in role rows and gridcells', function () {
+    // January 2030: 1 leading blank, 31 days chunked into 5 weeks — 1
+    // header row + 5 week rows, 31 gridcells, 1 presentation blank.
+    $html = $this->get(route('admin.agenda', ['vista' => 'mes']))->assertOk()->getContent();
+
+    expect(substr_count($html, 'role="row"'))->toBe(6);
+    expect(substr_count($html, 'role="gridcell"'))->toBe(31);
+    expect(substr_count($html, 'role="presentation"'))->toBe(1);
+});
+
+/**
+ * Review finding L3: when the shown week crosses from one month into the
+ * next, the desktop grid's column headers show "d/m" for the days already
+ * in the new month, not just the day number.
+ */
+test('the week view desktop grid shows the month once the week crosses into it', function () {
+    // The week of 2030-01-28 (Monday) to 2030-02-03 (Sunday) crosses from
+    // January into February on Friday the 1st.
+    $html = $this->get(route('admin.agenda', ['vista' => 'semana', 'fecha' => '2030-01-30']))->assertOk()->getContent();
+
+    expect($html)->toContain('lunes 28');
+    expect($html)->toContain('viernes 01/02');
+});
+
+/**
+ * Review finding N1: the period label only capitalizes its first letter.
+ * A blanket CSS "capitalize" class used to title-case every word, turning
+ * "Semana del ... al ..." into "Semana Del ... Al ...".
+ */
+test('día\'s label capitalizes only the weekday\'s first letter', function () {
+    $this->get(route('admin.agenda'))->assertOk()->assertSee('Martes 08/01/2030');
+});
+
+test('semana\'s label does not capitalize "del"/"al"', function () {
+    $html = $this->get(route('admin.agenda', ['vista' => 'semana']))->assertOk()->getContent();
+
+    expect($html)->toContain('Semana del 07/01 al 13/01/2030');
+    expect($html)->not->toContain('Semana Del');
+    expect($html)->not->toContain(' Al ');
+});
+
+test('mes\'s label capitalizes only the month\'s first letter', function () {
+    $this->get(route('admin.agenda', ['vista' => 'mes']))->assertOk()->assertSee('Enero 2030');
+});
+
+/**
+ * Review finding N2: the view switcher, the Anterior/Siguiente/Hoy
+ * controls and the date form sit in one row from md up, instead of three
+ * stacked blocks that wasted the extra width desktop has.
+ */
+test('the agenda nav lays out in a single row from md up', function () {
+    $html = $this->get(route('admin.agenda'))->assertOk()->getContent();
+
+    expect($html)->toContain('md:flex-row md:items-center md:justify-between');
+});

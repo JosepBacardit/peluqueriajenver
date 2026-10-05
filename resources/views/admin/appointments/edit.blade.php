@@ -28,6 +28,11 @@
     @csrf
     @method('PUT')
     <input type="hidden" name="version" value="{{ old('version', $appointment->updated_at?->getTimestamp()) }}">
+    {{-- Review finding M1: carried through to update() so it redirects back
+         to the view/date the salon was on, not always vista Día. --}}
+    @if ($volver)
+        <input type="hidden" name="volver" value="{{ old('volver', $volver) }}">
+    @endif
 
     <div>
         <label for="service_id" class="block text-sm mb-1">Servicio</label>
@@ -80,9 +85,15 @@
     {{-- "Guardar cambios" must stay the first submit button of the form:
          pressing Enter in a field submits with the first one, and that must
          never be "Guardar igualmente". --}}
+    @php
+        // $volver is already validated ("vista:fecha" or null) by the
+        // controller, so splitting it here is safe (review finding M1).
+        $volverParts = $volver ? explode(':', $volver, 2) : null;
+        $backRoute = $volverParts ? ['vista' => $volverParts[0], 'fecha' => $volverParts[1]] : ['fecha' => $appointment->starts_at->toDateString()];
+    @endphp
     <div class="flex gap-4 items-center">
         <button type="submit" class="btn-gold">Guardar cambios</button>
-        <a href="{{ route('admin.agenda', ['fecha' => $appointment->starts_at->toDateString()]) }}" class="text-gray-300 hover:text-gold">Volver a la agenda</a>
+        <a href="{{ route('admin.agenda', $backRoute) }}" class="text-gray-300 hover:text-gold">Volver a la agenda</a>
     </div>
 
     @if ($slotWarning)

@@ -114,6 +114,68 @@ test('a salon user can cancel a confirmed appointment at any time before it', fu
     expect(Appointment::count())->toBe(1);
 });
 
+/**
+ * Review finding M1: the create form carries "volver" through as a hidden
+ * field, so it survives the POST to store().
+ */
+test('the create form embeds "volver" as a hidden field when given a valid one', function () {
+    $this->get(route('admin.appointments.create', ['fecha' => '2030-01-08', 'volver' => 'semana:2030-01-08']))
+        ->assertOk()
+        ->assertSee('<input type="hidden" name="volver" value="semana:2030-01-08">', false);
+});
+
+/**
+ * Review finding M1: an invalid "volver" (unknown vista, malformed date, or
+ * an attempt to smuggle something that is not "vista:fecha") is dropped
+ * rather than echoed back — the hidden field is simply not rendered.
+ */
+test('the create form drops an invalid "volver" instead of echoing it back', function (string $volver) {
+    $html = $this->get(route('admin.appointments.create', ['fecha' => '2030-01-08', 'volver' => $volver]))
+        ->assertOk()->getContent();
+
+    expect($html)->not->toContain('name="volver"');
+})->with([
+    'unknown vista' => 'otravista:2030-01-08',
+    'malformed date' => 'semana:not-a-date',
+    'impossible date' => 'semana:2030-13-40',
+    'no separator' => 'semana',
+    'open-redirect attempt' => 'semana:2030-01-08/../../evil',
+]);
+
+/**
+ * Review finding M1: creating an appointment from vista Semana or Mes
+ * returns to that same view and date, instead of always landing on Día.
+ */
+test('creating an appointment redirects back to the vista/fecha it was created from', function () {
+    BookingSetting::current()->update(['min_notice_minutes' => 600]);
+
+    $this->post(route('admin.appointments.store'), adminAppointmentPayload(['volver' => 'semana:2030-01-08']))
+        ->assertRedirect(route('admin.agenda', ['vista' => 'semana', 'fecha' => '2030-01-08']));
+});
+
+/**
+ * Review finding M1: an invalid "volver" on store() can never become an
+ * open redirect — it falls back to the appointment's own date in Día, the
+ * behavior from before this feature, exactly as if "volver" were absent.
+ */
+test('creating an appointment with a tampered "volver" falls back to the appointment\'s own date, never an open redirect', function () {
+    BookingSetting::current()->update(['min_notice_minutes' => 600]);
+
+    $this->post(route('admin.appointments.store'), adminAppointmentPayload(['volver' => 'https://evil.test/phishing']))
+        ->assertRedirect(route('admin.agenda', ['fecha' => '2030-01-08']));
+});
+
+/**
+ * Review finding M1: cancelling from vista Semana or Mes returns to that
+ * same view and date.
+ */
+test('cancelling an appointment redirects back to the vista/fecha it was cancelled from', function () {
+    $appointment = Appointment::factory()->create(['starts_at' => '2030-01-08 08:30', 'ends_at' => '2030-01-08 09:30']);
+
+    $this->post(route('admin.appointments.cancel', $appointment), ['volver' => 'mes:2030-01-08'])
+        ->assertRedirect(route('admin.agenda', ['vista' => 'mes', 'fecha' => '2030-01-08']));
+});
+
 test('appointments cannot be deleted from the panel', function () {
     expect(collect(Route::getRoutes())->contains(
         fn ($route) => in_array('DELETE', $route->methods()) && str_contains($route->uri(), 'citas')

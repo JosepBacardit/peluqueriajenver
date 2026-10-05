@@ -125,6 +125,23 @@ test('the calendar days and the time slots meet the 44px minimum touch target', 
     expect(substr_count($html, 'min-h-11 flex items-center justify-center border'))->toBeGreaterThan(30); // every day cell of the month, available or not, plus every time slot
 });
 
+/**
+ * Review finding M3: the month grid groups its weeks under role="row" and
+ * marks every day cell role="gridcell", completing the role="grid" ARIA
+ * pattern it already declared (previously only role="columnheader" on the
+ * weekday labels, with no row/gridcell structure underneath).
+ */
+test('the calendar grid groups its weeks in role rows and marks every day a gridcell', function () {
+    // January 2030: starts on Tuesday, so 1 leading blank cell, 31 days
+    // chunked into 5 weeks of up to 7 cells (no trailing padding) — 1
+    // header row + 5 week rows, 31 gridcells, 1 presentation blank.
+    $html = $this->get(route('reservas', ['servicio' => $this->service->id]))->assertOk()->getContent();
+
+    expect(substr_count($html, 'role="row"'))->toBe(6);
+    expect(substr_count($html, 'role="gridcell"'))->toBe(31);
+    expect(substr_count($html, 'role="presentation"'))->toBe(1);
+});
+
 test('a customer books a free time and lands on the appointment page', function () {
     $response = $this->post(route('reservas.store'), bookingPayload());
 

@@ -130,3 +130,75 @@ test('the week view day strip only counts confirmed appointments, not cancelled 
     expect($html)->toContain('miércoles 09/01, sin citas');
     expect($html)->not->toContain('miércoles 09/01, 1 cita');
 });
+
+/**
+ * Review finding H1: a full closure (ScheduleBlock with no capacity
+ * reduction) inside the shown week must mark that day "Cerrado", exactly
+ * like vista Mes already does, both in the mobile strip and the desktop
+ * grid — even when it still has a confirmed appointment that survives the
+ * closure (PRF-022).
+ */
+test('the week view marks a day covered by a full closure as closed, even with a surviving appointment', function () {
+    Appointment::factory()->create(['starts_at' => '2030-01-09 08:00', 'ends_at' => '2030-01-09 08:30', 'customer_name' => 'Antes Del Cierre']);
+    ScheduleBlock::create(['starts_at' => '2030-01-09 00:00', 'ends_at' => '2030-01-10 00:00', 'capacity_reduction' => null]);
+
+    $html = $this->get(route('admin.agenda', ['vista' => 'semana']))->assertOk()->getContent();
+
+    expect($html)->toContain('miércoles 09/01, cerrado');
+    // The desktop grid shows "Cerrado" and still lists the surviving
+    // appointment, instead of hiding it.
+    expect(substr_count($html, 'Cerrado'))->toBeGreaterThanOrEqual(1);
+    expect($html)->toContain('Antes Del Cierre');
+});
+
+/**
+ * Review finding H1: a partial closure (capacity reduction) does not close
+ * the day, but is flagged the same way vista Día already does with its
+ * amber banner.
+ */
+test('the week view flags a day with a partial closure, without marking it closed', function () {
+    ScheduleBlock::create(['starts_at' => '2030-01-09 10:00', 'ends_at' => '2030-01-09 12:00', 'capacity_reduction' => 1]);
+
+    $html = $this->get(route('admin.agenda', ['vista' => 'semana']))->assertOk()->getContent();
+
+    expect($html)->toContain('miércoles 09/01, capacidad reducida');
+    expect($html)->toContain('Capacidad reducida');
+    expect($html)->not->toContain('miércoles 09/01, cerrado');
+});
+
+/**
+ * Review finding N3: each appointment in the desktop grid is a link (to
+ * editing it, or to its day when it cannot be edited), with a readable
+ * size, a 44px touch target and a full aria-label.
+ */
+test('the week view desktop grid links each appointment to editing it, with an aria-label and a 44px target', function () {
+    $appointment = Appointment::factory()->create([
+        'starts_at' => '2030-01-09 11:00', 'ends_at' => '2030-01-09 11:30',
+        'service_name' => 'Peinado', 'customer_name' => 'Marta Ruiz',
+    ]);
+
+    $html = $this->get(route('admin.agenda', ['vista' => 'semana']))->assertOk()->getContent();
+
+    expect($html)->toContain('href="'.e(route('admin.appointments.edit', ['appointment' => $appointment, 'volver' => 'semana:2030-01-08'])).'"');
+    expect($html)->toContain('aria-label="11:00 Peinado, Marta Ruiz"');
+    expect($html)->toContain('min-h-11');
+    expect($html)->toContain('text-sm');
+});
+
+/**
+ * Review finding N3: a cancelled appointment in the desktop grid links to
+ * its day (editing is not offered) and is marked "(Cancelada)" in text, not
+ * only with the strike-through style.
+ */
+test('the week view desktop grid marks a cancelled appointment with text, not only strike-through', function () {
+    Appointment::factory()->cancelled()->create([
+        'starts_at' => '2030-01-09 11:00', 'ends_at' => '2030-01-09 11:30',
+        'service_name' => 'Peinado', 'customer_name' => 'Marta Ruiz',
+    ]);
+
+    $html = $this->get(route('admin.agenda', ['vista' => 'semana']))->assertOk()->getContent();
+
+    expect($html)->toContain('(Cancelada)');
+    expect($html)->toContain('aria-label="11:00 Peinado, Marta Ruiz, cancelada"');
+    expect($html)->toContain('href="'.e(route('admin.agenda', ['vista' => 'dia', 'fecha' => '2030-01-09'])).'"');
+});

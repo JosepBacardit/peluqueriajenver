@@ -43,10 +43,14 @@
                     <a href="{{ $appointment->customerWhatsappUrl() }}" target="_blank" rel="noopener noreferrer" class="btn-outline text-sm" aria-label="Abrir WhatsApp con {{ $appointment->customer_name }}">WhatsApp</a>
                     @if ($appointment->isConfirmed())
                         @if ($appointment->starts_at->isFuture())
-                            <a href="{{ route('admin.appointments.edit', $appointment) }}" class="btn-outline text-sm" aria-label="Editar o mover la cita de {{ $appointment->customer_name }} a las {{ $appointment->starts_at->format('H:i') }}">Editar</a>
+                            {{-- "volver" (review finding M1): so saving or
+                                 cancelling returns to this same view/date,
+                                 not always vista Día. --}}
+                            <a href="{{ route('admin.appointments.edit', ['appointment' => $appointment, 'volver' => $volver]) }}" class="btn-outline text-sm" aria-label="Editar o mover la cita de {{ $appointment->customer_name }} a las {{ $appointment->starts_at->format('H:i') }}">Editar</a>
                         @endif
                         <form method="POST" action="{{ route('admin.appointments.cancel', $appointment) }}" onsubmit="return confirm('¿Cancelar la cita de {{ e($appointment->customer_name) }}? Su hora quedará libre.');">
                             @csrf
+                            <input type="hidden" name="volver" value="{{ $volver }}">
                             <button type="submit" class="btn-danger-outline text-sm w-full">Cancelar cita</button>
                         </form>
                     @endif

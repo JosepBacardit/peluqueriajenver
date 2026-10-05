@@ -32,6 +32,9 @@ class AppointmentController extends Controller
         return view('admin.appointments.create', [
             'services' => Service::query()->where('is_active', true)->ordered()->get(),
             'day' => AgendaController::dayFromQuery($request->query('fecha')),
+            // Review finding M1: where to return to after saving, instead
+            // of always landing on vista Día.
+            'volver' => self::volverParam($request->query('volver')),
         ]);
     }
 
@@ -51,14 +54,14 @@ class AppointmentController extends Controller
         $notifier->sendCreationNotices($appointment);
 
         return redirect()
-            ->route('admin.agenda', ['fecha' => $startsAt->toDateString()])
+            ->route('admin.agenda', self::volverFromRequest($request) ?? ['fecha' => $startsAt->toDateString()])
             ->with('status', 'Cita creada.');
     }
 
-    public function edit(Appointment $appointment): View|RedirectResponse
+    public function edit(Request $request, Appointment $appointment): View|RedirectResponse
     {
         if (! self::isMovable($appointment)) {
-            return self::notMovableResponse($appointment);
+            return self::notMovableResponse($appointment, $request);
         }
 
         return view('admin.appointments.edit', [
@@ -68,6 +71,7 @@ class AppointmentController extends Controller
                 ->orWhere('id', $appointment->service_id)
                 ->ordered()
                 ->get(),
+            'volver' => self::volverParam($request->query('volver')),
         ]);
     }
 
@@ -90,10 +94,10 @@ class AppointmentController extends Controller
                 expectedVersion: $request->version(),
             );
         } catch (AppointmentNotMovableException) {
-            return self::notMovableResponse($appointment);
+            return self::notMovableResponse($appointment, $request);
         } catch (AppointmentChangedException) {
             return redirect()
-                ->route('admin.appointments.edit', $appointment)
+                ->route('admin.appointments.edit', array_filter(['appointment' => $appointment, 'volver' => self::volverParam($request->input('volver'))]))
                 ->with('warning', 'Otra persona ha cambiado esta cita mientras la editabas, así que no se ha guardado nada. Estos son sus datos actuales: repite tu cambio si sigue haciendo falta.');
         } catch (StartTimeInPastException) {
             return back()->withInput($request->except('force'))->withErrors(['time' => 'Esa hora ya ha pasado.']);
@@ -104,7 +108,9 @@ class AppointmentController extends Controller
             ]);
         }
 
-        $redirect = redirect()->route('admin.agenda', ['fecha' => $appointment->starts_at->toDateString()]);
+        // Review finding M1: return to the view/date the salon was on
+        // (vista Semana/Mes), not always vista Día.
+        $redirect = redirect()->route('admin.agenda', self::volverFromRequest($request) ?? ['fecha' => $appointment->starts_at->toDateString()]);
 
         if ((! $outcome->rescheduled && ! $outcome->emailChanged) || $appointment->customer_email === null) {
             return $redirect->with('status', 'Cita actualizada.');
@@ -121,14 +127,14 @@ class AppointmentController extends Controller
             : 'Cita actualizada. Se ha enviado el cambio a la clienta por correo.');
     }
 
-    public function cancel(Appointment $appointment, CancelAppointment $cancelAppointment, AppointmentNotifier $notifier): RedirectResponse
+    public function cancel(Request $request, Appointment $appointment, CancelAppointment $cancelAppointment, AppointmentNotifier $notifier): RedirectResponse
     {
         if ($cancelAppointment->handle($appointment)) {
             $notifier->sendCancellationNotices($appointment, cancelledByCustomer: false);
         }
 
         return redirect()
-            ->route('admin.agenda', ['fecha' => $appointment->starts_at->toDateString()])
+            ->route('admin.agenda', self::volverFromRequest($request) ?? ['fecha' => $appointment->starts_at->toDateString()])
             ->with('status', 'Cita cancelada.');
     }
 
@@ -142,10 +148,32 @@ class AppointmentController extends Controller
         return $appointment->isConfirmed() && $appointment->starts_at->isFuture();
     }
 
-    private static function notMovableResponse(Appointment $appointment): RedirectResponse
+    private static function notMovableResponse(Appointment $appointment, Request $request): RedirectResponse
     {
         return redirect()
-            ->route('admin.agenda', ['fecha' => $appointment->starts_at->toDateString()])
+            ->route('admin.agenda', self::volverFromRequest($request) ?? ['fecha' => $appointment->starts_at->toDateString()])
             ->with('warning', 'Esta cita ya no se puede mover: está cancelada o ya ha empezado.');
+    }
+
+    /**
+     * The validated "vista:fecha" string (review finding M1) to echo into
+     * a hidden form field, or null when missing/invalid.
+     */
+    private static function volverParam(mixed $value): ?string
+    {
+        $volver = AgendaController::volverFromQuery($value);
+
+        return $volver === null ? null : "{$volver['vista']}:{$volver['fecha']}";
+    }
+
+    /**
+     * The validated ['vista' => ..., 'fecha' => ...] route params from the
+     * request's "volver" field (Request::input() reads both the query
+     * string and the POST/PUT body, so this works for every action), or
+     * null when missing/invalid — never an arbitrary redirect target.
+     */
+    private static function volverFromRequest(Request $request): ?array
+    {
+        return AgendaController::volverFromQuery($request->input('volver'));
     }
 }

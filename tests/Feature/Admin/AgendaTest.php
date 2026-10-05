@@ -136,8 +136,10 @@ test('only confirmed appointments that have not started yet offer to be edited',
     $started = Appointment::factory()->create(['starts_at' => '2030-01-08 07:30', 'ends_at' => '2030-01-08 08:30']);
     $cancelled = Appointment::factory()->cancelled()->create(['starts_at' => '2030-01-08 12:00', 'ends_at' => '2030-01-08 13:00']);
 
+    // The Editar link carries "volver" (review finding M1), so the href
+    // is no longer the bare edit route.
     $this->get(route('admin.agenda'))
-        ->assertSee('href="'.route('admin.appointments.edit', $upcoming).'"', false)
+        ->assertSee('href="'.e(route('admin.appointments.edit', ['appointment' => $upcoming, 'volver' => 'dia:2030-01-08'])).'"', false)
         ->assertDontSee('href="'.route('admin.appointments.edit', $started).'"', false)
         ->assertDontSee('href="'.route('admin.appointments.edit', $cancelled).'"', false);
 });

@@ -81,6 +81,33 @@ test('moving to a free time saves it and takes the salon to the new day', functi
     expect($appointment->status)->toBe(AppointmentStatus::Confirmed);
 });
 
+/**
+ * Review finding M1: the edit form carries "volver" through as a hidden
+ * field, so moving the appointment returns to the view/date the salon was
+ * on, not always vista Día — and an invalid one is dropped, never echoed
+ * back as an open-redirect target.
+ */
+test('the edit form embeds a valid "volver" and drops an invalid one', function () {
+    $this->get(route('admin.appointments.edit', ['appointment' => $this->appointment, 'volver' => 'mes:2030-01-08']))
+        ->assertOk()
+        ->assertSee('<input type="hidden" name="volver" value="mes:2030-01-08">', false);
+
+    $html = $this->get(route('admin.appointments.edit', ['appointment' => $this->appointment, 'volver' => 'https://evil.test']))
+        ->assertOk()->getContent();
+
+    expect($html)->not->toContain('name="volver"');
+});
+
+test('moving an appointment with "volver" redirects back to that vista/fecha, not vista Día', function () {
+    $this->put(route('admin.appointments.update', $this->appointment), reschedulePayload(['volver' => 'mes:2030-01-08']))
+        ->assertRedirect(route('admin.agenda', ['vista' => 'mes', 'fecha' => '2030-01-08']));
+});
+
+test('moving an appointment with a tampered "volver" falls back to its new date, never an open redirect', function () {
+    $this->put(route('admin.appointments.update', $this->appointment), reschedulePayload(['volver' => 'javascript:alert(1)']))
+        ->assertRedirect(route('admin.agenda', ['fecha' => '2030-01-09']));
+});
+
 test('a full time is not saved without confirmation and the form explains why', function () {
     fillTwelveOClock();
     $editUrl = route('admin.appointments.edit', $this->appointment);
@@ -341,6 +368,20 @@ test('a cancelled or already started appointment cannot be edited or moved', fun
 
     expect($appointment->fresh()->toArray())->toBe($before);
 })->with(['cancelled', 'started']);
+
+/**
+ * Review finding M1: "not movable" also returns to the view/date the salon
+ * was on, from both the GET (edit) and the PUT (update) entry points.
+ */
+test('"not movable" also returns to the vista/fecha the salon was on', function () {
+    $appointment = Appointment::factory()->cancelled()->create(['starts_at' => '2030-01-09 10:00', 'ends_at' => '2030-01-09 11:00']);
+
+    $this->get(route('admin.appointments.edit', ['appointment' => $appointment, 'volver' => 'semana:2030-01-08']))
+        ->assertRedirect(route('admin.agenda', ['vista' => 'semana', 'fecha' => '2030-01-08']));
+
+    $this->put(route('admin.appointments.update', $appointment), reschedulePayload(['force' => '1', 'volver' => 'semana:2030-01-08']))
+        ->assertRedirect(route('admin.agenda', ['vista' => 'semana', 'fecha' => '2030-01-08']));
+});
 
 test('moving leaves no generated text in the appointment', function () {
     $this->put(route('admin.appointments.update', $this->appointment), reschedulePayload());
