@@ -44,7 +44,7 @@
 | T027 | [Resolver la revisión de la adaptación móvil](T027-resolver-revision-mobile-ux.md) | FEATURE | PRF-095 (reforzado) | T020–T026 | Claude Opus 5.5 | `medium` | Pest + Pint + `npm run build` | done |
 | T028 | [Menú del panel: hamburguesa en vez de barra inferior](T028-menu-hamburguesa.md) | FEATURE | PRF-090 (reescrito), PRF-093 (ajustado) | T021 | Claude Opus 5.5 | `medium` | Pest + Pint + `npm run build` + navegador | done |
 | T029 | [Selector de vista y navegación](T029-selector-vista-navegacion.md) | FEATURE | PRF-099, PRF-104 | T006, T028 | Claude Sonnet 5.5 | `medium` | Pest + Pint | done |
-| T030 | [Vista Semana](T030-vista-semana.md) | FEATURE | PRF-100, PRF-101, PRF-105, PRF-106, PRF-107 | T029 | Claude Sonnet 5.5 | `high` | Pest + Pint | pending |
+| T030 | [Vista Semana](T030-vista-semana.md) | FEATURE | PRF-100, PRF-101, PRF-105, PRF-106, PRF-107 | T029 | Claude Sonnet 5.5 | `high` | Pest + Pint | done |
 | T031 | [Vista Mes](T031-vista-mes.md) | FEATURE | PRF-102, PRF-103, PRF-105, PRF-106, PRF-107 | T029 | Claude Sonnet 5.5 | `medium` | Pest + Pint | pending |
 | T032 | [Accesibilidad y pulido táctil de Semana y Mes](T032-accesibilidad-pulido.md) | SIMPLE | PRF-099, PRF-105, PRF-107 | T030, T031 | Claude Sonnet 5.5 | `low` | Pest + Pint + `npm run build` | pending |
 
