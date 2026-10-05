@@ -117,7 +117,7 @@ class AgendaController extends Controller
      * timeline grid — 4 queries total, none repeated per block or per
      * lane.
      *
-     * @return array{appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>, gridStart: int, gridEnd: int, timeline: array}
+     * @return array{appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>, gridStart: int, gridEnd: int, timeline: array, nowLineTop: int|null}
      */
     private function dayData(CarbonImmutable $day): array
     {
@@ -139,6 +139,7 @@ class AgendaController extends Controller
             'gridStart' => $bounds['start'],
             'gridEnd' => $bounds['end'],
             'timeline' => DayTimeline::build($day, $bounds['start'], $bounds['end'], $capacity, $dayRanges, $appointments, $blocks),
+            'nowLineTop' => DayTimeline::nowLineTop($day, $bounds['start'], $bounds['end'], CarbonImmutable::now()),
         ];
     }
 
@@ -167,7 +168,8 @@ class AgendaController extends Controller
         $openWeekdays = $allRanges->pluck('weekday')->unique()->all();
         $bounds = DayTimeline::weekBounds($allRanges);
         $capacity = BookingSetting::current()->capacity;
-        $today = CarbonImmutable::today();
+        $now = CarbonImmutable::now();
+        $today = $now->startOfDay();
 
         $days = [];
         for ($date = $weekStart; $date->lt($weekEnd); $date = $date->addDay()) {
@@ -190,6 +192,7 @@ class AgendaController extends Controller
                 'hasPartialClosure' => ! $isClosed && $dayBlocks->contains(fn (ScheduleBlock $b) => $b->capacity_reduction !== null),
                 'isToday' => $date->isSameDay($today),
                 'timeline' => DayTimeline::build($date, $bounds['start'], $bounds['end'], $capacity, $dayRanges, $dayAppointments, $dayBlocks),
+                'nowLineTop' => DayTimeline::nowLineTop($date, $bounds['start'], $bounds['end'], $now),
             ];
         }
 

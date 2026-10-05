@@ -76,6 +76,26 @@ class DayTimeline
     }
 
     /**
+     * The "now" line's pixel offset from the grid's top (PRF-116), or null
+     * when it should not be shown at all: $day is not today, or $now falls
+     * outside [$gridStart, $gridEnd).
+     */
+    public static function nowLineTop(CarbonImmutable $day, int $gridStart, int $gridEnd, CarbonImmutable $now): ?int
+    {
+        if (! $day->isSameDay($now)) {
+            return null;
+        }
+
+        $nowMinute = $now->hour * 60 + $now->minute;
+
+        if ($nowMinute < $gridStart || $nowMinute >= $gridEnd) {
+            return null;
+        }
+
+        return self::pxFromMinutes($nowMinute - $gridStart);
+    }
+
+    /**
      * Smallest free gap, in minutes, offered as its own tap target
      * (PRF-114) — independent of booking_settings.slot_interval_minutes.
      */

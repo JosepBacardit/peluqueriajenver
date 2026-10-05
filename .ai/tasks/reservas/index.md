@@ -53,7 +53,7 @@
 | T035 | [Algoritmo de carriles](T035-algoritmo-carriles.md) | FEATURE | PRF-109, PRF-110 | T034 | Claude Sonnet 5.5 | `high` | Pest + Pint | done |
 | T036 | [Vista Día: rejilla horaria](T036-vista-dia-rejilla.md) | FEATURE | PRF-111, PRF-112, PRF-113, PRF-115 | T035 | Claude Sonnet 5.5 | `high` | Pest + Pint | done |
 | T037 | [Tocar un hueco libre crea la cita](T037-tocar-hueco-libre.md) | FEATURE | PRF-114 | T036 | Claude Sonnet 5.5 | `medium` | Pest + Pint | done |
-| T038 | [Línea de «ahora» y desplazamiento automático](T038-ahora-y-scroll.md) | FEATURE | PRF-116, PRF-117 | T036 | Claude Sonnet 5.5 | `medium` | Pest + Pint + `npm run build` | pending |
+| T038 | [Línea de «ahora» y desplazamiento automático](T038-ahora-y-scroll.md) | FEATURE | PRF-116, PRF-117 | T036 | Claude Sonnet 5.5 | `medium` | Pest + Pint + `npm run build` | done |
 | T039 | [Semana con la rejilla horaria](T039-semana-rejilla.md) | FEATURE | PRF-118 | T036, T037, T038 | Claude Sonnet 5.5 | `high` | Pest + Pint | pending |
 | T040 | [Accesibilidad de la rejilla y cierre de la entrega](T040-accesibilidad-rejilla.md) | FEATURE | PRF-119, PRF-120 | T039 | Claude Sonnet 5.5 | `medium` | Pest + Pint + `npm run build` | pending |
 

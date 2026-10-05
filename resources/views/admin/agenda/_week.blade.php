@@ -57,7 +57,7 @@
         <p class="mb-4 border border-[#2A2A2A] bg-[#111111] text-gray-400 px-4 py-2 text-sm">Cerrado.</p>
     @endif
 
-    @include('admin.agenda._day', ['appointments' => $selected['appointments'], 'blocks' => $selected['blocks'], 'timeline' => $selected['timeline'], 'gridStart' => $gridStart, 'gridEnd' => $gridEnd])
+    @include('admin.agenda._day', ['appointments' => $selected['appointments'], 'blocks' => $selected['blocks'], 'timeline' => $selected['timeline'], 'gridStart' => $gridStart, 'gridEnd' => $gridEnd, 'nowLineTop' => $selected['nowLineTop']])
 </div>
 
 {{-- Desktop: a 7-column overview of the week (PRF-100). Two ARIA rows (a

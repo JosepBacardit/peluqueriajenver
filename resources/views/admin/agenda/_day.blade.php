@@ -2,7 +2,7 @@
      (PRF-108 and on), then the appointment cards. Extracted from
      index.blade.php (T030) so vista Semana can reuse it unchanged for the
      mobile day strip's selected day. Expects $appointments, $blocks,
-     $timeline, $gridStart and $gridEnd. --}}
+     $timeline, $gridStart, $gridEnd and $nowLineTop. --}}
 @foreach ($blocks as $block)
     <p class="mb-4 border border-amber-500/40 bg-amber-500/10 text-amber-200 px-4 py-2 text-sm">
         {{ $block->isFullClosure() ? 'Cierre total' : 'Capacidad reducida en '.$block->capacity_reduction }}:

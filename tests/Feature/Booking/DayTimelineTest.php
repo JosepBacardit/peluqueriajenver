@@ -2,6 +2,7 @@
 
 use App\Booking\DayTimeline;
 use App\Models\OpeningHour;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -49,3 +50,28 @@ test('pxFromMinutes converts minutes since the grid start into pixels at 88px/ho
     // or overlap by a rounding pixel.
     expect(DayTimeline::pxFromMinutes(615) - DayTimeline::pxFromMinutes(600))->toBe(22);
 });
+
+/**
+ * PRF-116: the "now" line only shows for today, and only when "now" falls
+ * inside the grid's range.
+ */
+test('nowLineTop gives the pixel offset for today, within the grid range', function () {
+    $now = CarbonImmutable::parse('2030-01-08 11:15'); // 11:15, grid 09:00-19:00
+    $day = CarbonImmutable::parse('2030-01-08')->startOfDay();
+
+    expect(DayTimeline::nowLineTop($day, 9 * 60, 19 * 60, $now))->toBe(DayTimeline::pxFromMinutes(135));
+});
+
+test('nowLineTop is null when the shown day is not today', function () {
+    $now = CarbonImmutable::parse('2030-01-08 11:15');
+    $otherDay = CarbonImmutable::parse('2030-01-09')->startOfDay();
+
+    expect(DayTimeline::nowLineTop($otherDay, 9 * 60, 19 * 60, $now))->toBeNull();
+});
+
+test('nowLineTop is null when "now" falls outside the grid range', function (string $time) {
+    $now = CarbonImmutable::parse("2030-01-08 {$time}");
+    $day = CarbonImmutable::parse('2030-01-08')->startOfDay();
+
+    expect(DayTimeline::nowLineTop($day, 9 * 60, 19 * 60, $now))->toBeNull();
+})->with(['07:00', '19:00', '23:59']);

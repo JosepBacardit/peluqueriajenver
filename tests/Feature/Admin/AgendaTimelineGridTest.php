@@ -69,3 +69,39 @@ test('the create form ignores a malformed "hora" instead of crashing', function 
         ->assertOk()
         ->assertSee('id="time" name="time" type="time" step="300" required value=""', false);
 })->with(['99:99', 'not-a-time', '9:00', '10:00:00']);
+
+/**
+ * PRF-116 / PRF-117: today, with "ahora" inside opening hours, shows the
+ * "now" line and the scroll-to-it script.
+ */
+test('today shows the "ahora" line and the scroll script, at the right offset', function () {
+    $this->travelTo(CarbonImmutable::parse('2030-01-08 11:15'));
+
+    $html = $this->get(route('admin.agenda'))->assertOk()->getContent();
+
+    // 11:15 is 135 minutes after the 09:00 grid start, at 88px/hour.
+    $expectedTop = (int) round(135 * 88 / 60);
+    expect($html)->toContain('style="top: '.$expectedTop.'px"');
+    expect($html)->toContain('>Ahora<');
+    expect($html)->toContain('id="timeline-scroll"');
+    expect($html)->toContain('container.scrollTop = Math.max(0, '.$expectedTop.' - 100);');
+});
+
+/**
+ * No "ahora" line (or script) when viewing a day that is not today, or
+ * when "ahora" falls outside the grid (before opening or after closing).
+ */
+test('no "ahora" line or scroll script when viewing another day', function () {
+    $html = $this->get(route('admin.agenda', ['fecha' => '2030-01-09']))->assertOk()->getContent();
+
+    expect($html)->not->toContain('>Ahora<');
+    expect($html)->not->toContain('scrollTop');
+});
+
+test('no "ahora" line when "ahora" falls outside today\'s grid range', function () {
+    // beforeEach already travels to 2030-01-08 08:00, before the 09:00 opening.
+    $html = $this->get(route('admin.agenda'))->assertOk()->getContent();
+
+    expect($html)->not->toContain('>Ahora<');
+    expect($html)->not->toContain('scrollTop');
+});
