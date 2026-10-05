@@ -28,6 +28,11 @@ export default defineConfig({
         cors: { origin: ['http://localhost:8082'] },
         watch: {
             ignored: ['**/storage/framework/views/**'],
+            // Native filesystem events don't reach the container from the
+            // Windows bind mount, so edits went unnoticed until polling was
+            // added here.
+            usePolling: true,
+            interval: 300,
         },
     },
 });

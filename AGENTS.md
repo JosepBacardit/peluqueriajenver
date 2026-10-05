@@ -442,6 +442,13 @@ first time any of this gets confirmed:
   has `short_open_tag=Off` and never showed this. Fixed in `d65c8d8` by
   emitting the XML declaration so it survives either setting;
   `tests/Feature/SitemapTest.php` guards against a regression.
+- `VITE_USE_POLLING=true` (`docker-compose.yml`, `node` service) looked
+  like it already made the Vite dev server pick up edits on the Windows
+  bind mount, but nothing in `vite.config.js` ever read it: native
+  filesystem events don't cross from Windows into the container, so the
+  dev server kept serving stale CSS/JS after edits until the browser was
+  forced to rebuild some other way. Fixed by setting `usePolling: true`
+  (with `interval: 300`) directly in `vite.config.js`'s `server.watch`.
 
 ## Working agreements
 
