@@ -29,7 +29,11 @@
         <label for="service_id" class="block text-sm mb-1">Servicio</label>
         <select id="service_id" name="service_id" required class="{{ $inputClass }}" {!! $fieldAria('service_id') !!}>
             @foreach ($services as $service)
-                <option value="{{ $service->id }}" @selected((int) old('service_id') === $service->id)>{{ $service->name }} ({{ $service->duration_label }})</option>
+                {{-- PRF-120 (T045): preselects the service the agenda was
+                     filtered by (or whose "Cabe" hueco was tapped);
+                     "old('service_id')" still wins when re-displaying the
+                     form after a validation error with a different choice. --}}
+                <option value="{{ $service->id }}" @selected((int) old('service_id', $servicio ?? '') === $service->id)>{{ $service->name }} ({{ $service->duration_label }})</option>
             @endforeach
         </select>
         @error('service_id') <p id="service_id-error" class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror

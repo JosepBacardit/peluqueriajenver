@@ -29,8 +29,10 @@ class AppointmentController extends Controller
 {
     public function create(Request $request): View
     {
+        $services = Service::query()->where('is_active', true)->ordered()->get();
+
         return view('admin.appointments.create', [
-            'services' => Service::query()->where('is_active', true)->ordered()->get(),
+            'services' => $services,
             'day' => AgendaController::dayFromQuery($request->query('fecha')),
             // Review finding M1: where to return to after saving, instead
             // of always landing on vista Día.
@@ -39,6 +41,12 @@ class AppointmentController extends Controller
             // grid; a missing or malformed value just leaves the field
             // empty, same as before this existed.
             'time' => self::timeParam($request->query('hora')),
+            // PRF-120 (T045): preselects the service the agenda was
+            // filtered by, or the one whose "Cabe" hueco was tapped —
+            // validated against the same active list the <select> itself
+            // renders, so an invalid/inactive id is silently ignored
+            // rather than preselecting nothing with an error.
+            'servicio' => AgendaController::servicioFromQuery($request->query('servicio'), $services)?->id,
         ]);
     }
 
