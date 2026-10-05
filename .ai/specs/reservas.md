@@ -28,6 +28,7 @@ La única forma de pedir cita es llamar o escribir por WhatsApp. El botón «Res
 - Edición de una cita confirmada desde el panel: día, hora, servicio y datos de la clienta (2026-10-05).
 - Botones «Reservar cita» de la portada y las páginas de servicio enlazando a la reserva online (2026-10-05).
 - Adaptación del panel y de la reserva pública al móvil, donde el salón trabaja la mayor parte del tiempo (2026-10-05).
+- Vistas Día, Semana y Mes en la agenda del panel, con selector y navegación compartible por URL (2026-10-05).
 
 ## No-objetivos
 
@@ -235,6 +236,20 @@ El panel lo usan sobre todo las peluqueras desde el móvil, con una mano, mientr
 - **PRF-097.** El calendario y las horas de la página de reservas **deben** tener una zona táctil de al menos 44 px de alto.
 - **PRF-098.** El botón para cancelar la cita en la página personal de la clienta **debe** ocupar todo el ancho disponible en el móvil, para que sea fácil de tocar.
 
+### Vistas Día, Semana y Mes de la agenda (2026-10-05)
+
+Decisión del usuario, 2026-10-05, tras el informe de fase 1 del agente `programador`: la agenda pasa de mostrar solo el día a ofrecer también una vista semanal y una mensual, hechas a mano con Blade (sin librería de calendario ni framework de JS, igual que el resto del panel). La vista Día no cambia: sigue siendo la lista de tarjetas actual.
+
+- **PRF-099.** La agenda **debe** ofrecer un selector Día/Semana/Mes, con zona táctil de al menos 44×44 px, cuya vista activa se refleje en el parámetro `vista` de la URL (junto con `fecha`), para que el enlace se pueda compartir y el botón Atrás del navegador funcione. Un valor de `vista` que no sea «dia», «semana» ni «mes» **debe** tratarse como «dia». La vista por defecto, sin `vista` en la URL, **debe** ser Día; la agenda **no debe** recordar la última vista usada entre visitas.
+- **PRF-100.** En anchos de pantalla de 768 px o más, la vista Semana **debe** mostrar una rejilla de 7 columnas (lunes a domingo) con las citas de cada día agrupadas por hora.
+- **PRF-101.** En anchos de pantalla menores de 768 px, la vista Semana **debe** mostrar una tira de 7 días (zona táctil de al menos 44 px cada uno) para elegir el día, con la agenda de ese día —igual que la vista Día, incluidas sus acciones Llamar, WhatsApp, Editar y Cancelar— mostrada debajo.
+- **PRF-102.** La vista Mes **debe** mostrar, en todos los anchos de pantalla, una rejilla mensual con el número de citas confirmadas de cada día.
+- **PRF-103.** Tocar cualquier día de la vista Mes **debe** abrir la vista Día de esa fecha, tenga o no citas.
+- **PRF-104.** Los controles Anterior, Siguiente y Hoy de la agenda **deben** adaptarse a la vista activa: un día en Día (igual que ahora, con el atajo «Mañana»), una semana en Semana y un mes en Mes. El formulario «Ir a la fecha» **debe** conservar la vista activa al cambiar de fecha.
+- **PRF-105.** Un día sin horario semanal (PRF-017) o cubierto por un cierre total (PRF-021) **debe** marcarse como «Cerrado» con texto, no solo con color, en las vistas Semana y Mes.
+- **PRF-106.** El día de hoy **debe** distinguirse en las vistas Semana y Mes con un borde u otro indicador que no sea solo el color.
+- **PRF-107.** Las rejillas de la vista Semana (768 px o más) y de la vista Mes **deben** tener una semántica de rejilla accesible (roles `grid`/`columnheader`) y navegarse con el teclado, igual que el calendario de `/reservas` (PRF-028).
+
 ## Datos existentes y transición
 
 No hay citas, servicios ni cuentas previos. Al desplegar se crean el horario inicial (PRF-019) y los ajustes iniciales (PRF-020). No se crean servicios: los da de alta el salón. Hasta que exista al menos un servicio reservable, la página de reservas muestra el mensaje de PRF-027. Antes de publicar hay que crear al menos una cuenta del panel, configurar el correo y la dirección del salón (PRF-055) y completar los datos pendientes de la política de privacidad (PRF-059). Las citas que lleguen por teléfono o WhatsApp deben apuntarse en el panel para que ocupen su hueco.
@@ -256,6 +271,7 @@ El remitente de correo real (PRF-070, PRF-071) sigue pendiente del buzón y el s
 - **CA-11 (PRF-077 a PRF-087).** El salón mueve una cita confirmada futura (día, hora y servicio) y puede editar los datos de la clienta a la vez. Un hueco sin capacidad, fuera de horario o en un cierre avisa con el motivo y exige confirmar antes de guardar. La clienta recibe el aviso con el mismo enlace; un fallo de envío no deshace el cambio ni se reintenta. Si cambia su email, recibe en la dirección nueva un enlace nuevo y el anterior deja de funcionar; si ese correo falla, el panel lo avisa y se reintenta. Una cita cancelada o pasada no se puede mover, un formulario desfasado no se guarda, y no queda ningún rastro del cambio en sus datos.
 - **CA-12 (PRF-076, PRF-088).** El botón «Reservar cita →» de la portada y de cada página de servicio, y el «Reservar online» de la sección «Reserva tu cita», llevan a la página de reservas; los botones de llamada y de WhatsApp se mantienen. Las preguntas frecuentes sobre cómo pedir cita mencionan la reserva online.
 - **CA-13 (PRF-089 a PRF-098).** En 360-414 px de ancho: los botones y enlaces de acción del panel miden al menos 44×44 px; el panel tiene un botón hamburguesa que despliega un menú vertical desplazable con los módulos y «Cerrar sesión» al final, visible también sin JavaScript; los servicios se ven en tarjetas; la agenda ofrece «Mañana» y un botón flotante para crear una cita, y separa Editar de Cancelar; la tarjeta de una cita abre WhatsApp con el teléfono normalizado; el horario semanal no hace *scroll* horizontal; el calendario y las horas de `/reservas` miden al menos 44 px; el botón de cancelar de `/cita/{token}` ocupa todo el ancho.
+- **CA-14 (PRF-099 a PRF-107).** La agenda ofrece un selector Día/Semana/Mes con `vista`/`fecha` en la URL; un valor de `vista` desconocido cae a Día, que no cambia. Semana agrupa las citas de lunes a domingo con una sola consulta (rejilla en escritorio, tira de 7 días más la agenda del día elegido en móvil). Mes muestra el número de citas por día con una consulta agregada, y tocar un día abre su vista Día. Anterior/Siguiente/Hoy y el formulario «Ir a la fecha» se adaptan a la vista activa. Los días cerrados y el día de hoy se distinguen con texto o borde, no solo con color, y las rejillas de Semana (escritorio) y Mes son accesibles por teclado.
 
 ## Plan de verificación
 
@@ -351,6 +367,15 @@ El remitente de correo real (PRF-070, PRF-071) sigue pendiente del buzón y el s
 | PRF-096 | A 360 px, abrir Horario → ninguna fila de tramo produce `scroll` horizontal ni recorta los campos de hora. |
 | PRF-097 | A 375 px, medir las celdas del calendario y los botones de hora de `/reservas` → al menos 44 px de alto. |
 | PRF-098 | A 375 px, abrir `/cita/{token}` de una cita cancelable → el botón «Cancelar cita» ocupa todo el ancho disponible. |
+| PRF-099 | Las pestañas Día/Semana/Mes miden al menos 44×44 px, el enlace de cada una lleva `vista`/`fecha`, y `?vista=invalido` muestra la vista Día. Sin `vista` en la URL → Día por defecto. |
+| PRF-100 | A 1024 px, vista Semana → rejilla de 7 columnas lunes-domingo con las citas de cada día. |
+| PRF-101 | A 375 px, vista Semana → tira de 7 días y, debajo, la agenda del día elegido con Llamar/WhatsApp/Editar/Cancelar. |
+| PRF-102 | Vista Mes con citas en varios días → cada día muestra su número de citas confirmadas. |
+| PRF-103 | En vista Mes, tocar un día (con o sin citas) → abre la vista Día de esa fecha. |
+| PRF-104 | En Semana, Anterior/Siguiente mueven una semana y «Hoy» vuelve a la semana actual; en Mes, un mes; «Ir a la fecha» mantiene la vista activa. |
+| PRF-105 | Un día sin horario semanal, o con un cierre total, se marca «Cerrado» con texto en Semana y Mes. |
+| PRF-106 | El día de hoy se distingue con un borde en Semana y Mes, no solo con un color de fondo. |
+| PRF-107 | La rejilla de Semana (escritorio) y la de Mes llevan `role="grid"`/`role="columnheader"` y se recorren con el teclado (Tab/Intro sobre los enlaces de cada día). |
 
 ## Riesgos y marcha atrás
 

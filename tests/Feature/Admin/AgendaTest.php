@@ -222,3 +222,75 @@ test('customerWhatsappUrl strips the "00" international dialing prefix, with or 
     '00 34 633 912 050',
     '00-34-633-912-050',
 ]);
+
+/**
+ * PRF-099: Día/Semana/Mes switcher, shareable through the URL ("vista" and
+ * "fecha" query parameters), each tab with a 44px touch target.
+ */
+test('the agenda offers a Día/Semana/Mes switcher with shareable links', function () {
+    $html = $this->get(route('admin.agenda'))->assertOk()->getContent();
+
+    // "día" is the default, so its own link stays exactly as before (no
+    // "vista" parameter) — existing links/tests that assume this must not break.
+    // Links with two query params render with "&amp;" (HTML-escaped), hence e().
+    expect($html)->toContain('href="'.route('admin.agenda', ['fecha' => '2030-01-08']).'"');
+    expect($html)->toContain('href="'.e(route('admin.agenda', ['vista' => 'semana', 'fecha' => '2030-01-08'])).'"');
+    expect($html)->toContain('href="'.e(route('admin.agenda', ['vista' => 'mes', 'fecha' => '2030-01-08'])).'"');
+    expect(substr_count($html, 'min-h-11 min-w-11'))->toBe(3);
+});
+
+test('the active view is marked with aria-current', function (string $query, string $label) {
+    $html = $this->get(route('admin.agenda', $query === '' ? [] : ['vista' => $query]))->assertOk()->getContent();
+
+    expect($html)->toContain('aria-current="page">'.$label.'</a>');
+})->with([
+    ['', 'Día'],
+    ['semana', 'Semana'],
+    ['mes', 'Mes'],
+]);
+
+/**
+ * PRF-099: an unknown "vista" value is treated as "dia" rather than erroring.
+ */
+test('an invalid vista falls back to día', function () {
+    $this->get(route('admin.agenda', ['vista' => 'invalido']))
+        ->assertOk()
+        ->assertSee('aria-current="page">Día</a>', false)
+        ->assertSee('No hay citas este día.');
+});
+
+/**
+ * PRF-104: Anterior/Siguiente/Hoy adapt to the active view.
+ */
+test('the day-switching controls become week controls in vista semana', function () {
+    $html = $this->get(route('admin.agenda', ['vista' => 'semana']))->assertOk()->getContent();
+
+    expect($html)->toContain('aria-label="Semana anterior"');
+    expect($html)->toContain('aria-label="Semana siguiente"');
+    expect($html)->toContain('href="'.e(route('admin.agenda', ['vista' => 'semana', 'fecha' => '2030-01-14'])).'"');
+    expect($html)->toContain('href="'.e(route('admin.agenda', ['vista' => 'semana', 'fecha' => '2029-12-31'])).'"');
+    expect($html)->not->toContain('aria-label="Día anterior"');
+    expect($html)->not->toContain('>Mañana<');
+});
+
+test('the day-switching controls become month controls in vista mes', function () {
+    $html = $this->get(route('admin.agenda', ['vista' => 'mes']))->assertOk()->getContent();
+
+    expect($html)->toContain('aria-label="Mes anterior"');
+    expect($html)->toContain('aria-label="Mes siguiente"');
+    expect($html)->toContain('href="'.e(route('admin.agenda', ['vista' => 'mes', 'fecha' => '2030-02-01'])).'"');
+    expect($html)->toContain('href="'.e(route('admin.agenda', ['vista' => 'mes', 'fecha' => '2029-12-01'])).'"');
+    expect($html)->not->toContain('aria-label="Día anterior"');
+});
+
+/**
+ * PRF-099: the "ir a la fecha" form keeps the active view when jumping to a
+ * different date, instead of silently dropping back to Día.
+ */
+test('jumping to a date keeps the active vista', function () {
+    $dia = $this->get(route('admin.agenda'))->assertOk()->getContent();
+    $semana = $this->get(route('admin.agenda', ['vista' => 'semana']))->assertOk()->getContent();
+
+    expect($dia)->not->toContain('name="vista"');
+    expect($semana)->toContain('type="hidden" name="vista" value="semana"');
+});
