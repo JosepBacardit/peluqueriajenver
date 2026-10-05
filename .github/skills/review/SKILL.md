@@ -26,6 +26,11 @@ Además de revisar el diff, comprueba siempre estos puntos, que son los fallos q
   Comprueba también que los tests e2e lo verifican, no solo el comportamiento visual.
 - **Imágenes (proyectos propios, no micasino).** Toda imagen que se sirve en la web es WebP optimizada: redimensionada al uso con `srcSet`, con `width`/`height` (sin CLS), `alt` y `loading="lazy"` fuera de la primera pantalla. Comprueba en el HTML o en la red que no se sirve ningún PNG ni JPG, salvo las excepciones aprobadas por el usuario (favicon e iconos de app, emails, PDFs y `og:image`) ([[knowledge/coding-style|coding-style]]).
 - **Textos comerciales.** Contrasta cada afirmación del texto (precios, plazos, resultados, capacidades, clientes, testimonios, certificaciones) con la lista de hechos confirmados por el usuario de la spec o del proyecto. Cualquier promesa de resultado o capacidad que no esté en esa lista es un hallazgo de texto que decide el usuario. Comprueba también que un test bloquea los términos prohibidos en toda la fuente del texto, no solo en un archivo ([[syntheses/lecciones-revisiones|patrón H]]).
+- **Comprobación en el navegador.** Si el cambio toca CSS, fuentes, JS de cliente o scripts e iframes de terceros, no basta con el código ni con tests que solo miran el HTML servido. Comprueba en el navegador, en el modo de desarrollo y en el build:
+  - los valores calculados que importan: `getComputedStyle` para la fuente o el estilo y `document.fonts` con su `status`;
+  - las peticiones de red reales: qué dominios se llaman, los 404 y si hay descargas duplicadas.
+
+  Ten en cuenta que, en Tailwind 4, todo CSS sin capa gana a las utilidades, y que en Vite dev las rutas `url('/…')` del CSS apuntan al servidor de Vite. Si no tienes navegador, analiza la cascada real sobre el CSS compilado que se sirve (`curl`) y escribe en el informe «Sin comprobar en el navegador», con lo que hay que mirar, para que el coordinador lo compruebe ([[syntheses/lecciones-revisiones|patrón M]]).
 - **Entorno de destino.** Lo que se da por hecho sobre el entorno (disco persistente, red, colas, programador de tareas) coincide con el entorno donde se despliega.
 
 <!-- obsidian-links:start -->
