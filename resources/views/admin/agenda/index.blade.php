@@ -12,17 +12,30 @@
         <h1 class="font-serif text-3xl text-white">Agenda</h1>
         <p class="text-gold-light capitalize">{{ $weekdays[$day->isoWeekday()] }} {{ $day->format('d/m/Y') }}</p>
     </div>
-    <a href="{{ route('admin.appointments.create', ['fecha' => $day->toDateString()]) }}" class="btn-gold text-sm">Nueva cita</a>
+    {{-- Hidden on phones: the floating button below replaces it there,
+         always reachable with the thumb without scrolling to the top. --}}
+    <a href="{{ route('admin.appointments.create', ['fecha' => $day->toDateString()]) }}" class="hidden md:inline-flex btn-gold text-sm">Nueva cita</a>
 </div>
+
+<a href="{{ route('admin.appointments.create', ['fecha' => $day->toDateString()]) }}"
+   class="md:hidden fixed right-4 z-40 flex items-center justify-center w-14 h-14 rounded-full bg-gold text-black shadow-lg shadow-black/40 hover:bg-gold-light"
+   style="bottom: calc(4.5rem + env(safe-area-inset-bottom))"
+   aria-label="Nueva cita">
+    <svg class="w-6 h-6" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+    </svg>
+</a>
 
 <nav aria-label="Cambiar de día" class="flex flex-wrap items-center gap-3 mb-8 text-sm">
     <a href="{{ route('admin.agenda', ['fecha' => $day->subDay()->toDateString()]) }}" class="btn-outline">← Día anterior</a>
     <a href="{{ route('admin.agenda') }}" class="btn-outline">Hoy</a>
+    <a href="{{ route('admin.agenda', ['fecha' => \Carbon\CarbonImmutable::today()->addDay()->toDateString()]) }}" class="btn-outline">Mañana</a>
     <a href="{{ route('admin.agenda', ['fecha' => $day->addDay()->toDateString()]) }}" class="btn-outline">Día siguiente →</a>
     <form method="GET" action="{{ route('admin.agenda') }}" class="flex items-center gap-2">
         <label for="fecha" class="sr-only">Ir a la fecha</label>
         <input id="fecha" type="date" name="fecha" value="{{ $day->toDateString() }}" class="bg-black border border-[#2A2A2A] px-2 py-1.5">
-        <button type="submit" class="text-gold hover:underline">Ir</button>
+        <button type="submit" class="btn-outline">Ir</button>
     </form>
 </nav>
 
@@ -45,7 +58,13 @@
                             <span class="text-gold font-semibold">{{ $appointment->starts_at->format('H:i') }}–{{ $appointment->ends_at->format('H:i') }}</span>
                             · {{ $appointment->service_name }}
                         </p>
-                        <p>{{ $appointment->customer_name }} · <a href="tel:{{ preg_replace('/[^0-9+]/', '', $appointment->customer_phone) }}" class="hover:text-gold">{{ $appointment->customer_phone }}</a>@if ($appointment->customer_email) · {{ $appointment->customer_email }}@endif</p>
+                        <p>
+                            {{ $appointment->customer_name }} ·
+                            <a href="tel:{{ preg_replace('/[^0-9+]/', '', $appointment->customer_phone) }}" class="hover:text-gold">{{ $appointment->customer_phone }}</a>
+                            ·
+                            <a href="{{ $appointment->customerWhatsappUrl() }}" target="_blank" rel="noopener" class="hover:text-gold" aria-label="Abrir WhatsApp con {{ $appointment->customer_name }}">WhatsApp</a>
+                            @if ($appointment->customer_email) · {{ $appointment->customer_email }}@endif
+                        </p>
                         @if ($appointment->isConfirmed() && $appointment->customer_email && $appointment->customer_notified_at === null)
                             <p class="text-sm text-amber-300">Correo de confirmación no enviado: el sistema lo reintenta cada 10 minutos. Si sigue así, revisa el email o avisa al cliente por teléfono.</p>
                         @endif

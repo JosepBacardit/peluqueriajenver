@@ -86,3 +86,52 @@ test('only confirmed appointments that have not started yet offer to be edited',
         ->assertDontSee('href="'.route('admin.appointments.edit', $started).'"', false)
         ->assertDontSee('href="'.route('admin.appointments.edit', $cancelled).'"', false);
 });
+
+/**
+ * PRF-092: a direct shortcut to tomorrow, next to "Hoy", so the salon can
+ * jump straight to it to note a phone/WhatsApp booking for the next day.
+ */
+test('the agenda offers a shortcut to tomorrow', function () {
+    $this->get(route('admin.agenda'))
+        ->assertSee('Mañana')
+        ->assertSee('href="'.route('admin.agenda', ['fecha' => '2030-01-09']).'"', false);
+});
+
+/**
+ * PRF-093: a floating "new appointment" button for phones, always
+ * reachable with the thumb; the top button stays for desktop only.
+ */
+test('the agenda has a floating "new appointment" button for phones', function () {
+    $html = $this->get(route('admin.agenda'))->assertOk()->getContent();
+
+    expect(substr_count($html, 'aria-label="Nueva cita"'))->toBe(1);
+    expect($html)->toContain('md:hidden fixed right-4');
+    expect($html)->toContain('hidden md:inline-flex btn-gold');
+});
+
+/**
+ * PRF-095: WhatsApp from the appointment card, phone normalized to
+ * international format.
+ */
+test('an appointment card offers to open WhatsApp with the customer, phone normalized to +34 when missing', function () {
+    Appointment::factory()->create([
+        'starts_at' => '2030-01-08 10:00', 'ends_at' => '2030-01-08 10:30',
+        'customer_name' => 'Marta Ruiz', 'customer_phone' => '633 912 050',
+    ]);
+
+    $this->get(route('admin.agenda'))
+        ->assertSee('href="https://wa.me/34633912050?text=Hola%20Marta%20Ruiz%2C%20te%20escribimos%20de%20Peluquer%C3%ADa%20Jenver%20sobre%20tu%20cita."', false);
+});
+
+test('customerWhatsappUrl keeps an already-international phone as is and never breaks on odd input', function () {
+    $withPlus = Appointment::factory()->make(['customer_name' => 'X', 'customer_phone' => '+34 633 912 050']);
+    expect($withPlus->customerWhatsappUrl())->toStartWith('https://wa.me/34633912050?text=');
+
+    // A number that already carries a country code without "+" is left as is.
+    $withoutPlus = Appointment::factory()->make(['customer_name' => 'X', 'customer_phone' => '34633912050']);
+    expect($withoutPlus->customerWhatsappUrl())->toStartWith('https://wa.me/34633912050?text=');
+
+    // Odd but valid-per-PhoneNumber input never throws.
+    $foreign = Appointment::factory()->make(['customer_name' => 'X', 'customer_phone' => '+1 (555) 123-4567']);
+    expect(fn () => $foreign->customerWhatsappUrl())->not->toThrow(Throwable::class);
+});

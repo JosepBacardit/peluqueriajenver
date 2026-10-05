@@ -84,4 +84,22 @@ class Appointment extends Model
     {
         return $this->starts_at->locale('es')->translatedFormat('l j \d\e F \d\e Y');
     }
+
+    /**
+     * wa.me link to message this customer from the agenda (PRF-095), with
+     * the phone normalized to international format: a number with no
+     * country code of its own (9 digits, same as PhoneNumber's minimum) is
+     * assumed Spanish and gets +34; anything else (already starts with "+"
+     * or already has more than 9 digits) is kept as typed, digits only.
+     */
+    public function customerWhatsappUrl(): string
+    {
+        $digits = (string) preg_replace('/\D/', '', $this->customer_phone);
+
+        if ($digits !== '' && ! str_starts_with(trim($this->customer_phone), '+') && strlen($digits) <= 9) {
+            $digits = '34'.$digits;
+        }
+
+        return 'https://wa.me/'.$digits.'?text='.rawurlencode("Hola {$this->customer_name}, te escribimos de Peluquería Jenver sobre tu cita.");
+    }
 }
