@@ -55,6 +55,7 @@ beforeEach(function () {
         'app.env' => 'production',
         'app.debug' => false,
         'app.url' => 'https://www.peluqueriajenver.com',
+        'app.name' => 'Peluquería Jenver',
         'mail.default' => 'smtp',
         'mail.mailers.smtp.host' => 'smtp.mail-provider.example',
         'mail.from.address' => 'citas@example.test',
@@ -72,6 +73,7 @@ test('it passes when every check is satisfied', function () {
         ->expectsOutputToContain('APP_ENV')
         ->expectsOutputToContain('APP_DEBUG')
         ->expectsOutputToContain('APP_URL')
+        ->expectsOutputToContain('APP_NAME')
         ->expectsOutputToContain('storage/framework/views')
         ->expectsOutputToContain('storage/logs')
         ->expectsOutputToContain('storage/framework/cache')
@@ -94,6 +96,14 @@ test('it fails when outgoing mail is not really configured', function (array $ma
     'no salon address' => [['booking.salon_notification_email' => null], 'BOOKING_NOTIFICATION_EMAIL'],
     'invalid salon address' => [['booking.salon_notification_email' => 'salon-at-example'], 'BOOKING_NOTIFICATION_EMAIL'],
 ]);
+
+test('it fails when the app name is still the skeleton default', function () {
+    config(['app.name' => 'Laravel']);
+
+    $this->artisan('deploy:check')
+        ->assertExitCode(1)
+        ->expectsOutputToContain('APP_NAME');
+});
 
 test('it fails when app env is not production', function () {
     config(['app.env' => 'local']);

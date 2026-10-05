@@ -71,6 +71,16 @@ class DeployCheckCommand extends Command
             $this->info('APP_URL is https.');
         }
 
+        // Every booking email carries this name as its sender and in its
+        // branded theme (see resources/views/vendor/mail); the skeleton
+        // default would ship "Laravel" to every customer.
+        if (config('app.name') === 'Laravel') {
+            $this->error('APP_NAME is still the skeleton default ("Laravel"): booking emails must carry the salon\'s name.');
+            $ok = false;
+        } else {
+            $this->info('APP_NAME is set.');
+        }
+
         // The admin panel's session cookie carries access to personal data.
         if (config('session.secure') !== true) {
             $this->error('SESSION_SECURE_COOKIE is not true: the session cookie could travel over plain http.');

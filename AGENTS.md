@@ -275,7 +275,9 @@ project actually has — see "What this project does not need" below.
 - `php artisan deploy:check` — the check `deploy.sh` runs as `www-data`
   before leaving maintenance mode. Fails (exit 1) if `APP_ENV` is not
   `production`, `APP_DEBUG` is not `false`, `APP_URL` does not start with
-  `https://`, if `storage/framework/views`, `storage/logs`,
+  `https://`, if `APP_NAME` is still the skeleton default (`Laravel`) —
+  every booking email carries this name as its sender and in its branded
+  theme — if `storage/framework/views`, `storage/logs`,
   `storage/framework/cache` or `bootstrap/cache` is not writable by
   whoever runs it, or if booking email cannot really be sent:
   `MAIL_MAILER` is `log`/`array`/empty, the SMTP `MAIL_HOST` is empty or
