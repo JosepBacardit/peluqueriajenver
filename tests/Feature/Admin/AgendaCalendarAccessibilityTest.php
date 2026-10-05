@@ -54,20 +54,23 @@ test('semana and mes navigation buttons reuse the 44px Día button style', funct
 })->with(['semana', 'mes']);
 
 /**
- * Review finding M3: the week view's desktop grid (header row + content
- * row) and its mobile day strip both group their cells under role="row",
- * completing the role="grid" ARIA pattern (previously only
- * role="grid"/"columnheader", with no row/gridcell structure underneath).
+ * Review finding M3, revisited for T039: the desktop week grid is no
+ * longer a tabular list-per-day (where role="grid"/"row"/"gridcell" fit),
+ * but an hourly timeline like Día's — content a screen reader reads in
+ * chronological DOM order via real links, same as Día. Its header row
+ * (day names) is still genuinely tabular, so it keeps role="row" and
+ * "columnheader"; the mobile day strip (still a one-row grid of day
+ * pills) keeps role="row"/"gridcell" as before. A full accessibility pass
+ * over the whole grid is T040's job.
  */
 test('the week view groups its cells in role rows and gridcells', function () {
     $html = $this->get(route('admin.agenda', ['vista' => 'semana']))->assertOk()->getContent();
 
-    // 1 row for the mobile 7-day strip + 2 rows for the desktop grid
-    // (header row, content row).
-    expect(substr_count($html, 'role="row"'))->toBe(3);
-    // 7 gridcells in the mobile strip + 7 in the desktop content row (the
-    // desktop header cells are role="columnheader", not gridcell).
-    expect(substr_count($html, 'role="gridcell"'))->toBe(14);
+    // 1 row for the mobile 7-day strip + 1 row for the desktop header.
+    expect(substr_count($html, 'role="row"'))->toBe(2);
+    // 7 gridcells in the mobile strip only (the desktop timeline body is
+    // no longer gridcell-based).
+    expect(substr_count($html, 'role="gridcell"'))->toBe(7);
 });
 
 /**

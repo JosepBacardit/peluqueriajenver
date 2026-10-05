@@ -6,15 +6,9 @@
      "ahora" on load, or leaves it at the top (the opening time) when
      there is no "ahora" line to show. --}}
 <div id="timeline-scroll" class="border border-[#2A2A2A] mb-6 overflow-y-auto" style="max-height: 70vh">
-    <div class="flex relative">
+    <div class="flex">
         @include('admin.agenda._timeline-hour-axis')
         @include('admin.agenda._timeline-column', ['compact' => false])
-        @if ($nowLineTop !== null)
-            <div class="absolute left-11 right-0 z-10 pointer-events-none" style="top: {{ $nowLineTop }}px" aria-hidden="true">
-                <div class="h-px bg-red-500"></div>
-                <span class="absolute -top-2.5 left-1 text-[9px] leading-none text-red-400 bg-black px-1">Ahora</span>
-            </div>
-        @endif
     </div>
 </div>
 

@@ -1,6 +1,7 @@
-{{-- Vista Semana (T030). Expects $days (list of ['date', 'appointments',
-     'blocks', 'isClosed', 'hasPartialClosure', 'isToday']), $weekStart,
-     $weekEnd, $day (the selected date), $volver and $weekdays (shared
+{{-- Vista Semana (T030, hourly grid since T039). Expects $days (list of
+     ['date', 'appointments', 'blocks', 'isClosed', 'hasPartialClosure',
+     'isToday', 'timeline', 'nowLineTop']), $weekStart, $weekEnd, $day (the
+     selected date), $gridStart, $gridEnd, $volver and $weekdays (shared
      from index.blade.php). --}}
 @php
     $weekdayShort = [1 => 'L', 2 => 'M', 3 => 'X', 4 => 'J', 5 => 'V', 6 => 'S', 7 => 'D'];
@@ -60,72 +61,57 @@
     @include('admin.agenda._day', ['appointments' => $selected['appointments'], 'blocks' => $selected['blocks'], 'timeline' => $selected['timeline'], 'gridStart' => $gridStart, 'gridEnd' => $gridEnd, 'nowLineTop' => $selected['nowLineTop']])
 </div>
 
-{{-- Desktop: a 7-column overview of the week (PRF-100). Two ARIA rows (a
-     header row of columnheaders and a content row of gridcells) instead of
-     one row with the header baked into each content cell, so the grid role
-     has the row/gridcell structure a screen reader expects (review finding
-     M3) — the two <div role="row" class="contents"> wrappers opt out of
-     CSS grid placement (display:contents) so grid-cols-7 still applies to
-     their children, not to the wrappers themselves. --}}
-<div class="hidden md:grid md:grid-cols-7 md:gap-px md:bg-[#2A2A2A] md:border md:border-[#2A2A2A]" role="grid" aria-label="Semana del {{ $weekStart->format('d/m') }} al {{ $weekEnd->format('d/m/Y') }}">
-    <div role="row" class="contents">
-        @foreach ($days as $d)
-            @php
-                // The week can cross into the next month (review finding
-                // L3): show the day alone only while it stays in the
-                // week's first month, "d/m" once it has crossed over.
-                $crossesMonth = $d['date']->month !== $weekStart->month;
-            @endphp
-            <div class="bg-black p-2 text-xs text-gray-400 capitalize" role="columnheader">
-                {{ $weekdays[$d['date']->isoWeekday()] }} {{ $crossesMonth ? $d['date']->format('d/m') : $d['date']->format('d') }}
-                {{-- Today must not rely on the ring color alone (PRF-106). --}}
-                @if ($d['isToday'])
-                    <span class="text-gold font-semibold">· Hoy</span>
-                @endif
-            </div>
-        @endforeach
+{{-- Desktop: the same hourly timeline grid as Día, repeated in 7 columns
+     (PRF-100, PRF-118), with the hour axis shared once on the left. This
+     replaces the earlier list-based 7-column overview entirely. --}}
+<div class="hidden md:block border border-[#2A2A2A] overflow-hidden" aria-label="Semana del {{ $weekStart->format('d/m') }} al {{ $weekEnd->format('d/m/Y') }}">
+    {{-- Header row: a spacer matching the hour axis width, then the 7 day
+         headers — the one part of this view that is genuinely tabular, so
+         it keeps the role="row"/"columnheader" pair (review finding M3's
+         pattern). --}}
+    <div class="flex border-b border-[#2A2A2A]" role="row">
+        <div class="w-11 shrink-0" aria-hidden="true"></div>
+        <div class="flex-1 flex">
+            @foreach ($days as $d)
+                @php
+                    // The week can cross into the next month (review
+                    // finding L3): show the day alone only while it stays
+                    // in the week's first month, "d/m" once crossed over.
+                    $crossesMonth = $d['date']->month !== $weekStart->month;
+                @endphp
+                <div class="flex-1 min-w-0 bg-black p-1 text-[10px] leading-tight text-gray-400 capitalize border-l border-[#1A1A1A] first:border-l-0" role="columnheader">
+                    {{ $weekdays[$d['date']->isoWeekday()] }} {{ $crossesMonth ? $d['date']->format('d/m') : $d['date']->format('d') }}
+                    {{-- Today must not rely on the border color alone (PRF-106). --}}
+                    @if ($d['isToday'])
+                        <span class="block text-gold font-semibold">Hoy</span>
+                    @endif
+                </div>
+            @endforeach
+        </div>
     </div>
-    <div role="row" class="contents">
+
+    {{-- Hour axis + 7 day columns, scrolled together to "ahora" on load
+         (the script lives once, in _timeline.blade.php's pattern — here
+         inlined since Semana has its own scroll container id). --}}
+    <div id="week-timeline-scroll" class="flex overflow-y-auto" style="max-height: 70vh">
+        @include('admin.agenda._timeline-hour-axis')
         @foreach ($days as $d)
-            <div class="bg-black p-2 min-h-32 {{ $d['isToday'] ? 'ring-1 ring-inset ring-gold' : '' }}" role="gridcell">
-                @if ($d['isClosed'])
-                    <p class="text-sm text-gray-500 mb-1">Cerrado</p>
-                @elseif ($d['hasPartialClosure'])
-                    <p class="text-sm text-amber-400 mb-1">Capacidad reducida</p>
-                @endif
-                @if ($d['appointments']->isEmpty())
-                    @unless ($d['isClosed'] || $d['hasPartialClosure'])
-                        <p class="text-sm text-gray-500">Sin citas</p>
-                    @endunless
-                @else
-                    {{-- Each appointment links to editing it when that is
-                         possible, or to its day otherwise (cancelled or
-                         already started), with a 44px touch target and a
-                         full aria-label (review finding N3). --}}
-                    <ul class="space-y-1">
-                        @foreach ($d['appointments'] as $appointment)
-                            @php
-                                $canEdit = $appointment->isConfirmed() && $appointment->starts_at->isFuture();
-                                $href = $canEdit
-                                    ? route('admin.appointments.edit', ['appointment' => $appointment, 'volver' => $volver])
-                                    : route('admin.agenda', ['vista' => 'dia', 'fecha' => $d['date']->toDateString()]);
-                                $statusLabel = $appointment->isConfirmed() ? '' : ', cancelada';
-                            @endphp
-                            <li>
-                                <a href="{{ $href }}"
-                                   class="min-h-11 flex items-center gap-1 px-1 -mx-1 text-sm {{ $appointment->isConfirmed() ? 'text-white hover:text-gold' : 'text-gray-500 line-through' }}"
-                                   aria-label="{{ $appointment->starts_at->format('H:i') }} {{ $appointment->service_name }}, {{ $appointment->customer_name }}{{ $statusLabel }}">
-                                    <span>{{ $appointment->starts_at->format('H:i') }} {{ $appointment->service_name }} · {{ $appointment->customer_name }}</span>
-                                    {{-- Cancelled must not rely on the strike-through alone (review finding N3). --}}
-                                    @unless ($appointment->isConfirmed())
-                                        <span class="text-xs no-underline">(Cancelada)</span>
-                                    @endunless
-                                </a>
-                            </li>
-                        @endforeach
-                    </ul>
-                @endif
-            </div>
+            {{-- "day" and "volver" are overridden per column here: each
+                 column's free slots must create on (and return to) that
+                 column's own date, not the mobile strip's selected $day. --}}
+            @include('admin.agenda._timeline-column', ['timeline' => $d['timeline'], 'compact' => true, 'nowLineTop' => $d['nowLineTop'], 'day' => $d['date'], 'volver' => 'semana:'.$d['date']->toDateString()])
         @endforeach
     </div>
 </div>
+
+@php($weekNowLineTop = collect($days)->first(fn ($d) => $d['nowLineTop'] !== null)['nowLineTop'] ?? null)
+@if ($weekNowLineTop !== null)
+    <script>
+        (function () {
+            var container = document.getElementById('week-timeline-scroll');
+            if (container) {
+                container.scrollTop = Math.max(0, {{ $weekNowLineTop }} - 100);
+            }
+        })();
+    </script>
+@endif

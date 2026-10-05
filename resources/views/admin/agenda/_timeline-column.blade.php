@@ -4,12 +4,14 @@
      segments in normal document flow — every segment's height is exact
      (DayTimeline::pxFromMinutes), so the lanes stay aligned to the shared
      hour axis without any absolute positioning.
-     Expects $timeline (DayTimeline::build() result) and $compact (bool:
-     hides the service name in narrow contexts, PRF-111). --}}
+     Expects $timeline (DayTimeline::build() result), $compact (bool:
+     hides the service name in narrow contexts, PRF-111) and, optionally,
+     $nowLineTop (int px, PRF-116 — omit or pass null when this column's
+     day is not today or "ahora" is outside the grid). --}}
 @php
     $bandLabels = ['cerrado' => 'Cerrado', 'fuera-horario' => 'Fuera de horario', 'cierre' => 'Cierre'];
 @endphp
-<div class="flex-1 min-w-0">
+<div class="relative flex-1 min-w-0">
     @foreach ($timeline['pieces'] as $piece)
         @if ($piece['kind'] === 'band')
             <div class="flex items-center justify-center text-center px-1 text-[10px] leading-tight text-amber-200 border-b border-[#2A2A2A]"
@@ -64,4 +66,7 @@
             </div>
         @endif
     @endforeach
+    @if (($nowLineTop ?? null) !== null)
+        @include('admin.agenda._timeline-now-line')
+    @endif
 </div>
