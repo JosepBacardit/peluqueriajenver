@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Actions\CancelAppointment;
 use App\Actions\CreateAppointment;
 use App\Actions\RescheduleAppointment;
+use App\Booking\AppointmentChangedException;
 use App\Booking\AppointmentNotifier;
 use App\Booking\AppointmentNotMovableException;
 use App\Booking\DuplicateAppointmentException;
@@ -73,34 +74,51 @@ class AppointmentController extends Controller
     /**
      * A full or closed time is not saved until the salon confirms it after
      * the warning (see UpdateAdminAppointmentRequest::confirmsSlot()). The
-     * customer is emailed only when the time or the service changes.
+     * customer gets one email when the time or the service changes (the
+     * change notice) or when only her email changes (her appointment with
+     * the new personal link); RescheduleAppointment decides both under its
+     * lock. The email is built from the values just saved.
      */
     public function update(UpdateAdminAppointmentRequest $request, Appointment $appointment, RescheduleAppointment $rescheduleAppointment, AppointmentNotifier $notifier): RedirectResponse
     {
         $service = Service::findOrFail($request->validated('service_id'));
-        $previousStart = $appointment->starts_at;
-        $previousServiceId = (int) $appointment->service_id;
 
         try {
-            $rescheduleAppointment->handle($appointment, $service, $request->startsAt(), $request->customer(), ignoreHoursAndCapacity: $request->confirmsSlot());
+            $outcome = $rescheduleAppointment->handle(
+                $appointment, $service, $request->startsAt(), $request->customer(),
+                ignoreHoursAndCapacity: $request->confirmsSlot(),
+                expectedVersion: $request->version(),
+            );
         } catch (AppointmentNotMovableException) {
             return self::notMovableResponse($appointment);
+        } catch (AppointmentChangedException) {
+            return redirect()
+                ->route('admin.appointments.edit', $appointment)
+                ->with('warning', 'Otra persona ha cambiado esta cita mientras la editabas, así que no se ha guardado nada. Estos son sus datos actuales: repite tu cambio si sigue haciendo falta.');
         } catch (StartTimeInPastException) {
             return back()->withInput($request->except('force'))->withErrors(['time' => 'Esa hora ya ha pasado.']);
-        } catch (SlotUnavailableException) {
-            return back()->withInput($request->except('force'))->with('slot_warning', $request->slotKey());
+        } catch (SlotUnavailableException $exception) {
+            return back()->withInput($request->except('force'))->with('slot_warning', [
+                'key' => $request->slotKey(),
+                'reason' => $exception->reason?->value,
+            ]);
         }
 
         $redirect = redirect()->route('admin.agenda', ['fecha' => $appointment->starts_at->toDateString()]);
-        $changed = ! $appointment->starts_at->eq($previousStart) || (int) $appointment->service_id !== $previousServiceId;
 
-        if ($changed && ! $notifier->sendRescheduleNotice($appointment)) {
-            return $redirect->with('warning', 'Cita actualizada, pero no se ha podido enviar el correo a la clienta con el cambio. Avísala por teléfono.');
+        if ((! $outcome->rescheduled && ! $outcome->emailChanged) || $appointment->customer_email === null) {
+            return $redirect->with('status', 'Cita actualizada.');
         }
 
-        return $redirect->with('status', $changed && $appointment->customer_email !== null
-            ? 'Cita actualizada. Se ha enviado el cambio a la clienta por correo.'
-            : 'Cita actualizada.');
+        if (! $notifier->sendChangeNotice($appointment, $outcome->rescheduled)) {
+            return $redirect->with('warning', $outcome->emailChanged
+                ? 'Cita actualizada, pero no se ha podido enviar a la clienta el correo con su nuevo enlace, y el anterior ya no funciona. El sistema lo reintentará cada 10 minutos; si no le llega, avísala por teléfono.'
+                : 'Cita actualizada, pero no se ha podido enviar el correo a la clienta con el cambio. Avísala por teléfono.');
+        }
+
+        return $redirect->with('status', $outcome->emailChanged
+            ? 'Cita actualizada. Se ha enviado a la clienta un correo con su cita y su nuevo enlace.'
+            : 'Cita actualizada. Se ha enviado el cambio a la clienta por correo.');
     }
 
     public function cancel(Appointment $appointment, CancelAppointment $cancelAppointment, AppointmentNotifier $notifier): RedirectResponse

@@ -1,8 +1,10 @@
 <?php
 
 use App\Enums\AppointmentStatus;
+use App\Mail\AppointmentConfirmedMail;
 use App\Mail\AppointmentRescheduledMail;
 use App\Models\Appointment;
+use App\Models\ScheduleBlock;
 use App\Models\Service;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -45,6 +47,8 @@ function reschedulePayload(array $overrides = []): array
         'customer_phone' => '600 123 456',
         'customer_email' => 'rosa@example.test',
         'notes' => 'Pelo rizado',
+        // The version of the appointment the edit form was opened with.
+        'version' => test()->appointment->fresh()->updated_at->getTimestamp(),
     ], $overrides);
 }
 
@@ -89,7 +93,7 @@ test('a full time is not saved without confirmation and the form explains why', 
 
     $this->get($editUrl)
         ->assertSee('role="alert"', false)
-        ->assertSee('fuera del horario de apertura o no tiene plaza libre')
+        ->assertSee('Esa hora ya no tiene plaza libre')
         ->assertSee('Guardar igualmente')
         // What was typed is kept, not the saved values.
         ->assertSee('value="12:30"', false);
@@ -202,12 +206,96 @@ test('moving an appointment emails the customer the new time and the same person
     });
 });
 
-test('the notice goes to the email saved with the move', function () {
+test('moving and changing the email at once sends a single change notice to the new address with the new link', function () {
     Mail::fake();
 
     $this->put(route('admin.appointments.update', $this->appointment), reschedulePayload(['customer_email' => 'rosa.nueva@example.test']));
 
-    Mail::assertSent(AppointmentRescheduledMail::class, fn ($mail) => $mail->hasTo('rosa.nueva@example.test'));
+    $newToken = $this->appointment->fresh()->token;
+    Mail::assertSentCount(1);
+    Mail::assertSent(AppointmentRescheduledMail::class, fn ($mail) => $mail->hasTo('rosa.nueva@example.test')
+        && str_contains($mail->render(), route('cita.show', $newToken)));
+});
+
+test('changing only the email sends the appointment and its new link to the new address, and the old link stops working', function () {
+    Mail::fake();
+    $oldToken = $this->appointment->token;
+
+    $this->put(route('admin.appointments.update', $this->appointment), reschedulePayload(['date' => '2030-01-08', 'time' => '10:00', 'customer_email' => 'rosa.nueva@example.test']))
+        ->assertSessionHas('status', 'Cita actualizada. Se ha enviado a la clienta un correo con su cita y su nuevo enlace.');
+
+    $appointment = $this->appointment->fresh();
+    expect($appointment->token)->not->toBe($oldToken);
+    expect($appointment->customer_notified_at)->not->toBeNull();
+    Mail::assertSentCount(1);
+    Mail::assertSent(AppointmentConfirmedMail::class, function (AppointmentConfirmedMail $mail) use ($appointment) {
+        $html = $mail->render();
+
+        return $mail->hasTo('rosa.nueva@example.test')
+            && str_contains($html, route('cita.show', $appointment->token))
+            && str_contains($html, '10:00');
+    });
+
+    auth()->logout();
+    $this->get(route('cita.show', $oldToken))->assertNotFound();
+    $this->get(route('cita.show', $appointment->token))->assertOk();
+});
+
+test('when the email with the new link fails, the panel says the old link no longer works and the retry sends it', function () {
+    Mail::shouldReceive('to')->once()->andThrow(new RuntimeException('SMTP server unreachable'));
+
+    $this->put(route('admin.appointments.update', $this->appointment), reschedulePayload(['customer_email' => 'rosa.nueva@example.test']))
+        ->assertSessionHas('warning', 'Cita actualizada, pero no se ha podido enviar a la clienta el correo con su nuevo enlace, y el anterior ya no funciona. El sistema lo reintentará cada 10 minutos; si no le llega, avísala por teléfono.');
+
+    $appointment = $this->appointment->fresh();
+    expect($appointment->customer_email)->toBe('rosa.nueva@example.test');
+    expect($appointment->customer_notified_at)->toBeNull();
+
+    Mail::swap(new Illuminate\Support\Testing\Fakes\MailFake(new Illuminate\Mail\MailManager(app())));
+    $this->travel(10)->minutes();
+    $this->artisan('appointments:notify-pending')->assertSuccessful();
+
+    Mail::assertSent(AppointmentConfirmedMail::class, fn ($mail) => $mail->hasTo('rosa.nueva@example.test')
+        && str_contains($mail->render(), route('cita.show', $appointment->token)));
+});
+
+test('a change notice that is sent counts as the confirmation still pending, so the retry sends nothing more', function () {
+    Mail::fake();
+    $this->appointment->forceFill(['customer_notified_at' => null])->save();
+
+    $this->put(route('admin.appointments.update', $this->appointment), reschedulePayload());
+    expect($this->appointment->fresh()->customer_notified_at)->not->toBeNull();
+
+    $this->travel(10)->minutes();
+    $this->artisan('appointments:notify-pending')->assertSuccessful();
+
+    Mail::assertSentCount(1);
+    Mail::assertSent(AppointmentRescheduledMail::class);
+});
+
+test('changing only the service also tells the customer', function () {
+    Mail::fake();
+    $color = Service::factory()->create(['name' => 'Color', 'duration_minutes' => 60]);
+
+    $this->put(route('admin.appointments.update', $this->appointment), reschedulePayload(['service_id' => $color->id, 'date' => '2030-01-08', 'time' => '10:00']));
+
+    Mail::assertSent(AppointmentRescheduledMail::class, fn ($mail) => str_contains($mail->render(), 'Color'));
+});
+
+test('a form opened before someone else changed the appointment saves nothing and shows the current details', function () {
+    $staleForm = reschedulePayload(['customer_phone' => '611 222 333', 'date' => '2030-01-08', 'time' => '10:00']);
+    $this->travel(1)->minutes();
+    $this->put(route('admin.appointments.update', $this->appointment), reschedulePayload(['time' => '12:00']));
+
+    $this->put(route('admin.appointments.update', $this->appointment), $staleForm)
+        ->assertRedirect(route('admin.appointments.edit', $this->appointment))
+        ->assertSessionHas('warning');
+
+    $appointment = $this->appointment->fresh();
+    expect($appointment->starts_at->format('Y-m-d H:i'))->toBe('2030-01-09 12:00');
+    expect($appointment->customer_phone)->toBe('600 123 456');
+
+    $this->get(route('admin.appointments.edit', $this->appointment))->assertSee('value="12:00"', false);
 });
 
 test('no email is sent when the customer has none or when neither the time nor the service changes', function (array $overrides) {
@@ -269,4 +357,48 @@ test('creating a new appointment from the panel still cannot take a full time', 
         ->assertSessionHasErrors('time');
 
     expect(Appointment::count())->toBe(3);
+});
+
+test('the warning says whether the time is outside opening hours, in a one-off closure or full', function (string $date, string $time, string $message) {
+    fillTwelveOClock();
+    ScheduleBlock::create(['starts_at' => '2030-01-08 15:00', 'ends_at' => '2030-01-08 16:00', 'capacity_reduction' => null]);
+    $editUrl = route('admin.appointments.edit', $this->appointment);
+
+    $this->from($editUrl)->put(route('admin.appointments.update', $this->appointment), reschedulePayload(['date' => $date, 'time' => $time]));
+
+    $this->get($editUrl)->assertSee($message);
+})->with([
+    'after closing time' => ['2030-01-08', '18:30', 'Esa hora cae fuera del horario de apertura'],
+    'closed monday' => ['2030-01-14', '10:00', 'Esa hora cae fuera del horario de apertura'],
+    'one-off closure' => ['2030-01-08', '15:00', 'Esa hora coincide con un cierre puntual'],
+    'no capacity left' => ['2030-01-08', '12:30', 'Esa hora ya no tiene plaza libre'],
+]);
+
+test('the warning takes the focus, is linked from the time fields and comes after the normal save button', function () {
+    fillTwelveOClock();
+    $editUrl = route('admin.appointments.edit', $this->appointment);
+
+    $this->from($editUrl)->put(route('admin.appointments.update', $this->appointment), reschedulePayload(['date' => '2030-01-08', 'time' => '12:30']));
+    $html = $this->get($editUrl)->getContent();
+
+    expect($html)->toContain('id="slot-warning" role="alert" tabindex="-1"');
+    expect($html)->toContain("document.getElementById('slot-warning').focus();");
+    foreach (['service_id', 'date', 'time'] as $field) {
+        expect($html)->toMatch('/id="'.$field.'"[^>]*aria-describedby="slot-warning-text"/');
+    }
+    // Enter in a field submits with the first submit button of the form.
+    preg_match('/<form method="POST" action="'.preg_quote(route('admin.appointments.update', $this->appointment), '/').'".*?<\/form>/s', $html, $form);
+    preg_match_all('/<button type="submit"[^>]*>([^<]+)<\/button>/', $form[0], $buttons);
+    expect($buttons[1])->toBe(['Guardar cambios', 'Guardar igualmente']);
+});
+
+test('fields with an error are marked invalid and point to their message', function () {
+    $editUrl = route('admin.appointments.edit', $this->appointment);
+
+    $this->from($editUrl)->put(route('admin.appointments.update', $this->appointment), reschedulePayload(['customer_phone' => '12345']));
+    $html = $this->get($editUrl)->getContent();
+
+    expect($html)->toMatch('/id="customer_phone"[^>]*aria-invalid="true" aria-describedby="customer_phone-error"/');
+    expect($html)->toContain('<p id="customer_phone-error"');
+    expect($html)->not->toMatch('/id="customer_name"[^>]*aria-invalid/');
 });

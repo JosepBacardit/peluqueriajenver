@@ -1,6 +1,7 @@
 <?php
 
 use App\Booking\AvailabilityCalculator;
+use App\Booking\UnavailabilityReason;
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\BookingSetting;
@@ -156,6 +157,21 @@ test('an appointment being moved does not take capacity from its own new time', 
     // Every other appointment still counts.
     bookAppointment('09:00', '10:00');
     expect($this->calculator->isAvailable(60, at('09:45'), $this->now, applyPublicRules: false, excludeAppointmentId: $moved->id))->toBeFalse();
+});
+
+test('it says why a time cannot be booked', function () {
+    BookingSetting::current()->update(['capacity' => 1, 'min_notice_minutes' => 120]);
+    bookAppointment('10:00', '11:00');
+    ScheduleBlock::create(['starts_at' => at('15:00'), 'ends_at' => at('16:00'), 'capacity_reduction' => null]);
+    $now = at('08:00');
+
+    expect($this->calculator->unavailabilityReason(60, at('07:00'), $now, applyPublicRules: false))->toBe(UnavailabilityReason::InThePast);
+    expect($this->calculator->unavailabilityReason(60, at('18:30'), $now, applyPublicRules: false))->toBe(UnavailabilityReason::OutsideOpeningHours);
+    expect($this->calculator->unavailabilityReason(60, at('10:30'), $now, applyPublicRules: false))->toBe(UnavailabilityReason::Full);
+    expect($this->calculator->unavailabilityReason(60, at('14:30'), $now, applyPublicRules: false))->toBe(UnavailabilityReason::Closed);
+    expect($this->calculator->unavailabilityReason(60, at('09:00'), $now, applyPublicRules: true))->toBe(UnavailabilityReason::OutsidePublicRules);
+    expect($this->calculator->unavailabilityReason(60, at('12:00'), $now, applyPublicRules: false))->toBeNull();
+    expect($this->calculator->isAvailable(60, at('12:00'), $now, applyPublicRules: false))->toBeTrue();
 });
 
 test('a full closure covering the whole day removes every time', function () {

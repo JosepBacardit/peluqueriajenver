@@ -55,20 +55,39 @@ class AppointmentNotifier
     }
 
     /**
-     * Best effort, without retry, like the cancellation notices: the
-     * appointment has already been moved. The caller tells the salon when
-     * it fails, so they can phone the customer instead.
+     * Tells the customer about a change made from the panel: the new time
+     * or service ($rescheduled) or, when only her email changed, her
+     * appointment and new personal link (the confirmation email, sent to
+     * the new address). One email either way.
+     *
+     * The appointment has already been changed, so a failure never undoes
+     * it; the caller tells the salon. A change of time alone is not retried
+     * (like cancellations). A change of email leaves the confirmation
+     * pending (RescheduleAppointment clears customer_notified_at), so
+     * appointments:notify-pending resends it: the old link no longer
+     * works. On success the confirmation is marked as sent, since this
+     * email carries the personal link and every detail too.
      *
      * @return bool false only when the customer has an email and sending
      *              it failed
      */
-    public function sendRescheduleNotice(Appointment $appointment): bool
+    public function sendChangeNotice(Appointment $appointment, bool $rescheduled): bool
     {
         if ($appointment->customer_email === null) {
             return true;
         }
 
-        return $this->send($appointment->customer_email, new AppointmentRescheduledMail($appointment));
+        $mail = $rescheduled ? new AppointmentRescheduledMail($appointment) : new AppointmentConfirmedMail($appointment);
+
+        if (! $this->send($appointment->customer_email, $mail)) {
+            return false;
+        }
+
+        if ($appointment->customer_notified_at === null) {
+            $appointment->forceFill(['customer_notified_at' => now()])->save();
+        }
+
+        return true;
     }
 
     private function salonEmail(): ?string

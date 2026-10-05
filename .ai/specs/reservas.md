@@ -144,7 +144,7 @@ Ejemplos resueltos (capacidad 2, intervalo de 15 minutos, tramo de 09:00 a 19:00
 
 ### Página de la cita y cancelación
 
-- **PRF-039.** Cada cita **debe** tener un enlace personal, imposible de adivinar (al menos 40 caracteres aleatorios), que abre su página con el servicio, el día y la hora, el nombre y el estado. El enlace no caduca.
+- **PRF-039.** Cada cita **debe** tener un enlace personal, imposible de adivinar (al menos 40 caracteres aleatorios), que abre su página con el servicio, el día y la hora, el nombre y el estado. El enlace no caduca; solo se sustituye por otro si el salón cambia el email de la cita (PRF-087).
 - **PRF-040.** Un enlace que no corresponde a ninguna cita **debe** mostrar la página de «no encontrado» y no revelar ningún dato.
 - **PRF-041.** El cliente **debe** poder cancelar su cita confirmada desde su página, tras confirmarlo, si falta al menos el plazo para cancelar del ajuste. La página muestra «Tu cita se ha cancelado.» y la hora vuelve a estar disponible.
 - **PRF-042.** Pasado el plazo para cancelar, o con la cita ya empezada, la página **no debe** permitir cancelar y debe mostrar «Ya no se puede cancelar online. Llámanos al 633 912 050.».
@@ -206,15 +206,17 @@ La imagen del logo de los correos es una excepción a la regla general de servir
 - **PRF-079.** Si el hueco elegido no tiene capacidad suficiente o cae fuera del horario de apertura, el panel **debe** avisarlo con un mensaje que lo explique antes de guardar nada.
 - **PRF-080.** Tras ese aviso, una persona del salón **debe** poder confirmar que quiere guardar el cambio igualmente. El panel **no debe** guardar un cambio con un hueco sin capacidad o fuera de horario sin esa confirmación explícita.
 - **PRF-081.** Una persona del salón **debe** poder editar también el nombre, el teléfono, el email y las observaciones de la clienta al mover la cita, con las mismas reglas de los campos que al crear una cita del panel (PRF-046).
-- **PRF-082.** Si la cita tiene email, la clienta **debe** recibir un correo que informe del cambio con la nueva fecha y hora y el mismo enlace personal a su cita (PRF-039).
+- **PRF-082.** Si la cita tiene email, la clienta **debe** recibir un correo que informe del cambio con la nueva fecha y hora y el mismo enlace personal a su cita (PRF-039), salvo que en el mismo cambio se haya cambiado su email (PRF-087).
 - **PRF-083.** Si el correo de PRF-082 no se puede enviar, el cambio **debe** mantenerse igualmente y el fallo queda registrado para el salón, sin reintento automático (igual que PRF-054).
 - **PRF-084.** Una cita cancelada, o una cuya hora ya ha pasado, **no debe** poder moverse: el panel no ofrece la opción de editar en esos casos.
 - **PRF-085.** Mover una cita **no debe** dejar ningún rastro del cambio en ningún campo visible para la clienta (por ejemplo, las observaciones). No se guarda un historial de los cambios de hora.
-- **PRF-086.** Dos cambios a la vez sobre la misma cita, o un cambio y una cancelación a la vez, **no deben** dejar un resultado mezclado: el segundo en completarse ve el estado que dejó el primero y actúa en consecuencia, igual que al crear una cita (PRF-026).
+- **PRF-086.** Dos cambios a la vez sobre la misma cita, o un cambio y una cancelación a la vez, **no deben** dejar un resultado mezclado: el segundo en completarse ve el estado que dejó el primero y actúa en consecuencia, igual que al crear una cita (PRF-026). Si una persona del salón guarda un formulario de edición abierto antes de que otra cambiara la cita, el panel **no debe** guardarlo: avisa y muestra los datos actuales.
+- **PRF-087.** Si al editar una cita cambia el email de la clienta, la cita **debe** recibir un enlace personal nuevo y el anterior **debe** dejar de funcionar, para que quien recibió el enlace en la dirección anterior (por ejemplo, una dirección equivocada) ya no pueda ver ni cancelar la cita. La clienta **debe** recibir en la dirección nueva un correo con su cita y el enlace nuevo; si en el mismo cambio también se mueve la cita, recibe un solo correo, el de cambio de PRF-082, con el enlace nuevo. Si ese correo no se puede enviar, el panel **debe** avisar al salón de que la clienta se ha quedado sin enlace válido, y la tarea periódica de PRF-053 lo reintenta (a diferencia de PRF-083, porque sin ese correo la clienta no tiene ningún enlace que funcione). Decisión del usuario, 2026-10-05, tras la revisión independiente (`.ai/reviews/booking-admin-tweaks.md`, L3).
 
 ### Botones «Reservar cita» de la portada y las páginas de servicio (2026-10-05)
 
 - **PRF-076.** El botón «Reservar cita →» del inicio de la portada y el de cada página de servicio **deben** llevar a la página de reservas, igual que el de la cabecera (PRF-056). Los botones que invitan explícitamente a llamar (por ejemplo, «Llamar ahora») y los de WhatsApp se mantienen como están.
+- **PRF-088.** La sección «Reserva tu cita» de la portada **debe** ofrecer también un botón «Reservar online» que lleve a la página de reservas, sin quitar el teléfono ni WhatsApp, y las preguntas frecuentes sobre cómo pedir cita **deben** mencionar la reserva online sin prometer nada que el sistema no haga (por ejemplo, que se pueda reservar online cualquier servicio). Decisión del usuario, 2026-10-05 (revisión `booking-admin-tweaks`, L10).
 
 ## Datos existentes y transición
 
@@ -234,8 +236,8 @@ El remitente de correo real (PRF-070, PRF-071) sigue pendiente del buzón y el s
 - **CA-8 (PRF-050 a PRF-055).** Se envían los correos de confirmación, aviso y cancelación. Un fallo de envío no rompe la reserva y la tarea periódica lo reintenta una sola vez con éxito. El despliegue falla sin correo configurado.
 - **CA-9 (PRF-056 a PRF-061).** La cabecera, el mapa del sitio y los datos estructurados apuntan a la reserva. La política explica el tratamiento con los datos pendientes marcados. No queda el email inventado ni hay precios en la página de reservas.
 - **CA-10 (PRF-070 a PRF-075).** Los correos muestran «Peluquería Jenver» como remitente y como marca (colores, logo o nombre, pie propio), sin ningún rastro de la plantilla por defecto. El despliegue falla si el nombre de la aplicación o el remitente siguen siendo los de la plantilla.
-- **CA-11 (PRF-077 a PRF-086).** El salón mueve una cita confirmada futura (día, hora y servicio) y puede editar los datos de la clienta a la vez. Un hueco sin capacidad o fuera de horario avisa y exige confirmar antes de guardar. La clienta recibe el aviso con el mismo enlace; un fallo de envío no deshace el cambio ni se reintenta. Una cita cancelada o pasada no se puede mover, y no queda ningún rastro del cambio en sus datos.
-- **CA-12 (PRF-076).** El botón «Reservar cita →» de la portada y de cada página de servicio lleva a la página de reservas; los botones de llamada y de WhatsApp se mantienen.
+- **CA-11 (PRF-077 a PRF-087).** El salón mueve una cita confirmada futura (día, hora y servicio) y puede editar los datos de la clienta a la vez. Un hueco sin capacidad, fuera de horario o en un cierre avisa con el motivo y exige confirmar antes de guardar. La clienta recibe el aviso con el mismo enlace; un fallo de envío no deshace el cambio ni se reintenta. Si cambia su email, recibe en la dirección nueva un enlace nuevo y el anterior deja de funcionar; si ese correo falla, el panel lo avisa y se reintenta. Una cita cancelada o pasada no se puede mover, un formulario desfasado no se guarda, y no queda ningún rastro del cambio en sus datos.
+- **CA-12 (PRF-076, PRF-088).** El botón «Reservar cita →» de la portada y de cada página de servicio, y el «Reservar online» de la sección «Reserva tu cita», llevan a la página de reservas; los botones de llamada y de WhatsApp se mantienen. Las preguntas frecuentes sobre cómo pedir cita mencionan la reserva online.
 
 ## Plan de verificación
 
@@ -318,7 +320,9 @@ El remitente de correo real (PRF-070, PRF-071) sigue pendiente del buzón y el s
 | PRF-083 | Simular un fallo de envío al mover la cita → el cambio queda guardado y no hay un segundo intento automático. |
 | PRF-084 | Intentar editar una cita cancelada, o una ya empezada → el panel no lo permite. |
 | PRF-085 | Mover una cita y revisar sus observaciones y demás datos → no aparece ningún texto generado por el cambio. |
-| PRF-086 | Dos cambios simultáneos sobre la misma cita (o un cambio y una cancelación a la vez) → el resultado final es el de uno de los dos, nunca una mezcla. |
+| PRF-086 | Dos cambios simultáneos sobre la misma cita (o un cambio y una cancelación a la vez) → el resultado final es el de uno de los dos, nunca una mezcla. Guardar un formulario abierto antes de otro cambio → no se guarda y se avisa. |
+| PRF-087 | Cambiar el email de una cita → enlace nuevo; el anterior da «no encontrado»; la dirección nueva recibe un correo con la cita y el enlace nuevo (uno solo si también se mueve). Simular un fallo → el panel avisa y la tarea periódica lo reenvía. |
+| PRF-088 | La sección «Reserva tu cita» de la portada lleva a la página de reservas sin perder teléfono ni WhatsApp; las preguntas frecuentes sobre pedir cita mencionan la reserva online. |
 
 ## Riesgos y marcha atrás
 

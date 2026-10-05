@@ -59,6 +59,7 @@ beforeEach(function () {
         'mail.default' => 'smtp',
         'mail.mailers.smtp.host' => 'smtp.mail-provider.example',
         'mail.from.address' => 'citas@example.test',
+        'mail.from.name' => 'Peluquería Jenver',
         'booking.salon_notification_email' => 'salon@example.test',
         'session.secure' => true,
     ]);
@@ -69,6 +70,7 @@ test('it passes when every check is satisfied', function () {
         ->assertExitCode(0)
         ->expectsOutputToContain('MAIL_MAILER')
         ->expectsOutputToContain('MAIL_FROM_ADDRESS')
+        ->expectsOutputToContain('MAIL_FROM_NAME')
         ->expectsOutputToContain('BOOKING_NOTIFICATION_EMAIL')
         ->expectsOutputToContain('APP_ENV')
         ->expectsOutputToContain('APP_DEBUG')
@@ -93,6 +95,9 @@ test('it fails when outgoing mail is not really configured', function (array $ma
     'smtp pointing at the local default' => [['mail.mailers.smtp.host' => '127.0.0.1'], 'MAIL_HOST'],
     'no sender address' => [['mail.from.address' => null], 'MAIL_FROM_ADDRESS'],
     'skeleton sender address' => [['mail.from.address' => 'hello@example.com'], 'MAIL_FROM_ADDRESS'],
+    'no sender name' => [['mail.from.name' => ''], 'MAIL_FROM_NAME'],
+    'skeleton sender name' => [['mail.from.name' => 'Laravel'], 'MAIL_FROM_NAME'],
+    'placeholder sender name' => [['mail.from.name' => 'Example'], 'MAIL_FROM_NAME'],
     'no salon address' => [['booking.salon_notification_email' => null], 'BOOKING_NOTIFICATION_EMAIL'],
     'invalid salon address' => [['booking.salon_notification_email' => 'salon-at-example'], 'BOOKING_NOTIFICATION_EMAIL'],
 ]);

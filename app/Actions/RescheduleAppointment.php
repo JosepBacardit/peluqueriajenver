@@ -2,8 +2,10 @@
 
 namespace App\Actions;
 
+use App\Booking\AppointmentChangedException;
 use App\Booking\AppointmentNotMovableException;
 use App\Booking\AvailabilityCalculator;
+use App\Booking\RescheduleOutcome;
 use App\Booking\SlotUnavailableException;
 use App\Booking\StartTimeInPastException;
 use App\Enums\AppointmentStatus;
@@ -17,8 +19,9 @@ use Illuminate\Support\Str;
 /**
  * Moves a confirmed, upcoming appointment to another time and/or service
  * from the admin panel, and updates the customer's details with it. The
- * same row is updated: its id and its token (the customer's personal
- * link) never change, and nothing is written about the change itself.
+ * same row is updated: its id never changes, nor does its token (the
+ * customer's personal link) unless the email changes, and nothing is
+ * written about the change itself.
  */
 class RescheduleAppointment
 {
@@ -47,19 +50,39 @@ class RescheduleAppointment
      * values are written by that single UPDATE, so two concurrent moves
      * leave the whole result of the one that ran last, never a mix.
      *
+     * $expectedVersion is the appointment's updated_at (as a Unix
+     * timestamp) shown in the salon's edit form. It is compared under the
+     * lock, so a form opened before someone else changed the appointment
+     * is refused instead of silently undoing that change (the form sends
+     * every field back, not only the ones edited). updated_at has a
+     * one-second resolution: a change made in the same second the form
+     * was opened would go unnoticed, which the salon's traffic makes
+     * negligible. Null skips the check.
+     *
      * The appointment itself never counts against its new time
      * (excludeAppointmentId), so it can be moved into the time it holds
-     * now. $ignoreHoursAndCapacity is the salon's explicit "save anyway"
-     * after being warned that the new time is full or outside opening
-     * hours; a start time in the past is refused even then.
+     * now, and when neither its time nor its length changes availability
+     * is not checked at all: editing only the customer's details of an
+     * appointment saved over capacity, or before the schedule changed,
+     * needs no new confirmation. $ignoreHoursAndCapacity is the salon's
+     * explicit "save anyway" after being warned that the new time is full
+     * or outside opening hours; a start time in the past is refused even
+     * then.
      *
      * When the service does not change, the appointment keeps the name and
      * duration it was booked with (as when the service is edited later);
      * a different service brings its own current name and duration.
      *
+     * A different email address gets a new token: whoever received the
+     * old personal link (e.g. at a mistyped address) can no longer see or
+     * cancel the appointment. Its confirmation is left pending
+     * (customer_notified_at = null) until the new address is emailed, so
+     * appointments:notify-pending resends it if that email fails.
+     *
      * @param  array{customer_name: string, customer_phone: string, customer_email: string|null, notes: string|null}  $customer
      *
      * @throws AppointmentNotMovableException
+     * @throws AppointmentChangedException
      * @throws StartTimeInPastException
      * @throws SlotUnavailableException
      */
@@ -70,10 +93,11 @@ class RescheduleAppointment
         array $customer,
         bool $ignoreHoursAndCapacity,
         ?CarbonImmutable $now = null,
-    ): Appointment {
+        ?int $expectedVersion = null,
+    ): RescheduleOutcome {
         $now ??= CarbonImmutable::now();
 
-        return DB::transaction(function () use ($appointment, $service, $startsAt, $customer, $ignoreHoursAndCapacity, $now): Appointment {
+        return DB::transaction(function () use ($appointment, $service, $startsAt, $customer, $ignoreHoursAndCapacity, $now, $expectedVersion): RescheduleOutcome {
             BookingSetting::query()->lockForUpdate()->orderBy('id')->firstOrFail();
 
             $current = Appointment::query()->find($appointment->getKey());
@@ -82,19 +106,29 @@ class RescheduleAppointment
                 throw new AppointmentNotMovableException;
             }
 
+            if ($expectedVersion !== null && $current->updated_at?->getTimestamp() !== $expectedVersion) {
+                throw new AppointmentChangedException;
+            }
+
             if ($startsAt->lt($now)) {
                 throw new StartTimeInPastException;
             }
 
             $keepsService = (int) $current->service_id === (int) $service->id;
-            $durationMinutes = $keepsService
-                ? (int) $current->starts_at->diffInMinutes($current->ends_at)
-                : $service->duration_minutes;
+            $currentDurationMinutes = (int) $current->starts_at->diffInMinutes($current->ends_at);
+            $durationMinutes = $keepsService ? $currentDurationMinutes : $service->duration_minutes;
+            $keepsSlot = $startsAt->eq($current->starts_at) && $durationMinutes === $currentDurationMinutes;
 
-            if (! $ignoreHoursAndCapacity
-                && ! $this->calculator->isAvailable($durationMinutes, $startsAt, $now, applyPublicRules: false, excludeAppointmentId: $current->id)) {
-                throw new SlotUnavailableException;
+            if (! $ignoreHoursAndCapacity && ! $keepsSlot) {
+                $reason = $this->calculator->unavailabilityReason($durationMinutes, $startsAt, $now, applyPublicRules: false, excludeAppointmentId: $current->id);
+
+                if ($reason !== null) {
+                    throw new SlotUnavailableException($reason);
+                }
             }
+
+            $email = $customer['customer_email'] === null ? null : Str::lower(trim($customer['customer_email']));
+            $emailChanged = $email !== $current->customer_email;
 
             $attributes = [
                 'service_id' => $service->id,
@@ -103,9 +137,15 @@ class RescheduleAppointment
                 'ends_at' => $startsAt->addMinutes($durationMinutes),
                 'customer_name' => trim($customer['customer_name']),
                 'customer_phone' => trim($customer['customer_phone']),
-                'customer_email' => $customer['customer_email'] === null ? null : Str::lower(trim($customer['customer_email'])),
+                'customer_email' => $email,
                 'notes' => $customer['notes'] === null ? null : trim($customer['notes']),
+                'updated_at' => $current->freshTimestamp(),
             ];
+
+            if ($emailChanged) {
+                $attributes['token'] = Str::random(48);
+                $attributes['customer_notified_at'] = null;
+            }
 
             $moved = Appointment::query()
                 ->whereKey($current->getKey())
@@ -116,7 +156,11 @@ class RescheduleAppointment
                 throw new AppointmentNotMovableException;
             }
 
-            return $appointment->forceFill($attributes + ['status' => AppointmentStatus::Confirmed])->syncOriginal();
+            return new RescheduleOutcome(
+                appointment: $appointment->forceFill($attributes + ['status' => AppointmentStatus::Confirmed])->syncOriginal(),
+                rescheduled: ! $startsAt->eq($current->starts_at) || ! $keepsService,
+                emailChanged: $emailChanged,
+            );
         });
     }
 }

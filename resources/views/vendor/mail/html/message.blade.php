@@ -1,10 +1,14 @@
 <x-mail::layout>
 {{-- Header: the salon's own logo, not the framework's, as an absolute
      public URL so it still shows up when a mail client blocks images
-     loaded from the message itself. --}}
+     loaded from the message itself. logo-jenver-email.png is the website
+     logo at twice its 124x56 display size (PNG, the approved exception
+     for emails), made from public/images/logo-jenver.png with
+     `magick logo-jenver.png -resize 248x112 -strip -colors 192 logo-jenver-email.png`.
+     The size is in the attributes because Outlook ignores CSS sizes. --}}
 <x-slot:header>
 <x-mail::header :url="config('app.url')">
-<img src="{{ asset('images/logo-jenver-optimized-v2.png') }}" class="logo" alt="Peluquería Jenver" width="160">
+<img src="{{ asset('images/logo-jenver-email.png') }}" class="logo" alt="Peluquería Jenver" width="124" height="56">
 </x-mail::header>
 </x-slot:header>
 

@@ -113,11 +113,10 @@ img {
 /* Logo */
 
 .logo {
-    height: auto;
+    height: 56px;
     margin-top: 0;
     margin-bottom: 0;
-    max-height: 56px;
-    width: auto;
+    width: 124px;
 }
 
 /* Body */

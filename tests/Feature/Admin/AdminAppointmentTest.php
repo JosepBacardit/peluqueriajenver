@@ -119,3 +119,12 @@ test('appointments cannot be deleted from the panel', function () {
         fn ($route) => in_array('DELETE', $route->methods()) && str_contains($route->uri(), 'citas')
     ))->toBeFalse();
 });
+
+test('fields of a new panel appointment with an error are marked invalid and point to their message', function () {
+    $this->from(route('admin.appointments.create'))->post(route('admin.appointments.store'), adminAppointmentPayload(['time' => '10:03']));
+    $html = $this->get(route('admin.appointments.create'))->getContent();
+
+    expect($html)->toMatch('/id="time"[^>]*aria-invalid="true" aria-describedby="time-error"/');
+    expect($html)->toContain('<p id="time-error"');
+    expect($html)->not->toMatch('/id="date"[^>]*aria-invalid/');
+});

@@ -101,14 +101,13 @@ test('the row lock on the booking settings is the first query of the booking tra
     // On MySQL (REPEATABLE READ) the re-check only sees bookings committed
     // by a concurrent request if the locking read comes first: any plain
     // read before it would fix an older snapshot and reopen overbooking.
-    $queries = [];
-    DB::listen(function ($query) use (&$queries) {
-        $queries[] = $query->sql;
-    });
+    // (See sqlWithVisibleLocks(): this proves the lock is requested first,
+    // not how MySQL applies it.)
+    $queries = sqlWithVisibleLocks(fn () => app(CreateAppointment::class)->handle(
+        $this->service, CarbonImmutable::parse('2030-01-08 10:00'), customerData(), AppointmentSource::Web, true, $this->now,
+    ));
 
-    app(CreateAppointment::class)->handle($this->service, CarbonImmutable::parse('2030-01-08 10:00'), customerData(), AppointmentSource::Web, true, $this->now);
-
-    expect($queries[0])->toContain('"booking_settings"');
+    expect($queries[0])->toContain('"booking_settings"')->toContain('for update');
 });
 
 test('cancelling the same appointment twice at once only cancels it once', function () {

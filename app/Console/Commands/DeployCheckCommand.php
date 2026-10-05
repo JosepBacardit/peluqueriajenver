@@ -176,6 +176,16 @@ class DeployCheckCommand extends Command
             $this->info('MAIL_FROM_ADDRESS is set.');
         }
 
+        // The sender name is what the customer sees in her inbox.
+        $fromName = trim((string) config('mail.from.name'));
+
+        if (in_array(strtolower($fromName), ['', 'laravel', 'example'], true)) {
+            $this->error("MAIL_FROM_NAME is missing or still a placeholder (got \"{$fromName}\"): booking emails must come from the salon's name.");
+            $ok = false;
+        } else {
+            $this->info('MAIL_FROM_NAME is set.');
+        }
+
         if (! filter_var((string) config('booking.salon_notification_email'), FILTER_VALIDATE_EMAIL)) {
             $this->error('BOOKING_NOTIFICATION_EMAIL is missing or not a valid email address.');
             $ok = false;

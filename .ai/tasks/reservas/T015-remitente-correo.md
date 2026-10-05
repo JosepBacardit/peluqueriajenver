@@ -20,7 +20,7 @@
 
 ## Plan de pruebas
 
-`tests/Feature/Booking/DeployCheckCommandTest.php`: nuevo caso que fija `APP_NAME=Laravel` (con el resto de la configuración correcta) y espera que el comando falle con un mensaje que lo mencione; otro que confirma que pasa con un nombre distinto.
+`tests/Feature/DeployCheckCommandTest.php`: nuevo caso que fija `APP_NAME=Laravel` (con el resto de la configuración correcta) y espera que el comando falle con un mensaje que lo mencione; otro que confirma que pasa con un nombre distinto.
 
 ## Verificación
 

@@ -84,9 +84,11 @@ pre-filled message per page); the salon records those in the admin agenda.
   lives in `App\Booking\AvailabilityCalculator`; every booking (web or
   admin) goes through `App\Actions\CreateAppointment`, which re-checks
   availability under a row lock on `booking_settings` so concurrent
-  bookings cannot overbook. The salon moves an appointment (same row, id
-  and token) from the agenda's "Editar" link through
-  `App\Actions\RescheduleAppointment`, which takes the same lock first and
+  bookings cannot overbook. The salon moves an appointment (same row and
+  id; the token only changes, invalidating the old link, when the email
+  changes) from the agenda's "Editar" link through
+  `App\Actions\RescheduleAppointment`, which takes the same lock first,
+  refuses a form opened before another change (hidden `updated_at`) and
   updates only while the row is still confirmed; a full or closed time is
   saved only after the panel's explicit "Guardar igualmente" (so the
   capacity can be exceeded on purpose, only from there), never a past
@@ -97,10 +99,12 @@ pre-filled message per page); the salon records those in the admin agenda.
   `App\Booking\AppointmentNotifier`: confirmation with the personal link to
   the customer, notice of web bookings and customer cancellations to
   `BOOKING_NOTIFICATION_EMAIL`, cancellation emails, and the customer's
-  notice when the salon changes the time or service of their appointment.
+  notice when the salon changes the time or service of their appointment
+  (or, when only the email changes, the confirmation with the new link).
   A failed send is logged and never undoes the booking, the cancellation
   or the move (the panel warns the salon when the move notice fails;
-  cancellation and move notices are never retried); failed creation notices stay with a
+  cancellation and move notices are never retried, but a changed email
+  leaves the confirmation pending so the new link is retried); failed creation notices stay with a
   null `customer_notified_at`/`salon_notified_at` and are retried by
   `php artisan appointments:notify-pending` (cron, see "Production
   deploys").
@@ -290,7 +294,8 @@ project actually has — see "What this project does not need" below.
   `storage/framework/cache` or `bootstrap/cache` is not writable by
   whoever runs it, or if booking email cannot really be sent:
   `MAIL_MAILER` is `log`/`array`/empty, the SMTP `MAIL_HOST` is empty or
-  local, `MAIL_FROM_ADDRESS` is missing or `hello@example.com`, or
+  local, `MAIL_FROM_ADDRESS` is missing or `hello@example.com`,
+  `MAIL_FROM_NAME` is empty, `Laravel` or `Example`, or
   `BOOKING_NOTIFICATION_EMAIL` is missing or invalid; and if
   `SESSION_SECURE_COOKIE` is not `true` (the admin session cookie must be
   https-only). `deploy.sh` runs the same mail-shape checks against `.env`

@@ -17,7 +17,7 @@ Desde este enlace puedes ver tu cita y, si no puedes venir, cancelarla:
 Ver mi cita
 </x-mail::button>
 
-Si el botón no funciona, copia este enlace en el navegador: {{ $appointmentUrl }}
+Si el botón no funciona, copia este enlace en el navegador: <a href="{{ $appointmentUrl }}">{{ $appointmentUrl }}</a>
 
 Peluquería Jenver
 </x-mail::message>

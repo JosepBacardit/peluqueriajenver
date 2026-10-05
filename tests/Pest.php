@@ -47,3 +47,48 @@ function something()
 {
     // ..
 }
+
+/**
+ * Runs $callback and returns the SQL of every query it ran, with row locks
+ * visible. SQLite, the test database, drops FOR UPDATE from the SQL it
+ * runs, so a plain query log cannot tell a locking read from a plain one.
+ * This swaps in a grammar that writes the lock as an SQL comment (which
+ * SQLite ignores). It proves that lockForUpdate() was called on a query
+ * and in which order; it cannot prove how MySQL then locks, which rests on
+ * the reasoning documented in the actions.
+ *
+ * @return list<string>
+ */
+function sqlWithVisibleLocks(Closure $callback): array
+{
+    $connection = Illuminate\Support\Facades\DB::connection();
+    $originalGrammar = $connection->getQueryGrammar();
+    $recording = true;
+    $queries = [];
+
+    $connection->setQueryGrammar(new class($connection) extends Illuminate\Database\Query\Grammars\SQLiteGrammar
+    {
+        protected function compileLock(Illuminate\Database\Query\Builder $query, $value)
+        {
+            return match (true) {
+                $value === true => '/* for update */',
+                $value === false => '/* lock in share mode */',
+                default => is_string($value) ? '/* '.$value.' */' : '',
+            };
+        }
+    });
+    $connection->listen(function ($query) use (&$queries, &$recording) {
+        if ($recording) {
+            $queries[] = $query->sql;
+        }
+    });
+
+    try {
+        $callback();
+    } finally {
+        $recording = false;
+        $connection->setQueryGrammar($originalGrammar);
+    }
+
+    return $queries;
+}

@@ -2,16 +2,19 @@
 
 use App\Actions\CancelAppointment;
 use App\Actions\RescheduleAppointment;
+use App\Booking\AppointmentChangedException;
 use App\Booking\AppointmentNotMovableException;
+use App\Booking\RescheduleOutcome;
 use App\Booking\SlotUnavailableException;
 use App\Booking\StartTimeInPastException;
+use App\Booking\UnavailabilityReason;
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\BookingSetting;
+use App\Models\ScheduleBlock;
 use App\Models\Service;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -42,7 +45,7 @@ function unchangedCustomer(Appointment $appointment): array
     return $appointment->only(['customer_name', 'customer_phone', 'customer_email', 'notes']);
 }
 
-function moveAppointment(Appointment $appointment, string $startsAt, ?Service $service = null, ?array $customer = null, bool $ignoreHoursAndCapacity = false, ?CarbonImmutable $now = null): Appointment
+function moveAppointment(Appointment $appointment, string $startsAt, ?Service $service = null, ?array $customer = null, bool $ignoreHoursAndCapacity = false, ?CarbonImmutable $now = null, ?int $expectedVersion = null): RescheduleOutcome
 {
     return app(RescheduleAppointment::class)->handle(
         $appointment,
@@ -51,6 +54,7 @@ function moveAppointment(Appointment $appointment, string $startsAt, ?Service $s
         $customer ?? unchangedCustomer($appointment),
         $ignoreHoursAndCapacity,
         $now ?? test()->now,
+        $expectedVersion,
     );
 }
 
@@ -156,15 +160,11 @@ test('a cancelled or already started appointment cannot be moved', function () {
 test('the row lock on the booking settings is the first query of the move transaction', function () {
     // Same reasoning as for creating an appointment: on MySQL (REPEATABLE
     // READ) only a locking read first lets the re-check see what a
-    // concurrent request has just committed.
-    $queries = [];
-    DB::listen(function ($query) use (&$queries) {
-        $queries[] = $query->sql;
-    });
+    // concurrent request has just committed. (See sqlWithVisibleLocks():
+    // this proves the lock is requested first, not how MySQL applies it.)
+    $queries = sqlWithVisibleLocks(fn () => moveAppointment($this->appointment, '2030-01-08 12:00'));
 
-    moveAppointment($this->appointment, '2030-01-08 12:00');
-
-    expect($queries[0])->toContain('"booking_settings"');
+    expect($queries[0])->toContain('"booking_settings"')->toContain('for update');
 });
 
 test('a move sent after a concurrent cancellation changes nothing', function () {
@@ -205,4 +205,89 @@ test('a cancellation after a move cancels the moved appointment', function () {
     $appointment = $this->appointment->fresh();
     expect($appointment->status)->toBe(AppointmentStatus::Cancelled);
     expect($appointment->starts_at->format('H:i'))->toBe('12:00');
+});
+
+test('it tells the salon why a time is not available', function (string $time, UnavailabilityReason $reason) {
+    Appointment::factory()->create(['starts_at' => '2030-01-08 12:00', 'ends_at' => '2030-01-08 13:00']);
+    ScheduleBlock::create(['starts_at' => '2030-01-08 15:00', 'ends_at' => '2030-01-08 16:00', 'capacity_reduction' => null]);
+
+    try {
+        moveAppointment($this->appointment, $time);
+        $this->fail('The move should have been refused.');
+    } catch (SlotUnavailableException $exception) {
+        expect($exception->reason)->toBe($reason);
+    }
+})->with([
+    'no capacity left' => ['2030-01-08 12:30', UnavailabilityReason::Full],
+    'after closing time' => ['2030-01-08 18:30', UnavailabilityReason::OutsideOpeningHours],
+    'closed monday' => ['2030-01-14 10:00', UnavailabilityReason::OutsideOpeningHours],
+    'one-off closure' => ['2030-01-08 15:00', UnavailabilityReason::Closed],
+]);
+
+test('editing only the customer details of an appointment saved over capacity needs no new confirmation', function () {
+    Appointment::factory()->create(['starts_at' => '2030-01-08 12:00', 'ends_at' => '2030-01-08 13:00']);
+    moveAppointment($this->appointment, '2030-01-08 12:00', ignoreHoursAndCapacity: true);
+
+    moveAppointment($this->appointment, '2030-01-08 12:00', customer: ['customer_name' => 'Rosa Vidal', 'customer_phone' => '611 222 333', 'customer_email' => 'rosa@example.test', 'notes' => null]);
+
+    expect($this->appointment->fresh()->customer_phone)->toBe('611 222 333');
+});
+
+test('keeping the time but taking a longer service is checked again', function () {
+    Appointment::factory()->create(['starts_at' => '2030-01-08 11:00', 'ends_at' => '2030-01-08 12:00']);
+    $longer = Service::factory()->create(['duration_minutes' => 90]);
+
+    expect(fn () => moveAppointment($this->appointment, '2030-01-08 10:00', $longer))->toThrow(SlotUnavailableException::class);
+});
+
+test('the outcome says whether the time or the service changed', function (string $startsAt, bool $otherService, bool $expected) {
+    $service = $otherService ? Service::factory()->create(['duration_minutes' => 60]) : null;
+
+    expect(moveAppointment($this->appointment, $startsAt, $service)->rescheduled)->toBe($expected);
+})->with([
+    'new time' => ['2030-01-08 12:00', false, true],
+    'new service only' => ['2030-01-08 10:00', true, true],
+    'same time and service' => ['2030-01-08 10:00', false, false],
+]);
+
+test('changing the email gives the appointment a new personal link and leaves its confirmation pending', function () {
+    $oldToken = $this->appointment->token;
+    $this->appointment->forceFill(['customer_notified_at' => now()])->save();
+
+    $outcome = moveAppointment($this->appointment, '2030-01-08 10:00', customer: ['customer_name' => 'Rosa Vidal', 'customer_phone' => '600 123 456', 'customer_email' => 'rosa.nueva@example.test', 'notes' => 'Pelo rizado']);
+
+    $appointment = $this->appointment->fresh();
+    expect($outcome->emailChanged)->toBeTrue();
+    expect($appointment->token)->not->toBe($oldToken);
+    expect(strlen($appointment->token))->toBe(48);
+    expect($appointment->customer_notified_at)->toBeNull();
+    expect($outcome->appointment->token)->toBe($appointment->token);
+});
+
+test('the same email written differently keeps the personal link', function () {
+    $oldToken = $this->appointment->token;
+
+    $outcome = moveAppointment($this->appointment, '2030-01-08 12:00', customer: ['customer_name' => 'Rosa Vidal', 'customer_phone' => '600 123 456', 'customer_email' => ' ROSA@example.test ', 'notes' => 'Pelo rizado']);
+
+    expect($outcome->emailChanged)->toBeFalse();
+    expect($this->appointment->fresh()->token)->toBe($oldToken);
+});
+
+test('a form opened before another change of the appointment is refused', function () {
+    $versionSeenByTheForm = $this->appointment->updated_at->getTimestamp();
+    $this->travel(1)->minutes();
+    moveAppointment(Appointment::find($this->appointment->id), '2030-01-08 12:00');
+
+    expect(fn () => moveAppointment($this->appointment, '2030-01-08 10:00', customer: ['customer_name' => 'Rosa Vidal', 'customer_phone' => '611 222 333', 'customer_email' => 'rosa@example.test', 'notes' => null], expectedVersion: $versionSeenByTheForm))
+        ->toThrow(AppointmentChangedException::class);
+
+    $appointment = $this->appointment->fresh();
+    expect($appointment->starts_at->format('H:i'))->toBe('12:00');
+    expect($appointment->customer_phone)->toBe('600 123 456');
+});
+
+test('a form showing the current version is accepted', function () {
+    moveAppointment($this->appointment, '2030-01-08 12:00', expectedVersion: $this->appointment->updated_at->getTimestamp());
+
+    expect($this->appointment->fresh()->starts_at->format('H:i'))->toBe('12:00');
 });

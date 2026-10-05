@@ -89,13 +89,28 @@ class AvailabilityCalculator
      */
     public function isAvailable(int $durationMinutes, CarbonImmutable $start, CarbonImmutable $now, bool $applyPublicRules, ?int $excludeAppointmentId = null): bool
     {
+        return $this->unavailabilityReason($durationMinutes, $start, $now, $applyPublicRules, $excludeAppointmentId) === null;
+    }
+
+    /**
+     * Why one specific start time cannot be booked (same rules and
+     * parameters as isAvailable()), or null when it can. The panel uses it
+     * to tell the salon what is wrong with the time it chose.
+     */
+    public function unavailabilityReason(int $durationMinutes, CarbonImmutable $start, CarbonImmutable $now, bool $applyPublicRules, ?int $excludeAppointmentId = null): ?UnavailabilityReason
+    {
         $settings = BookingSetting::current();
         $day = $start->startOfDay();
         $startMinute = $start->hour * 60 + $start->minute;
         $end = $start->addMinutes($durationMinutes);
 
-        if ($start->second !== 0 || $start->lt($now)) {
-            return false;
+        if ($start->lt($now)) {
+            return UnavailabilityReason::InThePast;
+        }
+
+        // Not a whole minute: never sent by the forms.
+        if ($start->second !== 0) {
+            return UnavailabilityReason::OutsidePublicRules;
         }
 
         $range = $this->rangesFor($day)->first(
@@ -104,7 +119,7 @@ class AvailabilityCalculator
         );
 
         if ($range === null) {
-            return false;
+            return UnavailabilityReason::OutsideOpeningHours;
         }
 
         if ($applyPublicRules) {
@@ -113,11 +128,11 @@ class AvailabilityCalculator
             if (! $onGrid
                 || $start->lt($now->addMinutes($settings->min_notice_minutes))
                 || ! $this->isWithinBookingWindow($day, $now, $settings)) {
-                return false;
+                return UnavailabilityReason::OutsidePublicRules;
             }
         }
 
-        return $this->hasCapacity($start, $end, $this->loadOccupation($start, $end, $excludeAppointmentId), $settings->capacity);
+        return $this->capacityProblem($start, $end, $this->loadOccupation($start, $end, $excludeAppointmentId), $settings->capacity);
     }
 
     /**
@@ -199,6 +214,18 @@ class AvailabilityCalculator
      */
     private function hasCapacity(CarbonImmutable $start, CarbonImmutable $end, array $context, int $capacity): bool
     {
+        return $this->capacityProblem($start, $end, $context, $capacity) === null;
+    }
+
+    /**
+     * At the first moment without a free place: Closed when the blocks
+     * alone leave no place (a one-off closure), Full when the confirmed
+     * appointments take the places left.
+     *
+     * @param  array{appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>}  $context
+     */
+    private function capacityProblem(CarbonImmutable $start, CarbonImmutable $end, array $context, int $capacity): ?UnavailabilityReason
+    {
         $moments = collect([$start])
             ->merge($context['appointments']->pluck('starts_at'))
             ->merge($context['blocks']->pluck('starts_at'))
@@ -211,11 +238,15 @@ class AvailabilityCalculator
             $reduction = $context['blocks']->filter($covers)
                 ->sum(fn (ScheduleBlock $block) => $block->capacity_reduction ?? $capacity);
 
+            if ($capacity - $reduction < 1) {
+                return UnavailabilityReason::Closed;
+            }
+
             if ($capacity - $reduction - $occupied < 1) {
-                return false;
+                return UnavailabilityReason::Full;
             }
         }
 
-        return true;
+        return null;
     }
 }

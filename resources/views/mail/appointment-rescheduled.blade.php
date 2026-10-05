@@ -17,7 +17,7 @@ Si esta hora no te va bien, llámanos o cancela la cita desde tu enlace de siemp
 Ver mi cita
 </x-mail::button>
 
-Si el botón no funciona, copia este enlace en el navegador: {{ $appointmentUrl }}
+Si el botón no funciona, copia este enlace en el navegador: <a href="{{ $appointmentUrl }}">{{ $appointmentUrl }}</a>
 
 Peluquería Jenver
 </x-mail::message>

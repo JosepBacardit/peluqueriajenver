@@ -17,6 +17,9 @@ use Illuminate\Validation\Rule;
  * service, date and time it was shown for (slotKey()), so it only
  * confirms that exact choice: if the salon changes any of them after the
  * warning, the new choice is checked (and warned about) again.
+ *
+ * `version` is the appointment's updated_at when the form was opened (see
+ * RescheduleAppointment::handle()).
  */
 class UpdateAdminAppointmentRequest extends StoreAdminAppointmentRequest
 {
@@ -33,6 +36,7 @@ class UpdateAdminAppointmentRequest extends StoreAdminAppointmentRequest
                 fn (Builder $query) => $query->where('is_active', true)->orWhere('id', $appointment->service_id)
             )],
             'force' => ['nullable', 'string', 'max:100'],
+            'version' => ['required', 'integer'],
         ]);
     }
 
@@ -43,6 +47,11 @@ class UpdateAdminAppointmentRequest extends StoreAdminAppointmentRequest
     public function slotKey(): string
     {
         return implode('|', [$this->validated('service_id'), $this->validated('date'), $this->validated('time')]);
+    }
+
+    public function version(): int
+    {
+        return (int) $this->validated('version');
     }
 
     public function confirmsSlot(): bool
