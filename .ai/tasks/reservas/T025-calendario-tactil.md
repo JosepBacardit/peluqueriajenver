@@ -25,4 +25,4 @@ Las celdas del calendario (`pages/partials/reservas-calendar.blade.php`) y los b
 
 `docker compose exec -u www-data app php artisan test --compact --filter="PublicBookingTest"` (35 tests en verde) · suite completa (354 tests en verde) · `docker compose exec -u www-data app vendor/bin/pint --dirty --format agent` (sin cambios).
 
-Pendiente: medir con el inspector, a 375 px, que una celda del calendario y un botón de hora miden al menos 44 px de alto (el agente principal lo comprueba con el navegador en las páginas públicas, que no necesitan sesión).
+Pendiente: medir con el inspector, a 375 px, que una celda del calendario y un botón de hora miden al menos 44 px de alto. El agente principal lo intentó con el navegador en `/reservas?servicio=3` (no necesita sesión), pero `resize_window` no cambió el ancho real de la ventana (`window.innerWidth` siguió en 1920 tras pedir 375×800 y 390×844), así que no pudo confirmarlo visualmente; queda para el usuario.
