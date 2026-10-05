@@ -20,6 +20,12 @@
                aria-label="{{ $weekdays[$d['date']->isoWeekday()] }} {{ $d['date']->format('d/m') }}{{ $d['isClosed'] ? ', cerrado' : ($count > 0 ? ', '.$count.' '.($count === 1 ? 'cita' : 'citas') : ', sin citas') }}">
                 <span>{{ $weekdayShort[$d['date']->isoWeekday()] }}</span>
                 <span class="font-semibold">{{ $d['date']->day }}</span>
+                {{-- Today must not rely on the border color alone (PRF-106):
+                     when it is not the selected day, a text label makes it
+                     explicit for colorblind users and screen readers alike. --}}
+                @if ($d['isToday'] && ! $isSelected)
+                    <span class="text-[8px] leading-none text-gold">hoy</span>
+                @endif
             </a>
         @endforeach
     </div>
@@ -35,7 +41,13 @@
 <div class="hidden md:grid md:grid-cols-7 md:gap-px md:bg-[#2A2A2A] md:border md:border-[#2A2A2A]" role="grid" aria-label="Semana del {{ $weekStart->format('d/m') }} al {{ $weekEnd->format('d/m/Y') }}">
     @foreach ($days as $d)
         <div class="bg-black p-2 min-h-40 {{ $d['isToday'] ? 'ring-1 ring-inset ring-gold' : '' }}">
-            <p class="text-xs text-gray-400 mb-2 capitalize">{{ $weekdays[$d['date']->isoWeekday()] }} {{ $d['date']->format('d') }}</p>
+            <p class="text-xs text-gray-400 mb-2 capitalize" role="columnheader">
+                {{ $weekdays[$d['date']->isoWeekday()] }} {{ $d['date']->format('d') }}
+                {{-- Today must not rely on the ring color alone (PRF-106). --}}
+                @if ($d['isToday'])
+                    <span class="text-gold font-semibold">· Hoy</span>
+                @endif
+            </p>
             @if ($d['isClosed'])
                 <p class="text-xs text-gray-500">Cerrado</p>
             @elseif ($d['appointments']->isEmpty())
