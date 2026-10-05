@@ -76,7 +76,7 @@
 
             <h3 class="text-xl font-semibold mt-6 mb-3 text-gold/80">Google Maps</h3>
             <p class="text-gray-300">
-                Utilizamos Google Maps para mostrar nuestra ubicación. Google puede usar cookies para analizar el uso de este servicio.
+                Utilizamos Google Maps para mostrar nuestra ubicación. El mapa no se carga hasta que pulsas «Ver mapa»; al cargarlo, Google puede instalar sus propias cookies.
             </p>
         </section>
 

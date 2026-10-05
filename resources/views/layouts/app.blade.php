@@ -197,5 +197,44 @@
         });
       })();
     </script>
+
+    <!--
+        Google Maps embeds (partials/google-map-embed.blade.php) only load
+        when the visitor clicks "Ver mapa"; this is independent of the
+        analytics cookie consent above and never reads or writes it. One
+        delegated listener here covers every map on the page, however many
+        times the partial is included.
+    -->
+    <script>
+      document.addEventListener('click', function (event) {
+        const trigger = event.target.closest('[data-google-map-trigger]');
+        if (!trigger) {
+          return;
+        }
+
+        const container = trigger.closest('[data-google-map]');
+        if (!container || container.querySelector('iframe')) {
+          return;
+        }
+
+        const iframe = document.createElement('iframe');
+        iframe.src = container.getAttribute('data-embed-src');
+        iframe.width = '100%';
+        iframe.height = '100%';
+        iframe.style.position = 'absolute';
+        iframe.style.inset = '0';
+        iframe.style.border = '0';
+        iframe.style.filter = 'grayscale(100%) invert(10%)';
+        iframe.loading = 'lazy';
+        iframe.referrerPolicy = 'no-referrer-when-downgrade';
+        iframe.setAttribute('allowfullscreen', '');
+        container.appendChild(iframe);
+
+        const placeholder = container.querySelector('[data-google-map-placeholder]');
+        if (placeholder) {
+          placeholder.remove();
+        }
+      });
+    </script>
 </body>
 </html>
