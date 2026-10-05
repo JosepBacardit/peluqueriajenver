@@ -1,6 +1,7 @@
 <?php
 
 use App\Booking\DayTimeline;
+use App\Models\Appointment;
 use App\Models\OpeningHour;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -75,3 +76,40 @@ test('nowLineTop is null when "now" falls outside the grid range', function (str
 
     expect(DayTimeline::nowLineTop($day, 9 * 60, 19 * 60, $now))->toBeNull();
 })->with(['07:00', '19:00', '23:59']);
+
+/**
+ * Review finding H1: extends the grid to cover a confirmed appointment
+ * forced outside the normal opening hours ("Guardar igualmente"), rounded
+ * out to the hour like weekBounds().
+ */
+test('extendBounds grows the grid end to cover a confirmed appointment outside the normal range', function () {
+    $appointment = Appointment::factory()->create(['starts_at' => '2030-01-08 19:30', 'ends_at' => '2030-01-08 20:05']);
+
+    $bounds = DayTimeline::extendBounds(9 * 60, 19 * 60, collect([$appointment]));
+
+    expect($bounds)->toBe(['start' => 9 * 60, 'end' => 21 * 60]); // 20:05 rounds out to 21:00
+});
+
+test('extendBounds also grows the start when an appointment starts before the normal opening', function () {
+    $appointment = Appointment::factory()->create(['starts_at' => '2030-01-08 07:40', 'ends_at' => '2030-01-08 08:30']);
+
+    $bounds = DayTimeline::extendBounds(9 * 60, 19 * 60, collect([$appointment]));
+
+    expect($bounds)->toBe(['start' => 7 * 60, 'end' => 19 * 60]);
+});
+
+test('extendBounds ignores a cancelled appointment outside the range', function () {
+    $appointment = Appointment::factory()->cancelled()->create(['starts_at' => '2030-01-08 20:00', 'ends_at' => '2030-01-08 20:30']);
+
+    $bounds = DayTimeline::extendBounds(9 * 60, 19 * 60, collect([$appointment]));
+
+    expect($bounds)->toBe(['start' => 9 * 60, 'end' => 19 * 60]);
+});
+
+test('extendBounds leaves the grid unchanged when every appointment already fits', function () {
+    $appointment = Appointment::factory()->create(['starts_at' => '2030-01-08 10:00', 'ends_at' => '2030-01-08 10:30']);
+
+    $bounds = DayTimeline::extendBounds(9 * 60, 19 * 60, collect([$appointment]));
+
+    expect($bounds)->toBe(['start' => 9 * 60, 'end' => 19 * 60]);
+});

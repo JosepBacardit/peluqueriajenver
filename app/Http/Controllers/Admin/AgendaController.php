@@ -130,16 +130,21 @@ class AgendaController extends Controller
         $blocks = ScheduleBlock::query()->overlapping($day, $day->addDay())->orderBy('starts_at')->get();
         $allRanges = OpeningHour::query()->get();
         $bounds = DayTimeline::weekBounds($allRanges);
+        // Review finding H1: a confirmed appointment forced outside the
+        // normal opening hours ("Guardar igualmente") must not be left
+        // occupying an invisible lane — the grid grows to cover it.
+        $bounds = DayTimeline::extendBounds($bounds['start'], $bounds['end'], $appointments);
         $dayRanges = $allRanges->where('weekday', $day->isoWeekday())->sortBy('opens_at')->values();
         $capacity = BookingSetting::current()->capacity;
+        $now = CarbonImmutable::now();
 
         return [
             'appointments' => $appointments,
             'blocks' => $blocks,
             'gridStart' => $bounds['start'],
             'gridEnd' => $bounds['end'],
-            'timeline' => DayTimeline::build($day, $bounds['start'], $bounds['end'], $capacity, $dayRanges, $appointments, $blocks),
-            'nowLineTop' => DayTimeline::nowLineTop($day, $bounds['start'], $bounds['end'], CarbonImmutable::now()),
+            'timeline' => DayTimeline::build($day, $bounds['start'], $bounds['end'], $capacity, $dayRanges, $appointments, $blocks, $now),
+            'nowLineTop' => DayTimeline::nowLineTop($day, $bounds['start'], $bounds['end'], $now),
         ];
     }
 
@@ -167,6 +172,11 @@ class AgendaController extends Controller
         $allRanges = OpeningHour::query()->get();
         $openWeekdays = $allRanges->pluck('weekday')->unique()->all();
         $bounds = DayTimeline::weekBounds($allRanges);
+        // Review finding H1: extend the whole week's shared bounds (every
+        // column uses the same axis) so a confirmed appointment forced
+        // outside the normal opening hours in any of its 7 days is never
+        // left occupying an invisible lane.
+        $bounds = DayTimeline::extendBounds($bounds['start'], $bounds['end'], $appointments);
         $capacity = BookingSetting::current()->capacity;
         $now = CarbonImmutable::now();
         $today = $now->startOfDay();
@@ -191,7 +201,7 @@ class AgendaController extends Controller
                 'isClosed' => $isClosed,
                 'hasPartialClosure' => ! $isClosed && $dayBlocks->contains(fn (ScheduleBlock $b) => $b->capacity_reduction !== null),
                 'isToday' => $date->isSameDay($today),
-                'timeline' => DayTimeline::build($date, $bounds['start'], $bounds['end'], $capacity, $dayRanges, $dayAppointments, $dayBlocks),
+                'timeline' => DayTimeline::build($date, $bounds['start'], $bounds['end'], $capacity, $dayRanges, $dayAppointments, $dayBlocks, $now),
                 'nowLineTop' => DayTimeline::nowLineTop($date, $bounds['start'], $bounds['end'], $now),
             ];
         }
