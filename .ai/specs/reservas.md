@@ -268,7 +268,12 @@ Decisión del usuario, 2026-10-05: para encontrar huecos libres al apuntar una c
 - **PRF-117.** Al abrir la vista Día o Semana, la rejilla **debe** desplazarse sola a la hora actual (si el día mostrado es hoy y «ahora» cae dentro del rango) o a la apertura, sin esperar ninguna interacción.
 - **PRF-118.** La vista Semana en pantallas de 768 px o más **debe** usar la misma rejilla horaria en 7 columnas, con el eje de horas una sola vez. En pantallas menores de 768 px, la tira de 7 días **debe** seguir mostrando debajo la rejilla horaria del día elegido (la vista Día).
 - **PRF-119.** La rejilla **debe** ser navegable por teclado, con cada hueco libre y cada bloque de cita como enlace real, en orden cronológico **global** en el HTML — intercalando los carriles por hora, no agrupado primero por carril (resuelta la ambigüedad de la revisión `agenda-timeline-grid`, hallazgo L4) —, con `aria-label` completo que incluya la plaza (PRF-109) y, en Semana, el día de esa columna (hallazgo M2). La rejilla **debe** llevar, además, un enlace «Saltar a las citas» al principio, para no obligar a tabular por cada hueco libre de la vista Día antes de llegar a la lista de tarjetas.
-- **PRF-120.** Un selector de servicio que resalte en la rejilla los huecos donde cabe su duración completa **queda pospuesto**: no forma parte de esta entrega; se valorará como tarea posterior opcional.
+- **PRF-120.** Un selector de servicio que resalte en la rejilla los huecos donde cabe su duración completa **queda pospuesto**: no forma parte de esta entrega; se valorará como tarea posterior opcional. *Actualización (2026-10-05):* el usuario ha aprobado retomarlo en `feature/agenda-service-filter` (T042–T045). Hasta T043 sigue sin haber selector; la base de cálculo es PRF-121 y PRF-122.
+
+### Filtro de servicio en la agenda: base de cálculo (2026-10-05)
+
+- **PRF-121.** Para resaltar dónde cabe un servicio, el panel **debe** decidir si un servicio de duración D cabe empezando a una hora dada con **solo** las reglas 1 y 2 de «Disponibilidad»: la cita completa dentro de un tramo de apertura del día, y sin alcanzar en ningún instante la capacidad efectiva (la capacidad menos las reducciones de los cierres parciales; un cierre total la deja en 0), contando solo las citas confirmadas. **No debe** aplicar la regla 3 (intervalo de la web, antelación mínima ni ventana de reserva), igual que al crear una cita desde el panel. Ese cálculo **no debe** hacer ninguna consulta a la base de datos: usa los tramos, las citas y los cierres que la agenda ya carga para dibujar la rejilla.
+- **PRF-122.** Para cualquier hora futura, el resultado de PRF-121 **debe** coincidir con el de la comprobación de disponibilidad del panel al crear una cita (`isAvailable(..., applyPublicRules: false)`): las dos comparten la misma comprobación de tramo y de capacidad, de modo que la rejilla nunca marque como «cabe» un hueco que el alta rechazaría, ni al revés.
 
 ## Datos existentes y transición
 
@@ -409,7 +414,9 @@ El remitente de correo real (PRF-070, PRF-071) sigue pendiente del buzón y el s
 | PRF-117 | Al abrir la agenda en el día de hoy, la rejilla ya está desplazada a la hora actual sin tocar nada. |
 | PRF-118 | A 1024 px, Semana muestra 7 columnas de la misma rejilla horaria. A 375 px, Semana muestra la tira de 7 días con la rejilla del día elegido debajo. |
 | PRF-119 | Con el teclado (Tab), se puede llegar a cada hueco libre y a cada bloque de cita de la rejilla, en orden cronológico global (intercalando los carriles), empezando por un enlace «Saltar a las citas». |
-| PRF-120 | No existe ningún selector de servicio en la rejilla horaria. |
+| PRF-120 | No existe ningún selector de servicio en la rejilla horaria (hasta T043). |
+| PRF-121 | Una cita que no deja hueco, capacidad 1 y 2, un cierre parcial a mitad del servicio, un cierre total, la pausa de mediodía, una cita que termina justo al empezar, citas canceladas y los días de cambio de hora → solo cabe donde lo permiten las reglas 1 y 2; horas fuera del intervalo o de la antelación también caben; ninguna consulta. |
+| PRF-122 | En muchos días aleatorios (con semilla), el resultado coincide con `isAvailable(..., applyPublicRules: false)` para cada hora candidata. |
 
 ## Riesgos y marcha atrás
 

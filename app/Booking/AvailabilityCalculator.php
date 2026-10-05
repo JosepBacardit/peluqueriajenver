@@ -113,10 +113,7 @@ class AvailabilityCalculator
             return UnavailabilityReason::OutsidePublicRules;
         }
 
-        $range = $this->rangesFor($day)->first(
-            fn (OpeningHour $range) => $startMinute >= $range->opensAtMinutes()
-                && $startMinute + $durationMinutes <= $range->closesAtMinutes()
-        );
+        $range = $this->rangeContaining($this->rangesFor($day), $startMinute, $durationMinutes);
 
         if ($range === null) {
             return UnavailabilityReason::OutsideOpeningHours;
@@ -133,6 +130,59 @@ class AvailabilityCalculator
         }
 
         return $this->capacityProblem($start, $end, $this->loadOccupation($start, $end, $excludeAppointmentId), $settings->capacity);
+    }
+
+    /**
+     * Which of the candidate start times a service of $durationMinutes
+     * fits into on $day, by rules 1 and 2 only (an opening range holds the
+     * whole service, and the effective capacity, after the blocks' reductions
+     * and full closures, is never reached by the confirmed appointments):
+     * the same rules and the same capacity check (capacityProblem()) as
+     * isAvailable(..., applyPublicRules: false). Rule 3 (slot interval,
+     * minimum notice, booking window) never applies, and neither does
+     * isAvailable()'s "not in the past": the agenda decides what to do with
+     * past times. A test checks it agrees with isAvailable() on many
+     * random days.
+     *
+     * It runs no query: everything comes from the context the agenda
+     * already loads for DayTimeline::build(), so the agenda's service
+     * filter costs nothing per day, lane or half hour. Usage, in
+     * AgendaController::dayData() (and per day in weekData(), with that
+     * day's $dayRanges, $dayAppointments and $dayBlocks):
+     *
+     *     $fitting = $calculator->fittingStartMinutes(
+     *         $service->duration_minutes,
+     *         $candidateMinutes, // e.g. the 'start' of the timeline's tappable free segments
+     *         $day, $dayRanges, $appointments, $blocks, $capacity,
+     *     );
+     *     $fits = array_flip($fitting); // isset($fits[$segment['start']])
+     *
+     * Candidates are minutes since midnight on the wall clock, the unit
+     * DayTimeline uses, so they stay right on the days the clocks change.
+     *
+     * @param  list<int>  $candidateMinutes  candidate start times, minutes since midnight
+     * @param  Collection<int, OpeningHour>  $ranges  $day's opening ranges
+     * @param  Collection<int, Appointment>  $appointments  every appointment that can overlap $day, any status (only confirmed ones count); those starting on $day are enough, since none crosses midnight
+     * @param  Collection<int, ScheduleBlock>  $blocks  the blocks overlapping $day
+     * @return list<int> the candidates the service fits into, in the given order
+     */
+    public function fittingStartMinutes(int $durationMinutes, array $candidateMinutes, CarbonImmutable $day, Collection $ranges, Collection $appointments, Collection $blocks, int $capacity): array
+    {
+        $day = $day->startOfDay();
+        $context = [
+            'appointments' => $appointments->filter(fn (Appointment $appointment) => $appointment->isConfirmed())->values(),
+            'blocks' => $blocks,
+        ];
+
+        return array_values(array_filter($candidateMinutes, function (int $minute) use ($durationMinutes, $day, $ranges, $context, $capacity): bool {
+            if ($this->rangeContaining($ranges, $minute, $durationMinutes) === null) {
+                return false;
+            }
+
+            $start = $this->atMinute($day, $minute);
+
+            return $this->hasCapacity($start, $start->addMinutes($durationMinutes), $context, $capacity);
+        }));
     }
 
     /**
@@ -181,6 +231,19 @@ class AvailabilityCalculator
             ->where('weekday', $day->isoWeekday())
             ->orderBy('opens_at')
             ->get();
+    }
+
+    /**
+     * Rule 1: the opening range that holds the whole appointment, if any.
+     *
+     * @param  Collection<int, OpeningHour>  $ranges
+     */
+    private function rangeContaining(Collection $ranges, int $startMinute, int $durationMinutes): ?OpeningHour
+    {
+        return $ranges->first(
+            fn (OpeningHour $range) => $startMinute >= $range->opensAtMinutes()
+                && $startMinute + $durationMinutes <= $range->closesAtMinutes()
+        );
     }
 
     /**
