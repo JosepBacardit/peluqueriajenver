@@ -24,12 +24,15 @@ La única forma de pedir cita es llamar o escribir por WhatsApp. El botón «Res
 - Correos al cliente y al salón, con reintento automático de los avisos de cita nueva.
 - Cambios en la cabecera, el mapa del sitio y los datos estructurados para que apunten a la reserva online.
 - Política de privacidad reestructurada para cubrir las reservas.
+- Remitente y marca de los correos salientes con la identidad del salón (2026-10-05).
+- Edición de una cita confirmada desde el panel: día, hora, servicio y datos de la clienta (2026-10-05).
+- Botones «Reservar cita» de la portada y las páginas de servicio enlazando a la reserva online (2026-10-05).
 
 ## No-objetivos
 
 - Elegir peluquera o asignar citas a una persona concreta. **Descartado** por decisión del usuario: el salón trabaja con una capacidad común.
 - Varios servicios en una misma cita. **Descartado**: los combos se dan de alta como servicios propios.
-- Cambiar la fecha u hora de una cita ya hecha. **Pospuesto**: el cliente cancela y vuelve a reservar.
+- Cambiar la fecha u hora de una cita ya hecha **desde la página de la clienta**. **Pospuesto**: el cliente sigue cancelando y reservando otra vez. Revisado el 2026-10-05: el salón sí puede moverla desde el panel (PRF-077 y siguientes); solo queda pospuesto el autoservicio de la clienta.
 - Recordatorio por correo antes de la cita y borrado automático de citas antiguas. **Pospuesto** al PR 5.
 - Calendario sin recargar la página. **Pospuesto** al PR 5.
 - Avisos por WhatsApp o SMS. **Descartado**: tienen coste y requieren un proveedor externo.
@@ -185,9 +188,39 @@ Ejemplos resueltos (capacidad 2, intervalo de 15 minutos, tramo de 09:00 a 19:00
 - **PRF-068.** El acceso al panel **no debe** comprobar más de 20 contraseñas por minuto desde una misma conexión, aunque cambie el email. Tampoco debe tardar menos con un email inexistente que con una contraseña errónea, ni ofrecer una sesión persistente («mantener la sesión abierta»).
 - **PRF-069.** Si el servidor de correo no responde, cada intento de envío **debe** abandonarse como mucho a los 10 segundos, para que la página de éxito llegue al cliente (PRF-052).
 
+### Remitente y marca de los correos (2026-10-05)
+
+- **PRF-070.** Todo correo que envía la aplicación (confirmación, aviso al salón, cancelación) **debe** mostrar como remitente «Peluquería Jenver», nunca el nombre de una plantilla genérica.
+- **PRF-071.** El despliegue **no debe** completarse si el nombre de la aplicación o el remitente del correo siguen siendo los de la plantilla por defecto del framework (amplía PRF-055).
+- **PRF-072.** Los correos al cliente y al salón **deben** mostrar la identidad visual del salón: los colores negro y dorado, y el logo o el nombre «Peluquería Jenver», en vez del tema genérico por defecto.
+- **PRF-073.** El pie de cada correo **debe** mostrar los datos de contacto del salón, no un aviso de derechos de autor de la plantilla.
+- **PRF-074.** Los correos **no deben** enlazar ni mostrar ninguna marca ajena al salón (por ejemplo, un logotipo o un enlace a la página de un tercero).
+- **PRF-075.** Cuando el correo use una imagen del logo, **debe** cargarse desde una dirección pública, no desde el propio mensaje, y llevar un texto alternativo con el nombre del salón, para que el correo siga siendo comprensible en los clientes que bloquean las imágenes por defecto (Outlook y Gmail, entre otros).
+
+La imagen del logo de los correos es una excepción a la regla general de servir toda imagen en WebP (decisión del usuario, 2026-10-05): se sirve en PNG porque el soporte de WebP en los clientes de correo, sobre todo Outlook de escritorio, es insuficiente.
+
+### Edición de una cita desde el panel (2026-10-05)
+
+- **PRF-077.** Una persona del salón **debe** poder cambiar el día, la hora y, si hace falta, el servicio de una cita confirmada que todavía no ha empezado, desde la agenda del panel.
+- **PRF-078.** Al guardar el cambio, se aplican las mismas reglas de disponibilidad que al crear una cita desde el panel (reglas 1 y 2 de la sección «Disponibilidad», sin la regla 3), sin contar la propia cita en el hueco que deja libre.
+- **PRF-079.** Si el hueco elegido no tiene capacidad suficiente o cae fuera del horario de apertura, el panel **debe** avisarlo con un mensaje que lo explique antes de guardar nada.
+- **PRF-080.** Tras ese aviso, una persona del salón **debe** poder confirmar que quiere guardar el cambio igualmente. El panel **no debe** guardar un cambio con un hueco sin capacidad o fuera de horario sin esa confirmación explícita.
+- **PRF-081.** Una persona del salón **debe** poder editar también el nombre, el teléfono, el email y las observaciones de la clienta al mover la cita, con las mismas reglas de los campos que al crear una cita del panel (PRF-046).
+- **PRF-082.** Si la cita tiene email, la clienta **debe** recibir un correo que informe del cambio con la nueva fecha y hora y el mismo enlace personal a su cita (PRF-039).
+- **PRF-083.** Si el correo de PRF-082 no se puede enviar, el cambio **debe** mantenerse igualmente y el fallo queda registrado para el salón, sin reintento automático (igual que PRF-054).
+- **PRF-084.** Una cita cancelada, o una cuya hora ya ha pasado, **no debe** poder moverse: el panel no ofrece la opción de editar en esos casos.
+- **PRF-085.** Mover una cita **no debe** dejar ningún rastro del cambio en ningún campo visible para la clienta (por ejemplo, las observaciones). No se guarda un historial de los cambios de hora.
+- **PRF-086.** Dos cambios a la vez sobre la misma cita, o un cambio y una cancelación a la vez, **no deben** dejar un resultado mezclado: el segundo en completarse ve el estado que dejó el primero y actúa en consecuencia, igual que al crear una cita (PRF-026).
+
+### Botones «Reservar cita» de la portada y las páginas de servicio (2026-10-05)
+
+- **PRF-076.** El botón «Reservar cita →» del inicio de la portada y el de cada página de servicio **deben** llevar a la página de reservas, igual que el de la cabecera (PRF-056). Los botones que invitan explícitamente a llamar (por ejemplo, «Llamar ahora») y los de WhatsApp se mantienen como están.
+
 ## Datos existentes y transición
 
 No hay citas, servicios ni cuentas previos. Al desplegar se crean el horario inicial (PRF-019) y los ajustes iniciales (PRF-020). No se crean servicios: los da de alta el salón. Hasta que exista al menos un servicio reservable, la página de reservas muestra el mensaje de PRF-027. Antes de publicar hay que crear al menos una cuenta del panel, configurar el correo y la dirección del salón (PRF-055) y completar los datos pendientes de la política de privacidad (PRF-059). Las citas que lleguen por teléfono o WhatsApp deben apuntarse en el panel para que ocupen su hueco.
+
+El remitente de correo real (PRF-070, PRF-071) sigue pendiente del buzón y el servidor SMTP del salón (ver «Preguntas abiertas»); mientras tanto, el valor documentado es provisional.
 
 ## Criterios de aceptación
 
@@ -200,6 +233,9 @@ No hay citas, servicios ni cuentas previos. Al desplegar se crean el horario ini
 - **CA-7 (PRF-045 a PRF-049).** La agenda muestra y navega por días, crea citas aplicando capacidad y horario y cancela sin borrar.
 - **CA-8 (PRF-050 a PRF-055).** Se envían los correos de confirmación, aviso y cancelación. Un fallo de envío no rompe la reserva y la tarea periódica lo reintenta una sola vez con éxito. El despliegue falla sin correo configurado.
 - **CA-9 (PRF-056 a PRF-061).** La cabecera, el mapa del sitio y los datos estructurados apuntan a la reserva. La política explica el tratamiento con los datos pendientes marcados. No queda el email inventado ni hay precios en la página de reservas.
+- **CA-10 (PRF-070 a PRF-075).** Los correos muestran «Peluquería Jenver» como remitente y como marca (colores, logo o nombre, pie propio), sin ningún rastro de la plantilla por defecto. El despliegue falla si el nombre de la aplicación o el remitente siguen siendo los de la plantilla.
+- **CA-11 (PRF-077 a PRF-086).** El salón mueve una cita confirmada futura (día, hora y servicio) y puede editar los datos de la clienta a la vez. Un hueco sin capacidad o fuera de horario avisa y exige confirmar antes de guardar. La clienta recibe el aviso con el mismo enlace; un fallo de envío no deshace el cambio ni se reintenta. Una cita cancelada o pasada no se puede mover, y no queda ningún rastro del cambio en sus datos.
+- **CA-12 (PRF-076).** El botón «Reservar cita →» de la portada y de cada página de servicio lleva a la página de reservas; los botones de llamada y de WhatsApp se mantienen.
 
 ## Plan de verificación
 
@@ -266,6 +302,23 @@ No hay citas, servicios ni cuentas previos. Al desplegar se crean el horario ini
 | PRF-059 | La política de privacidad contiene las secciones de reservas y los datos pendientes marcados. |
 | PRF-060 | Ninguna página contiene el email inventado. |
 | PRF-061 | La página de reservas pasa la misma comprobación sin precios que el resto. |
+| PRF-070 | Se envían los 4 correos → el campo «De» muestra «Peluquería Jenver», no «Laravel». |
+| PRF-071 | Comprobación de despliegue con el nombre de la aplicación «Laravel» o el remitente por defecto → falla. |
+| PRF-072 | Un correo renderizado muestra los colores de la marca y el logo o el nombre del salón, no el tema por defecto. |
+| PRF-073 | El pie del correo muestra los datos del salón, no un aviso de la plantilla. |
+| PRF-074 | El HTML del correo no contiene ningún enlace ni logotipo de un tercero. |
+| PRF-075 | La imagen del logo del correo es una URL absoluta y lleva texto alternativo. |
+| PRF-076 | El botón del inicio de la portada y el de cada página de servicio llevan a la página de reservas; los botones de llamada y WhatsApp siguen en `tel:`/WhatsApp. |
+| PRF-077 | Mover una cita confirmada futura a otro día, hora o servicio disponible → se guarda con los nuevos datos. |
+| PRF-078 | Mover una cita a un hueco que solo queda libre porque es el suyo propio → se permite (no cuenta contra sí misma). |
+| PRF-079 | Elegir un hueco sin capacidad o fuera de horario → aviso explicativo antes de guardar. |
+| PRF-080 | Confirmar «Guardar igualmente» tras el aviso → se guarda. Sin confirmar → no se guarda. |
+| PRF-081 | Cambiar a la vez la hora y el teléfono de la clienta → ambos se actualizan con las reglas de validación del alta. |
+| PRF-082 | Mover una cita con email → la clienta recibe un correo con la nueva fecha/hora y el mismo enlace que ya tenía. |
+| PRF-083 | Simular un fallo de envío al mover la cita → el cambio queda guardado y no hay un segundo intento automático. |
+| PRF-084 | Intentar editar una cita cancelada, o una ya empezada → el panel no lo permite. |
+| PRF-085 | Mover una cita y revisar sus observaciones y demás datos → no aparece ningún texto generado por el cambio. |
+| PRF-086 | Dos cambios simultáneos sobre la misma cita (o un cambio y una cancelación a la vez) → el resultado final es el de uno de los dos, nunca una mezcla. |
 
 ## Riesgos y marcha atrás
 
@@ -274,6 +327,8 @@ No hay citas, servicios ni cuentas previos. Al desplegar se crean el horario ini
 - **Caché de páginas.** Una página de reservas cacheada mostraría horas ocupadas. Lo impide PRF-038. Hay que confirmar que el servidor web no añade su propia caché.
 - **Datos legales pendientes.** No se puede publicar hasta completar PRF-059.
 - **Marcha atrás.** Los cambios en la base de datos solo añaden tablas. Para retirar la funcionalidad basta con revertir los PRs: el botón vuelve a abrir una llamada y las tablas nuevas se quedan sin uso, sin afectar al resto de la web.
+- **Tema de correo nuevo.** Un tema Markdown mal maquetado puede verse roto en Outlook de escritorio (motor Word, sin CSS moderno). Se mitiga manteniendo la estructura de tablas del tema por defecto de Laravel y revisando el HTML renderizado en Gmail y Outlook antes de darlo por bueno.
+- **Guardar un hueco sin capacidad u horario (PRF-080).** Permite que el panel supere la capacidad configurada a propósito. La página pública de reservas sigue sin ofrecer ese hueco (no cambia su cálculo de disponibilidad), así que el exceso solo lo ve y lo decide el salón.
 
 ## Preguntas abiertas
 
@@ -281,7 +336,7 @@ No hay citas, servicios ni cuentas previos. Al desplegar se crean el horario ini
 | --- | --- | --- | --- |
 | Titular, NIF y email de contacto para la política de privacidad | Cliente | Marcado como pendiente | Bloquea la publicación |
 | Plazo de conservación de las citas | Cliente | Marcado como pendiente | Bloquea la publicación. La purga automática queda para el PR 5 |
-| Buzón y servidor de correo de envío y dirección del salón | Usuario y cliente | Sin valor | El despliegue falla hasta configurarlos (PRF-055) |
+| Buzón y servidor de correo de envío y dirección del salón real | Usuario y cliente | `reservas@peluqueriajenver.com` (provisional, 2026-10-05) | El despliegue falla hasta configurar el SMTP real (PRF-055, PRF-071) |
 | Lista real de servicios y duraciones | Cliente | Ninguno sembrado | La página de reservas muestra el mensaje sin servicios |
 
 ## Tareas

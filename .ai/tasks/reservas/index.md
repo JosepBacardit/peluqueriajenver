@@ -6,7 +6,8 @@
   - PR 2, `feature/booking-availability`: T004–T006;
   - PR 3, `feature/booking-public`: T007–T009;
   - PR 4, `feature/booking-notifications`: T010–T012.
-- **Estado general:** implementación (T001–T012), revisión (T013) y resolución (T014) hechas. Queda pendiente el hallazgo M4 de la revisión (analítica y consentimiento, decisión del usuario) y los datos del cliente que bloquean publicar.
+  - Ajustes tras la revisión visual del usuario (2026-10-05), `feature/booking-admin-tweaks` apilada sobre `feature/booking-review-fixes`: T015–T018.
+- **Estado general:** implementación (T001–T012), revisión (T013) y resolución (T014) hechas. Queda pendiente el hallazgo M4 de la revisión (analítica y consentimiento, decisión del usuario) y los datos del cliente que bloquean publicar. De los ajustes 2026-10-05: T015, T016 y T018 hechos; T017 (mover/editar cita) especificada y pendiente de implementar (Claude Opus 5.5).
 
 ## Tareas
 
@@ -26,6 +27,10 @@
 | T012 | [Privacidad](T012-privacidad.md) | FEATURE | PRF-059, 060 | T007 | Claude Sonnet 5 | `medium` | Pest | done |
 | T013 | [Revisión independiente](T013-revision.md) | REVIEW | Todos | T001–T012 | Claude Opus 5.5 | `medium` | Matriz completa | done |
 | T014 | [Resolver la revisión](T014-resolver-revision.md) | FEATURE | PRF-062–069 | T013 | Claude Opus 5.5 | `medium` | Pest + Pint + `bash -n` | done |
+| T015 | [Remitente de producción y deploy:check](T015-remitente-correo.md) | SIMPLE | PRF-070, 071 | T011 | Claude Sonnet 5 | `low` | Pest + Pint | done |
+| T016 | [Marca del salón en el tema de los correos](T016-marca-correos.md) | FEATURE | PRF-072–075 | T010 | Claude Sonnet 5 | `medium` | Pest + Pint + revisión visual | done |
+| T017 | [Mover y editar una cita desde el panel](T017-editar-cita-panel.md) | ARCHITECTURAL | PRF-077–086 | T004, T006, T010, T014 | Claude Opus 5.5 | `medium` | Pest + Pint | pending |
+| T018 | [Botones «Reservar cita» del inicio y servicios](T018-cta-reservar.md) | SIMPLE | PRF-076 | T009 | Claude Sonnet 5 | `low` | Pest + Pint | done |
 
 Nota de ejecución: las tareas T001–T012 las ejecutó una misma instancia del agente `programador` (Claude Opus 5.5), por indicación del agente principal, en lugar de alternar modelos por tarea.
 
@@ -76,6 +81,11 @@ Nota de ejecución: las tareas T001–T012 las ejecutó una misma instancia del 
 | PRF-067 | prohibición | T014 | `DeployCheckCommandTest` | covered |
 | PRF-068 | prohibición | T014 | `AdminAuthenticationTest` | covered |
 | PRF-069 | comportamiento | T014 | `DeployCheckCommandTest` (timeout) y `AppointmentNotificationsTest` | covered |
+| PRF-070 | comportamiento | T015 | `DeployCheckCommandTest` | covered |
+| PRF-071 | prohibición | T015 | `DeployCheckCommandTest` | covered |
+| PRF-072 a PRF-075 | comportamiento y prohibición | T016 | `MailContentEscapingTest`, revisión visual en Gmail/Outlook | covered |
+| PRF-076 | comportamiento | T018 | `BookingLinksAndSeoTest` | covered |
+| PRF-077 a PRF-086 | comportamiento y prohibición | T017 | (a definir al implementar T017) | pending |
 
 ## Casos revisados que no aplican
 
