@@ -83,16 +83,56 @@
     <link rel="preload" as="font" type="font/woff2" href="{{ asset('fonts/playfair-display-latin-400-normal.woff2') }}" crossorigin>
     <link rel="preload" as="font" type="font/woff2" href="{{ asset('fonts/inter-latin-400-normal.woff2') }}" crossorigin>
 
-    <!-- System font stack with metrics that match Google Fonts -->
+    {{--
+        Bug found in browser (not by the independent reviewer, see
+        .ai/reviews/self-hosted-fonts.md): this plain, unlayered <style>
+        set a literal fallback as the real font-family for body/h1-h6
+        ("font-family: -apple-system..."/"Georgia, serif"), never
+        var(--font-serif)/var(--font-sans). Unlayered CSS always wins over
+        Tailwind's utilities, which live inside @layer, so Playfair
+        Display and Inter were downloaded and preloaded but never
+        actually applied anywhere on the site. Now body/h1-h6 use the
+        variables themselves, whose fallback segment is only shown while
+        the webfont downloads (font-display: swap).
+
+        The two local-only @font-face rules below (Arial/Georgia,
+        read: as the system already has them, no network request) are
+        metric-adjusted so the fallback occupies almost the same vertical
+        space as the real webfont, to shrink the swap's layout shift.
+        Overrides computed from @capsizecss/metrics (the same font-metrics
+        database next/font uses): size-adjust = (webfont avg char width /
+        unitsPerEm) ÷ (fallback avg char width / unitsPerEm); ascent/
+        descent/line-gap-override = the webfont's own value (as a
+        fraction of its unitsPerEm) ÷ that size-adjust. ascent-override/
+        descent-override/line-gap-override have no effect on Safari
+        (Chromium 87+/Firefox 89+ only); harmless there, just no CLS gain.
+    --}}
     <style>
+      @font-face {
+        font-family: 'Playfair Display Fallback';
+        src: local('Georgia');
+        ascent-override: 106.72%;
+        descent-override: 24.76%;
+        line-gap-override: 0%;
+        size-adjust: 101.39%;
+      }
+
+      @font-face {
+        font-family: 'Inter Fallback';
+        src: local('Arial');
+        ascent-override: 90.44%;
+        descent-override: 22.52%;
+        line-gap-override: 0%;
+        size-adjust: 107.12%;
+      }
+
       :root {
-        --font-serif: 'Playfair Display', Georgia, serif;
-        --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+        --font-serif: 'Playfair Display', 'Playfair Display Fallback', Georgia, serif;
+        --font-sans: 'Inter', 'Inter Fallback', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
       }
 
       body {
-        /* Fallback: system fonts with similar metrics to prevent FOUT */
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+        font-family: var(--font-sans);
         font-size: 16px;
         line-height: 1.5;
         /* Normalize character height to reduce shift when fonts load */
@@ -101,7 +141,7 @@
       }
 
       h1, h2, h3, h4, h5, h6, .font-serif {
-        font-family: Georgia, serif;
+        font-family: var(--font-serif);
       }
     </style>
 

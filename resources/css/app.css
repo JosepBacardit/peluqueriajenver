@@ -8,23 +8,17 @@
  * are the "latin" subset woff2 from the official @fontsource npm packages
  * (@fontsource/inter@5.2.6, @fontsource/playfair-display@5.3.0, OFL-1.1
  * licensed, see public/fonts/OFL-inter.txt and OFL-playfair-display.txt),
- * covering the weights and styles actually used on the site: Inter 300/400/
- * 500/600 normal, Playfair Display 400/700 normal. Playfair's italic was
- * requested from Google before but never applied anywhere (no element pairs
- * font-serif with italic), so it is dropped here; Inter's italic paragraphs
+ * covering the weights and styles actually used on the site: Inter 400/500/
+ * 600 normal, Playfair Display 400/700 normal. Inter 300/font-light and
+ * Playfair's italic 400 were requested from Google before but are dropped
+ * here: neither font-light nor font-weight: 300 appears anywhere in views,
+ * CSS or JS (review self-hosted-fonts.md B1), and no element pairs
+ * font-serif with italic. Inter's italic paragraphs
  * (home.blade.php reviews) already render with the browser's synthetic
  * italic today, unchanged by this. The "latin" subset covers Spanish and
  * Catalan: á/é/í/ó/ú/ü/ñ/ç and the "l·l" middot all fall in U+0000-00FF,
  * already inside this subset's unicode-range, so "latin-ext" is not needed.
  */
-@font-face {
-    font-family: 'Inter';
-    font-style: normal;
-    font-weight: 300;
-    font-display: swap;
-    src: url('/fonts/inter-latin-300-normal.woff2') format('woff2');
-}
-
 @font-face {
     font-family: 'Inter';
     font-style: normal;
@@ -66,8 +60,15 @@
 }
 
 @theme {
-    --font-sans: 'Inter', system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-    --font-serif: 'Playfair Display', Georgia, serif;
+    /*
+     * 'Inter Fallback'/'Playfair Display Fallback' are the metric-adjusted,
+     * local-only @font-face rules declared in layouts/app.blade.php's
+     * critical <style> (so they're already available before this
+     * stylesheet loads); keeping them here too makes the font-sans/
+     * font-serif utility classes shrink the same layout shift.
+     */
+    --font-sans: 'Inter', 'Inter Fallback', system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-serif: 'Playfair Display', 'Playfair Display Fallback', Georgia, serif;
     --color-gold: #C9A84C;
     --color-gold-light: #E2C97E;
     --color-gold-dark: #A07830;
