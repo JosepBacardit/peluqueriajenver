@@ -35,7 +35,7 @@
 | T019 | [Resolver la revisión de los ajustes](T019-resolver-revision-ajustes.md) | FEATURE | PRF-070–075, 077–088 | T015–T018 | Claude Opus 5.5 | `medium` | Pest + Pint + navegador | done |
 | T020 | [Objetivo táctil mínimo en botones y enlaces de acción](T020-objetivo-tactil.md) | SIMPLE | PRF-089, 094 | T017 | Claude Sonnet 5.5 | `low` | Pest + Pint | done |
 | T021 | [Navegación inferior fija del panel en móvil](T021-nav-inferior.md) | FEATURE | PRF-090 | T001 | Claude Sonnet 5.5 | `medium` | Pest + Pint + navegador | done |
-| T022 | [Servicios en tarjetas en todos los anchos](T022-servicios-tarjetas.md) | FEATURE | PRF-091 | T002 | Claude Sonnet 5.5 | `low` | Pest + Pint | pending |
+| T022 | [Servicios en tarjetas en todos los anchos](T022-servicios-tarjetas.md) | FEATURE | PRF-091 | T002 | Claude Sonnet 5.5 | `low` | Pest + Pint | done |
 | T023 | [Agenda pensada para el pulgar](T023-agenda-pulgar.md) | FEATURE | PRF-092–095 | T006, T017 | Claude Sonnet 5.5 | `medium` | Pest + Pint + navegador | pending |
 | T024 | [Horario semanal sin recorte en 360 px](T024-horario-360.md) | SIMPLE | PRF-096 | T003 | Claude Sonnet 5.5 | `low` | Pest + Pint + navegador | pending |
 | T025 | [Calendario y horas públicas: zona táctil](T025-calendario-tactil.md) | SIMPLE | PRF-097 | T007 | Claude Sonnet 5.5 | `low` | Pest + Pint + navegador | pending |
@@ -98,7 +98,7 @@ Nota de ejecución: las tareas T001–T012 las ejecutó una misma instancia del 
 | PRF-077 a PRF-087 | comportamiento y prohibición | T017, T019 | `RescheduleAppointmentTest`, `AdminRescheduleAppointmentTest`, `AvailabilityCalculatorTest`, `AgendaTest`, `MailBrandingTest`, `MailContentEscapingTest`, `MailSenderTest`; pendiente el recorrido completo en el navegador (guardar, teclado y lector de pantalla) | partial |
 | PRF-089, PRF-094 | comportamiento | T020 | `AdminLayoutTest` (estilos compartidos `.btn-gold`/`.btn-outline`/`.btn-danger-outline`); pendiente medir a 375 px en el navegador | partial |
 | PRF-090 | comportamiento | T021 | `AdminLayoutTest` (navegación inferior fija, 5 módulos, activo marcado en las dos navegaciones, iconos `aria-hidden`, relleno para la zona segura); pendiente comprobar a 375 px y 1024 px en el navegador | partial |
-| PRF-091 | comportamiento y prohibición | T022 | `ServiceManagementTest`; pendiente comprobar a 375 px en el navegador | pending |
+| PRF-091 | comportamiento y prohibición | T022 | `ServiceManagementTest` (tarjetas, sin `<table>` ni `overflow-x-auto`); pendiente comprobar a 375 px en el navegador | partial |
 | PRF-092, PRF-093 | comportamiento | T023 | `AgendaTest`; pendiente comprobar a 375 px en el navegador (botón flotante, navegación inferior) | pending |
 | PRF-095 | comportamiento y prohibición | T023 | `AppointmentTest` (normalización del teléfono para WhatsApp) | pending |
 | PRF-096 | prohibición | T024 | pendiente comprobar a 360 px en el navegador | pending |

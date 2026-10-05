@@ -13,33 +13,35 @@
 @if ($services->isEmpty())
     <p class="text-gray-300">Todavía no hay servicios. Crea el primero para poder recibir reservas.</p>
 @else
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm text-left">
-            <thead class="text-gray-400 border-b border-[#2A2A2A]">
-                <tr>
-                    <th class="py-2 pr-4">Orden</th>
-                    <th class="py-2 pr-4">Nombre</th>
-                    <th class="py-2 pr-4">Duración</th>
-                    <th class="py-2 pr-4">Precio interno</th>
-                    <th class="py-2 pr-4">Reservable online</th>
-                    <th class="py-2 pr-4">Activo</th>
-                    <th class="py-2"></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($services as $service)
-                    <tr class="border-b border-[#1A1A1A] {{ $service->is_active ? '' : 'text-gray-500' }}">
-                        <td class="py-2 pr-4">{{ $service->sort_order }}</td>
-                        <td class="py-2 pr-4">{{ $service->name }}</td>
-                        <td class="py-2 pr-4">{{ $service->duration_label }}</td>
-                        <td class="py-2 pr-4">{{ $service->price_cents === null ? '—' : number_format($service->price_cents / 100, 2, ',', '.').' €' }}</td>
-                        <td class="py-2 pr-4">{{ $service->is_bookable_online ? 'Sí' : 'No' }}</td>
-                        <td class="py-2 pr-4">{{ $service->is_active ? 'Sí' : 'No' }}</td>
-                        <td class="py-2 text-right"><a href="{{ route('admin.services.edit', $service) }}" class="text-gold hover:underline">Editar</a></td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
+    {{-- Cards at every width (not just mobile): a salon's service list is
+         short, so a table added nothing on desktop and forced horizontal
+         scroll on a phone. --}}
+    <ul class="space-y-3">
+        @foreach ($services as $service)
+            <li class="border border-[#2A2A2A] p-4 {{ $service->is_active ? '' : 'opacity-60' }}">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <p class="text-white font-semibold">{{ $service->name }}</p>
+                        <p class="text-sm text-gray-400">{{ $service->duration_label }} · Orden {{ $service->sort_order }}</p>
+                    </div>
+                    <a href="{{ route('admin.services.edit', $service) }}" class="btn-outline text-sm">Editar</a>
+                </div>
+                <dl class="mt-3 grid grid-cols-3 gap-3 text-sm">
+                    <div>
+                        <dt class="text-gray-400">Precio interno</dt>
+                        <dd class="text-white">{{ $service->price_cents === null ? '—' : number_format($service->price_cents / 100, 2, ',', '.').' €' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-gray-400">Reservable online</dt>
+                        <dd class="text-white">{{ $service->is_bookable_online ? 'Sí' : 'No' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-gray-400">Activo</dt>
+                        <dd class="text-white">{{ $service->is_active ? 'Sí' : 'No' }}</dd>
+                    </div>
+                </dl>
+            </li>
+        @endforeach
+    </ul>
 @endif
 @endsection

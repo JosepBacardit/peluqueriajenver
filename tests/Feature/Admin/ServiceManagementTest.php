@@ -127,6 +127,19 @@ test('the list is ordered by sort order then name and shows every column', funct
         ->assertSee('45,00 €');
 });
 
+/**
+ * PRF-091: cards at every width instead of a table with horizontal scroll
+ * on a phone.
+ */
+test('the list is rendered as cards, never a table', function () {
+    Service::factory()->create(['name' => 'Corte', 'sort_order' => 1, 'duration_minutes' => 30]);
+
+    $html = $this->get(route('admin.services.index'))->assertOk()->getContent();
+
+    expect($html)->not->toContain('<table')->not->toContain('overflow-x-auto');
+    expect($html)->toContain('href="'.route('admin.services.edit', 1).'"');
+});
+
 test('services cannot be deleted from the panel', function () {
     $service = Service::factory()->create();
 
