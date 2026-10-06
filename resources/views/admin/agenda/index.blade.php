@@ -90,43 +90,53 @@
             @if ($vista !== 'dia')
                 <input type="hidden" name="vista" value="{{ $vista }}">
             @endif
-            {{-- Preserves the service filter (PRF-120) across a date jump. --}}
-            @if ($servicio)
-                <input type="hidden" name="servicio" value="{{ $servicio->id }}">
-            @endif
+            {{-- Preserves the service filter (PRF-120/PRF-132) across a
+                 date jump — one hidden field per selected service. --}}
+            @foreach ($servicios as $filterService)
+                <input type="hidden" name="servicio[]" value="{{ $filterService->id }}">
+            @endforeach
             <input id="fecha" type="date" name="fecha" value="{{ $day->toDateString() }}" class="bg-black border border-[#2A2A2A] px-2 py-3">
             <button type="submit" class="btn-outline">Ir</button>
         </form>
     </nav>
 </div>
 
-{{-- Service filter (PRF-120, T043): "Cualquiera" plus every active
-     service with its duration. Submits on change with minimal vanilla JS;
-     the "Ver" button is a no-JS fallback. Not shown in Mes, which has no
-     rejilla to highlight — but the filter still survives a visit there
-     (decision 3: Mes's own links carry $servicioQuery forward).
-     Review finding M1: at 360 px, a long service name used to push the
-     row past the viewport (no min-width: 0 on the <select>, no
-     flex-wrap) — "Ver" could even end up clipped off-screen. "flex-wrap"
-     lets "Ver" drop to its own line instead of forcing a horizontal
-     scrollbar; "min-w-0 flex-1" lets the <select> itself shrink below
-     its content's natural width (a flex item's default min-width is
-     "auto", i.e. its content, which is exactly what let it overflow). --}}
+{{-- Service filter (PRF-120, PRF-132, T043/T048): 1 to MAX_SERVICES active
+     services, with their duration. Not shown in Mes, which has no rejilla
+     to highlight — but the filter still survives a visit there (decision
+     3: Mes's own links carry $servicioQuery forward).
+     A native <select> cannot hold several checked options comfortably on
+     a phone (and a multi-select listbox is worse), so this is a <details>
+     disclosure of checkboxes instead — comfortable with one hand, and
+     needs no JavaScript at all: every box submits together with "Ver".
+     Review finding M1 (of T043, still true here): "Ver" must never be
+     pushed off a 360 px screen — <details>/<summary> never forces a row
+     width the way the old <select> could. --}}
 @if ($vista !== 'mes')
-    <form method="GET" action="{{ route('admin.agenda') }}" class="flex flex-wrap items-center gap-2 text-sm mb-6">
-        <input type="hidden" name="fecha" value="{{ $day->toDateString() }}">
-        @if ($vista !== 'dia')
-            <input type="hidden" name="vista" value="{{ $vista }}">
-        @endif
-        <label for="servicio" class="text-gray-400 shrink-0">Servicio</label>
-        <select id="servicio" name="servicio" class="min-w-0 flex-1 bg-black border border-[#2A2A2A] px-2 py-3" onchange="this.form.submit()">
-            <option value="">Cualquiera</option>
-            @foreach ($services as $serviceOption)
-                <option value="{{ $serviceOption->id }}" @selected($servicio?->id === $serviceOption->id)>{{ $serviceOption->name }} ({{ $serviceOption->duration_label }})</option>
-            @endforeach
-        </select>
-        <button type="submit" class="btn-outline shrink-0">Ver</button>
-    </form>
+    <details class="mb-6 text-sm border border-[#2A2A2A]">
+        <summary class="min-h-11 flex items-center gap-2 px-3 py-2 cursor-pointer text-gray-200">
+            <span class="text-gray-400">Servicio:</span>
+            <span class="truncate">{{ $servicios->isEmpty() ? 'Cualquiera' : $servicios->pluck('name')->implode(', ') }}</span>
+        </summary>
+        <form method="GET" action="{{ route('admin.agenda') }}" class="p-3 border-t border-[#2A2A2A] space-y-3">
+            <input type="hidden" name="fecha" value="{{ $day->toDateString() }}">
+            @if ($vista !== 'dia')
+                <input type="hidden" name="vista" value="{{ $vista }}">
+            @endif
+            <p class="text-xs text-gray-400">Hasta {{ \App\Models\Appointment::MAX_SERVICES }} servicios a la vez; la rejilla resalta los huecos que suman su duración.</p>
+            <ul class="space-y-2">
+                @foreach ($services as $serviceOption)
+                    <li>
+                        <label class="flex items-center gap-3 min-h-11 cursor-pointer">
+                            <input type="checkbox" name="servicio[]" value="{{ $serviceOption->id }}" class="w-5 h-5 shrink-0 accent-gold" @checked($servicios->contains('id', $serviceOption->id))>
+                            <span>{{ $serviceOption->name }} ({{ $serviceOption->duration_label }})</span>
+                        </label>
+                    </li>
+                @endforeach
+            </ul>
+            <button type="submit" class="btn-outline">Ver</button>
+        </form>
+    </details>
 @endif
 
 {{-- pb-24 (phones only): keeps the floating "+" button from sitting on

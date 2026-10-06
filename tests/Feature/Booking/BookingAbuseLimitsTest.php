@@ -67,7 +67,7 @@ test('the salon can still book a customer with two upcoming appointments from th
 
     $this->actingAs(User::factory()->create())
         ->post(route('admin.appointments.store'), [
-            'service_id' => $this->service->id, 'date' => '2030-01-09', 'time' => '12:00',
+            'service_ids' => [$this->service->id], 'date' => '2030-01-09', 'time' => '12:00',
             'customer_name' => 'Ana', 'customer_phone' => '600 123 456', 'customer_email' => 'ana@example.test',
         ])->assertSessionHasNoErrors();
 

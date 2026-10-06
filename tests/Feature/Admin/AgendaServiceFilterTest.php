@@ -40,21 +40,21 @@ test('the selector is not shown in vista Mes', function () {
 });
 
 /**
- * Review finding M1: the row used to have no "flex-wrap"/"min-w-0", so a
- * long service name could push "Ver" past the 360 px viewport. A real
- * <select> cannot be measured without a browser, but "min-w-0" is what
- * lets it shrink below its content's own width (a flex item's default
- * min-width is "auto", i.e. its content) and "flex-wrap" is what lets
- * "Ver" drop to its own line instead of forcing a horizontal scrollbar —
- * exercised here with a ~40-character name, longer than any real service.
+ * Review finding M1 (T043) / T048: a long service name used to push "Ver"
+ * past a 360 px viewport when the filter was a <select> (no "min-width:
+ * 0", no "flex-wrap"). T048 replaced the <select> with a <details>
+ * disclosure of checkboxes instead, which never forces a row width in the
+ * first place — the summary truncates and the checkbox list wraps
+ * naturally — exercised here with a ~40-character name, longer than any
+ * real service.
  */
-test('the service selector row can wrap and its <select> can shrink, even with a long service name', function () {
+test('the service selector never forces a row width, even with a long service name', function () {
     Service::factory()->create(['name' => 'Coloración completa con tratamiento capilar']);
 
     $html = $this->get(route('admin.agenda'))->assertOk()->getContent();
 
-    expect($html)->toContain('class="flex flex-wrap items-center gap-2 text-sm mb-6"');
-    expect($html)->toContain('class="min-w-0 flex-1 bg-black border border-[#2A2A2A] px-2 py-3"');
+    expect($html)->toContain('<details class="mb-6 text-sm border border-[#2A2A2A]">');
+    expect($html)->toContain('class="truncate"');
     expect($html)->toContain('Coloración completa con tratamiento capilar');
 });
 
@@ -272,21 +272,31 @@ test('selecting a service keeps vista Semana at a fixed number of queries, not o
 });
 
 /**
- * T045: "Nueva cita" preselects the service the agenda was filtered by (or
- * whose "Cabe" hueco was tapped).
+ * T045/T048: "Nueva cita" preselects every service the agenda was filtered
+ * by (or whose "Cabe" hueco was tapped) — not only the first.
  */
 test('the create form preselects the service from a valid "servicio" query parameter', function () {
     $service = Service::factory()->create(['name' => 'Balayage']);
 
     $html = $this->get(route('admin.appointments.create', ['servicio' => $service->id]))->assertOk()->getContent();
 
-    expect($html)->toContain('<option value="'.$service->id.'" selected>Balayage');
+    expect($html)->toMatch('/name="service_ids\[\]" value="'.$service->id.'"[^>]*checked/');
+});
+
+test('the create form preselects every service from a "servicio[]" with several', function () {
+    $balayage = Service::factory()->create(['name' => 'Balayage']);
+    $cut = Service::factory()->create(['name' => 'Corte']);
+
+    $html = $this->get(route('admin.appointments.create', ['servicio' => [$balayage->id, $cut->id]]))->assertOk()->getContent();
+
+    expect($html)->toMatch('/name="service_ids\[\]" value="'.$balayage->id.'"[^>]*checked/');
+    expect($html)->toMatch('/name="service_ids\[\]" value="'.$cut->id.'"[^>]*checked/');
 });
 
 test('the create form ignores an invalid or inactive "servicio" query parameter', function (string|int $servicio) {
     $html = $this->get(route('admin.appointments.create', ['servicio' => $servicio]))->assertOk()->getContent();
 
-    expect($html)->not->toContain('selected>');
+    expect($html)->not->toContain('checked>');
 })->with(['no-es-un-id', '999999']);
 
 test('the create form ignores an inactive service\'s id in "servicio"', function () {
@@ -294,5 +304,61 @@ test('the create form ignores an inactive service\'s id in "servicio"', function
 
     $html = $this->get(route('admin.appointments.create', ['servicio' => $inactive->id]))->assertOk()->getContent();
 
-    expect($html)->not->toContain('selected>');
+    expect($html)->not->toContain('checked>');
+});
+
+/**
+ * PRF-132 (T048): the "Cabe" highlight with two services selected marks
+ * only the half hours where the sum of their durations fits, same rules
+ * as a single service (PRF-121).
+ */
+test('choosing two services in the agenda filter marks "Cabe" only where the sum fits', function () {
+    $haircut = Service::factory()->create(['name' => 'Corte', 'duration_minutes' => 30]);
+    $beard = Service::factory()->create(['name' => 'Barba', 'duration_minutes' => 15]);
+
+    $html = $this->get(route('admin.agenda', ['servicio' => [$haircut->id, $beard->id]]))->assertOk()->getContent();
+
+    // 45 minutes: 18:30 + 45 = 19:15, past closing — does not fit; 18:00
+    // does (18:00 + 45 = 18:45).
+    expect($html)->toContain('aria-label="Hueco libre a las 18:00, plaza 1, cabe Barba + Corte"');
+    expect($html)->not->toContain('aria-label="Hueco libre a las 18:30, plaza 1, cabe Barba + Corte"');
+});
+
+/**
+ * PRF-132: the filter survives navigation with several services selected,
+ * the same way it already does with one (PRF-123) — via the array form
+ * "servicio[]" once there is more than one.
+ */
+test('the service filter survives navigating the tabs with several services selected', function () {
+    $haircut = Service::factory()->create(['name' => 'Corte']);
+    $beard = Service::factory()->create(['name' => 'Barba']);
+    // AgendaController::serviciosFromQuery() returns them in the salon's
+    // order (sort_order, then name), not the order given in the query —
+    // "Barba" sorts before "Corte".
+    $servicioParam = ['servicio' => [$beard->id, $haircut->id]];
+
+    $html = $this->get(route('admin.agenda', ['servicio' => [$haircut->id, $beard->id]]))->assertOk()->getContent();
+
+    expect($html)->toContain(e(route('admin.agenda', ['vista' => 'semana', 'fecha' => '2030-01-08', ...$servicioParam])));
+    expect($html)->toContain(e(route('admin.appointments.create', ['fecha' => '2030-01-08', 'volver' => 'dia:2030-01-08', ...$servicioParam])));
+});
+
+test('selecting two services keeps vista Día at a fixed number of queries', function () {
+    $haircut = Service::factory()->create(['duration_minutes' => 30]);
+    $beard = Service::factory()->create(['duration_minutes' => 15]);
+    foreach (range(9, 18) as $hour) {
+        Appointment::factory()->create(['starts_at' => "2030-01-08 {$hour}:00", 'ends_at' => "2030-01-08 {$hour}:15"]);
+    }
+
+    DB::enableQueryLog();
+    $this->get(route('admin.agenda', ['servicio' => [$haircut->id, $beard->id]]))->assertOk();
+    $queries = DB::getQueryLog();
+
+    $countOf = fn (string $table) => collect($queries)->filter(fn ($q) => str_contains($q['query'], "from \"{$table}\""))->count();
+
+    expect($countOf('appointments'))->toBe(1);
+    expect($countOf('schedule_blocks'))->toBe(1);
+    expect($countOf('opening_hours'))->toBe(1);
+    expect($countOf('booking_settings'))->toBe(1);
+    expect($countOf('services'))->toBe(1);
 });

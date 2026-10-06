@@ -37,9 +37,11 @@ class AgendaController extends Controller
         $weekLastDay = $weekStart->addDays(6);
         $month = $day->startOfMonth();
 
-        // Service filter (PRF-120, T043): loaded once, reused both for the
-        // <select>'s options and to validate "servicio" against it — a
-        // malformed or inactive id is silently ignored, never an error.
+        // Service filter (PRF-120, PRF-132, T043/T048): loaded once, reused
+        // both for the checkbox list's options and to validate "servicio"
+        // against it — a malformed, repeated or inactive id is silently
+        // ignored, never an error, and the list is capped at MAX_SERVICES
+        // (extra ids beyond that are silently dropped too, same spirit).
         // $servicioQuery is the single query-string fragment every link in
         // the three views (tabs, Anterior/Siguiente/Hoy, the date form,
         // Nueva cita, each hueco libre, Mes's day cells) splats in, so the
@@ -47,8 +49,16 @@ class AgendaController extends Controller
         // selector of its own) without repeating the same ['servicio' =>
         // ...] literal at every one of those call sites.
         $services = Service::query()->where('is_active', true)->ordered()->get();
-        $servicio = self::servicioFromQuery($request->query('servicio'), $services);
-        $servicioQuery = $servicio !== null ? ['servicio' => $servicio->id] : [];
+        $servicios = self::serviciosFromQuery($request->query('servicio'), $services);
+        // A single selected service keeps using a scalar "servicio=N" (as
+        // short as before T048, PRF-123's existing links), the array form
+        // "servicio[]=..." only once there is more than one (PRF-132).
+        $servicioIds = $servicios->pluck('id')->all();
+        $servicioQuery = match (count($servicioIds)) {
+            0 => [],
+            1 => ['servicio' => $servicioIds[0]],
+            default => ['servicio' => $servicioIds],
+        };
 
         return view('admin.agenda.index', [
             'vista' => $vista,
@@ -64,28 +74,39 @@ class AgendaController extends Controller
             // "vista:fecha" format and its whitelist parsing never change.
             'volver' => "$vista:{$day->toDateString()}",
             'services' => $services,
-            'servicio' => $servicio,
+            'servicios' => $servicios,
             'servicioQuery' => $servicioQuery,
             ...match ($vista) {
-                'semana' => $this->weekData($weekStart, $servicio),
+                'semana' => $this->weekData($weekStart, $servicios),
                 'mes' => $this->monthData($month),
-                default => $this->dayData($day, $servicio),
+                default => $this->dayData($day, $servicios),
             },
         ]);
     }
 
     /**
-     * The selected service (PRF-120), or null when "servicio" is missing,
-     * not numeric, or does not match one of the already-loaded active
-     * services — never a second query to check it.
+     * The selected services (PRF-120, PRF-132), 1 to
+     * Appointment::MAX_SERVICES of them, in the order $services (already
+     * sorted) gives them — never a second query to validate "servicio"
+     * against it. Anything not numeric, repeated, or past the maximum
+     * count is dropped silently; a missing or empty "servicio" (or one
+     * where every id is invalid) returns an empty collection, the same as
+     * "Cualquiera".
+     *
+     * @param  Collection<int, Service>  $services
+     * @return Collection<int, Service>
      */
-    public static function servicioFromQuery(mixed $value, Collection $services): ?Service
+    public static function serviciosFromQuery(mixed $value, Collection $services): Collection
     {
-        if (! is_numeric($value)) {
-            return null;
+        if ($value === null || $value === '') {
+            return collect();
         }
 
-        return $services->firstWhere('id', (int) $value);
+        $ids = is_array($value) ? $value : [$value];
+        $ids = array_values(array_unique(array_map('intval', array_filter($ids, 'is_numeric'))));
+        $ids = array_slice($ids, 0, Appointment::MAX_SERVICES);
+
+        return $services->whereIn('id', $ids)->values();
     }
 
     /**
@@ -156,7 +177,7 @@ class AgendaController extends Controller
      *
      * @return array{appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>, gridStart: int, gridEnd: int, timeline: array, nowLineTop: int|null}
      */
-    private function dayData(CarbonImmutable $day, ?Service $servicio): array
+    private function dayData(CarbonImmutable $day, Collection $servicios): array
     {
         $appointments = Appointment::query()
             ->where('starts_at', '>=', $day)
@@ -176,7 +197,7 @@ class AgendaController extends Controller
         $now = CarbonImmutable::now();
 
         $timeline = DayTimeline::build($day, $bounds['start'], $bounds['end'], $capacity, $dayRanges, $appointments, $blocks, $now);
-        $timeline = $this->markServiceFit($timeline, $servicio, $day, $dayRanges, $appointments, $blocks, $capacity);
+        $timeline = $this->markServiceFit($timeline, $servicios, $day, $dayRanges, $appointments, $blocks, $capacity);
 
         return [
             'appointments' => $appointments,
@@ -189,23 +210,27 @@ class AgendaController extends Controller
     }
 
     /**
-     * PRF-120/123/124: with no service selected, returns $timeline
-     * untouched (no extra work at all). With one, finds which of its
-     * already-tappable free half hours the service fits into — no query,
-     * since AvailabilityCalculator::fittingStartMinutes() works entirely
-     * off the $ranges/$appointments/$blocks the caller already loaded —
-     * and flags them for the view (DayTimeline::markServiceFit()).
+     * PRF-120/123/124/132: with no service selected, returns $timeline
+     * untouched (no extra work at all). With 1 to MAX_SERVICES, finds
+     * which of its already-tappable free half hours the sum of their
+     * durations fits into — no query, since
+     * AvailabilityCalculator::fittingStartMinutes() works entirely off the
+     * $ranges/$appointments/$blocks the caller already loaded — and flags
+     * them for the view (DayTimeline::markServiceFit()).
+     *
+     * @param  Collection<int, Service>  $servicios
      */
-    private function markServiceFit(array $timeline, ?Service $servicio, CarbonImmutable $day, Collection $ranges, Collection $appointments, Collection $blocks, int $capacity): array
+    private function markServiceFit(array $timeline, Collection $servicios, CarbonImmutable $day, Collection $ranges, Collection $appointments, Collection $blocks, int $capacity): array
     {
-        if ($servicio === null) {
+        if ($servicios->isEmpty()) {
             return $timeline;
         }
 
+        $durationMinutes = (int) $servicios->sum('duration_minutes');
         $candidates = DayTimeline::tappableFreeMinutes($timeline);
-        $fitting = $this->calculator->fittingStartMinutes($servicio->duration_minutes, $candidates, $day, $ranges, $appointments, $blocks, $capacity);
+        $fitting = $this->calculator->fittingStartMinutes($durationMinutes, $candidates, $day, $ranges, $appointments, $blocks, $capacity);
 
-        return DayTimeline::markServiceFit($timeline, $fitting, $servicio->duration_minutes);
+        return DayTimeline::markServiceFit($timeline, $fitting, $durationMinutes);
     }
 
     /**
@@ -217,7 +242,7 @@ class AgendaController extends Controller
      *
      * @return array{days: list<array{date: CarbonImmutable, appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>, isClosed: bool, hasPartialClosure: bool, isToday: bool, timeline: array}>, gridStart: int, gridEnd: int}
      */
-    private function weekData(CarbonImmutable $weekStart, ?Service $servicio): array
+    private function weekData(CarbonImmutable $weekStart, Collection $servicios): array
     {
         $weekEnd = $weekStart->addWeek();
 
@@ -255,7 +280,7 @@ class AgendaController extends Controller
             $isClosed = ! in_array($date->isoWeekday(), $openWeekdays, true) || $hasFullClosure;
 
             $timeline = DayTimeline::build($date, $bounds['start'], $bounds['end'], $capacity, $dayRanges, $dayAppointments, $dayBlocks, $now);
-            $timeline = $this->markServiceFit($timeline, $servicio, $date, $dayRanges, $dayAppointments, $dayBlocks, $capacity);
+            $timeline = $this->markServiceFit($timeline, $servicios, $date, $dayRanges, $dayAppointments, $dayBlocks, $capacity);
 
             $days[] = [
                 'date' => $date,

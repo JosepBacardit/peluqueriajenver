@@ -19,11 +19,12 @@
      aria-label in Semana's columns with the day, e.g. "miércoles 7", so a
      screen-reader user knows which day's plaza/cita/hueco they are on;
      omitted in vista Día, where there is only one day on screen).
-     Also inherits $servicio (nullable Service, PRF-120: the selected
-     service filter — AgendaController already flagged every segment
-     that fits it with 'fits' => true) and $servicioQuery (array, the
-     "servicio" query fragment, PRF-120: added to every "Nueva cita" link
-     so the filter survives into the create form, preselected, T045) from
+     Also inherits $servicios (Collection<Service>, PRF-120/PRF-132: the
+     selected service filter, 1 to MAX_SERVICES of them — AgendaController
+     already flagged every segment that fits their combined duration with
+     'fits' => true) and $servicioQuery (array, the "servicio" query
+     fragment, PRF-120/PRF-132: added to every "Nueva cita" link so the
+     filter survives into the create form, preselected, T045/T048) from
      the including view's own scope — @include shares it automatically,
      so neither _day.blade.php, _timeline.blade.php nor _week.blade.php
      need to repeat it explicitly. --}}
@@ -31,7 +32,8 @@
     $bandLabels = ['cerrado' => 'Cerrado', 'fuera-horario' => 'Fuera de horario', 'cierre' => 'Cierre'];
     $datePrefix = ($ariaDateLabel ?? null) !== null ? $ariaDateLabel.', ' : '';
     $servicioQuery = $servicioQuery ?? [];
-    $servicio = $servicio ?? null;
+    $servicios = $servicios ?? collect();
+    $serviciosLabel = $servicios->pluck('name')->implode(' + ');
 @endphp
 <div class="relative flex-1 min-w-0">
     @foreach ($timeline['pieces'] as $piece)
@@ -119,7 +121,7 @@
                         <a href="{{ route('admin.appointments.create', ['fecha' => $day->toDateString(), 'hora' => $slotTime, 'volver' => $volver, ...$servicioQuery]) }}"
                            class="flex items-center justify-center text-[9px] leading-none {{ $fits ? 'border-l-4 border-gold bg-gold/10 text-gold font-semibold' : 'hover:bg-gold/10' }}"
                            style="{{ $gridArea }}"
-                           aria-label="{{ $datePrefix }}Hueco libre a las {{ $slotTime }}, plaza {{ $segment['lane'] + 1 }}{{ $fits ? ', cabe '.$servicio->name : '' }}">
+                           aria-label="{{ $datePrefix }}Hueco libre a las {{ $slotTime }}, plaza {{ $segment['lane'] + 1 }}{{ $fits ? ', cabe '.$serviciosLabel : '' }}">
                             @if ($fits && ! $compact)
                                 Cabe
                             @endif

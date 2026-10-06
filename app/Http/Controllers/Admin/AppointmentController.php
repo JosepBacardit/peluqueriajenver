@@ -41,12 +41,12 @@ class AppointmentController extends Controller
             // grid; a missing or malformed value just leaves the field
             // empty, same as before this existed.
             'time' => self::timeParam($request->query('hora')),
-            // PRF-120 (T045): preselects the service the agenda was
-            // filtered by, or the one whose "Cabe" hueco was tapped —
-            // validated against the same active list the <select> itself
-            // renders, so an invalid/inactive id is silently ignored
-            // rather than preselecting nothing with an error.
-            'servicio' => AgendaController::servicioFromQuery($request->query('servicio'), $services)?->id,
+            // PRF-120/PRF-132 (T045, T048): preselects the service(s) the
+            // agenda was filtered by, or whose "Cabe" hueco was tapped —
+            // validated against the same active list the checkboxes
+            // render, so an invalid/inactive id is silently ignored rather
+            // than preselecting nothing with an error.
+            'servicios' => AgendaController::serviciosFromQuery($request->query('servicio'), $services)->pluck('id')->all(),
         ]);
     }
 
@@ -61,11 +61,11 @@ class AppointmentController extends Controller
 
     public function store(StoreAdminAppointmentRequest $request, CreateAppointment $createAppointment, AppointmentNotifier $notifier): RedirectResponse
     {
-        $service = Service::findOrFail($request->validated('service_id'));
+        $services = Service::query()->whereIn('id', $request->validated('service_ids'))->get();
         $startsAt = $request->startsAt();
 
         try {
-            $appointment = $createAppointment->handle(collect([$service]), $startsAt, $request->customer(), AppointmentSource::Admin, applyPublicRules: false);
+            $appointment = $createAppointment->handle($services, $startsAt, $request->customer(), AppointmentSource::Admin, applyPublicRules: false);
         } catch (SlotUnavailableException) {
             return back()->withInput()->withErrors(['time' => 'Esa hora no está disponible para este servicio.']);
         } catch (DuplicateAppointmentException) {
@@ -92,6 +92,11 @@ class AppointmentController extends Controller
                 ->orWhereIn('id', $appointment->items()->pluck('service_id'))
                 ->ordered()
                 ->get(),
+            // PRF-129: every service the appointment already has, however
+            // many — the edit form must mark them all, not just the first
+            // (the bug T046 flagged: the old single-<select> form only
+            // ever sent one).
+            'selectedIds' => $appointment->items->pluck('service_id')->all(),
             'volver' => self::volverParam($request->query('volver')),
         ]);
     }
@@ -106,11 +111,11 @@ class AppointmentController extends Controller
      */
     public function update(UpdateAdminAppointmentRequest $request, Appointment $appointment, RescheduleAppointment $rescheduleAppointment, AppointmentNotifier $notifier): RedirectResponse
     {
-        $service = Service::findOrFail($request->validated('service_id'));
+        $services = Service::query()->whereIn('id', $request->validated('service_ids'))->get();
 
         try {
             $outcome = $rescheduleAppointment->handle(
-                $appointment, collect([$service]), $request->startsAt(), $request->customer(),
+                $appointment, $services, $request->startsAt(), $request->customer(),
                 ignoreHoursAndCapacity: $request->confirmsSlot(),
                 expectedVersion: $request->version(),
             );

@@ -41,7 +41,7 @@ beforeEach(function () {
 function reschedulePayload(array $overrides = []): array
 {
     return array_merge([
-        'service_id' => test()->service->id,
+        'service_ids' => [test()->service->id],
         'date' => '2030-01-09',
         'time' => '16:00',
         'customer_name' => 'Rosa Vidal',
@@ -66,8 +66,10 @@ test('the edit form shows the appointment\'s current details', function () {
         ->assertSee('value="Rosa Vidal"', false)
         ->assertSee('value="600 123 456"', false)
         ->assertSee('value="rosa@example.test"', false)
-        ->assertSee('Pelo rizado')
-        ->assertSee('<option value="'.$this->service->id.'" selected', false);
+        ->assertSee('Pelo rizado');
+
+    expect($this->get(route('admin.appointments.edit', $this->appointment))->getContent())
+        ->toMatch('/name="service_ids\[\]" value="'.$this->service->id.'"[^>]*checked/');
 });
 
 test('moving to a free time saves it and takes the salon to the new day', function () {
@@ -199,14 +201,14 @@ test('invalid details are rejected with the same rules as a new panel appointmen
     'short phone' => [['customer_phone' => '12345'], 'customer_phone'],
     'invalid email' => [['customer_email' => 'nope'], 'customer_email'],
     'notes over 500' => [['notes' => str_repeat('a', 501)], 'notes'],
-    'unknown service' => [['service_id' => 999], 'service_id'],
+    'unknown service' => [['service_ids' => [999]], 'service_ids.0'],
 ]);
 
 test('another inactive service cannot be chosen, but the appointment can keep its own', function () {
     $retired = Service::factory()->inactive()->create();
 
-    $this->put(route('admin.appointments.update', $this->appointment), reschedulePayload(['service_id' => $retired->id]))
-        ->assertSessionHasErrors('service_id');
+    $this->put(route('admin.appointments.update', $this->appointment), reschedulePayload(['service_ids' => [$retired->id]]))
+        ->assertSessionHasErrors('service_ids.0');
 
     $this->service->update(['is_active' => false]);
 
@@ -305,7 +307,7 @@ test('changing only the service also tells the customer', function () {
     Mail::fake();
     $color = Service::factory()->create(['name' => 'Color', 'duration_minutes' => 60]);
 
-    $this->put(route('admin.appointments.update', $this->appointment), reschedulePayload(['service_id' => $color->id, 'date' => '2030-01-08', 'time' => '10:00']));
+    $this->put(route('admin.appointments.update', $this->appointment), reschedulePayload(['service_ids' => [$color->id], 'date' => '2030-01-08', 'time' => '10:00']));
 
     Mail::assertSent(AppointmentRescheduledMail::class, fn ($mail) => str_contains($mail->render(), 'Color'));
 });
@@ -425,7 +427,7 @@ test('the warning takes the focus, is linked from the time fields and comes afte
 
     expect($html)->toContain('id="slot-warning" role="alert" tabindex="-1"');
     expect($html)->toContain("document.getElementById('slot-warning').focus();");
-    foreach (['service_id', 'date', 'time'] as $field) {
+    foreach (['service_ids', 'date', 'time'] as $field) {
         expect($html)->toMatch('/id="'.$field.'"[^>]*aria-describedby="slot-warning-text"/');
     }
     // Enter in a field submits with the first submit button of the form.

@@ -24,7 +24,7 @@ beforeEach(function () {
 function adminAppointmentPayload(array $overrides = []): array
 {
     return array_merge([
-        'service_id' => test()->service->id,
+        'service_ids' => [test()->service->id],
         'date' => '2030-01-08',
         'time' => '10:05',
         'customer_name' => 'Rosa Vidal',
@@ -92,14 +92,14 @@ test('invalid admin booking data is rejected', function (array $overrides, strin
     'short phone' => [['customer_phone' => '12345'], 'customer_phone'],
     'invalid email' => [['customer_email' => 'nope'], 'customer_email'],
     'notes over 500' => [['notes' => str_repeat('a', 501)], 'notes'],
-    'unknown service' => [['service_id' => 999], 'service_id'],
+    'unknown service' => [['service_ids' => [999]], 'service_ids.0'],
 ]);
 
 test('an inactive service cannot be booked from the panel', function () {
     $inactive = Service::factory()->inactive()->create();
 
-    $this->post(route('admin.appointments.store'), adminAppointmentPayload(['service_id' => $inactive->id]))
-        ->assertSessionHasErrors('service_id');
+    $this->post(route('admin.appointments.store'), adminAppointmentPayload(['service_ids' => [$inactive->id]]))
+        ->assertSessionHasErrors('service_ids.0');
 
     expect(Appointment::count())->toBe(0);
 });

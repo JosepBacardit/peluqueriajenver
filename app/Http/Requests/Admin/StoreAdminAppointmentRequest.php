@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\Appointment;
 use App\Rules\PhoneNumber;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
@@ -9,7 +10,8 @@ use Illuminate\Validation\Rule;
 
 /**
  * An appointment recorded by the salon (usually a phone or WhatsApp
- * booking). Email is optional here.
+ * booking). Email is optional here. 1 to Appointment::MAX_SERVICES active
+ * services (PRF-129).
  */
 class StoreAdminAppointmentRequest extends FormRequest
 {
@@ -24,7 +26,8 @@ class StoreAdminAppointmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'service_id' => ['required', 'integer', Rule::exists('services', 'id')->where('is_active', true)],
+            'service_ids' => ['required', 'array', 'min:1', 'max:'.Appointment::MAX_SERVICES],
+            'service_ids.*' => ['distinct', 'integer', Rule::exists('services', 'id')->where('is_active', true)],
             'date' => ['required', 'date_format:Y-m-d'],
             'time' => ['required', 'date_format:H:i', 'regex:/^\d{2}:\d[05]$/'],
             'customer_name' => ['required', 'string', 'min:2', 'max:100'],
@@ -41,7 +44,10 @@ class StoreAdminAppointmentRequest extends FormRequest
     {
         return [
             'time.regex' => 'La hora debe ser múltiplo de 5 minutos.',
-            'service_id.exists' => 'Elige un servicio activo.',
+            'service_ids.required' => 'Elige al menos un servicio.',
+            'service_ids.max' => 'Como mucho '.Appointment::MAX_SERVICES.' servicios.',
+            'service_ids.*.distinct' => 'No puedes elegir el mismo servicio dos veces.',
+            'service_ids.*.exists' => 'Elige solo servicios activos.',
         ];
     }
 

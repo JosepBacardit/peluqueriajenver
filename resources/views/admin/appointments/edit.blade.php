@@ -15,12 +15,13 @@
     // aria-invalid and aria-describedby for a field: its own error message
     // and, for the fields that choose the time, the "save anyway" warning.
     $fieldAria = function (string $field, bool $choosesTime = false) use ($errors, $slotWarning): string {
+        $hasError = $errors->has($field) || $errors->has($field.'.*');
         $describedBy = array_filter([
-            $errors->has($field) ? $field.'-error' : null,
+            $hasError ? $field.'-error' : null,
             $choosesTime && $slotWarning ? 'slot-warning-text' : null,
         ]);
 
-        return trim(($errors->has($field) ? 'aria-invalid="true" ' : '').($describedBy === [] ? '' : 'aria-describedby="'.implode(' ', $describedBy).'"'));
+        return trim(($hasError ? 'aria-invalid="true" ' : '').($describedBy === [] ? '' : 'aria-describedby="'.implode(' ', $describedBy).'"'));
     };
 @endphp
 
@@ -34,15 +35,26 @@
         <input type="hidden" name="volver" value="{{ old('volver', $volver) }}">
     @endif
 
-    <div>
-        <label for="service_id" class="block text-sm mb-1">Servicio</label>
-        <select id="service_id" name="service_id" required class="{{ $inputClass }}" {!! $fieldAria('service_id', true) !!}>
+    @php
+        // PRF-129: every service the appointment already has is checked
+        // (the bug this task fixes: the old single <select> only ever
+        // sent the first one back); "old('service_ids')" wins after a
+        // validation error with a different choice made in the form.
+        $checkedServiceIds = old('service_ids', $selectedIds);
+    @endphp
+    <fieldset>
+        <legend class="block text-sm mb-1">Servicios (hasta {{ \App\Models\Appointment::MAX_SERVICES }})</legend>
+        <div id="service_ids" class="space-y-2" {!! $fieldAria('service_ids', true) !!}>
             @foreach ($services as $service)
-                <option value="{{ $service->id }}" @selected((int) old('service_id', $appointment->items->first()?->service_id) === $service->id)>{{ $service->name }} ({{ $service->duration_label }}){{ $service->is_active ? '' : ' · inactivo' }}</option>
+                <label class="flex items-center gap-3 min-h-11 cursor-pointer">
+                    <input type="checkbox" name="service_ids[]" value="{{ $service->id }}" class="w-5 h-5 shrink-0 accent-gold" @checked(in_array($service->id, $checkedServiceIds))>
+                    <span>{{ $service->name }} ({{ $service->duration_label }}){{ $service->is_active ? '' : ' · inactivo' }}</span>
+                </label>
             @endforeach
-        </select>
-        @error('service_id') <p id="service_id-error" class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
-    </div>
+        </div>
+        @error('service_ids') <p id="service_ids-error" class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
+        @error('service_ids.*') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
+    </fieldset>
 
     <div class="grid sm:grid-cols-2 gap-4">
         <div>

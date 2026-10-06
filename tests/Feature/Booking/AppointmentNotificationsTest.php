@@ -85,11 +85,11 @@ test('a panel booking does not email the salon and emails the customer only when
     $this->actingAs(User::factory()->create());
 
     $this->post(route('admin.appointments.store'), [
-        'service_id' => $this->service->id, 'date' => '2030-01-08', 'time' => '10:00',
+        'service_ids' => [$this->service->id], 'date' => '2030-01-08', 'time' => '10:00',
         'customer_name' => 'Sin Email', 'customer_phone' => '600 000 000', 'customer_email' => '',
     ]);
     $this->post(route('admin.appointments.store'), [
-        'service_id' => $this->service->id, 'date' => '2030-01-08', 'time' => '12:00',
+        'service_ids' => [$this->service->id], 'date' => '2030-01-08', 'time' => '12:00',
         'customer_name' => 'Con Email', 'customer_phone' => '600 000 001', 'customer_email' => 'con@example.test',
     ]);
 

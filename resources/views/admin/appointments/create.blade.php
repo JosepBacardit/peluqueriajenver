@@ -11,7 +11,9 @@
     // the 44px touch target (review finding N3).
     $inputClass = 'w-full bg-black border border-[#2A2A2A] px-3 py-3 focus:border-gold focus:outline-none';
     // aria-invalid and aria-describedby linking a field to its error.
-    $fieldAria = fn (string $field): string => $errors->has($field) ? 'aria-invalid="true" aria-describedby="'.$field.'-error"' : '';
+    // "service_ids" also checks "service_ids.*" (one checkbox too many,
+    // repeated, or inactive), not only the array-level rules.
+    $fieldAria = fn (string $field): string => $errors->has($field) || $errors->has($field.'.*') ? 'aria-invalid="true" aria-describedby="'.$field.'-error"' : '';
 @endphp
 
 @if ($services->isEmpty())
@@ -25,19 +27,26 @@
         <input type="hidden" name="volver" value="{{ old('volver', $volver) }}">
     @endif
 
-    <div>
-        <label for="service_id" class="block text-sm mb-1">Servicio</label>
-        <select id="service_id" name="service_id" required class="{{ $inputClass }}" {!! $fieldAria('service_id') !!}>
+    @php
+        // PRF-120/PRF-132 (T045/T048): preselects every service the agenda
+        // was filtered by (or whose "Cabe" hueco was tapped);
+        // "old('service_ids')" still wins when re-displaying the form
+        // after a validation error with a different choice.
+        $checkedServiceIds = old('service_ids', $servicios ?? []);
+    @endphp
+    <fieldset>
+        <legend class="block text-sm mb-1">Servicios (hasta {{ \App\Models\Appointment::MAX_SERVICES }})</legend>
+        <div id="service_ids" class="space-y-2" {!! $fieldAria('service_ids') !!}>
             @foreach ($services as $service)
-                {{-- PRF-120 (T045): preselects the service the agenda was
-                     filtered by (or whose "Cabe" hueco was tapped);
-                     "old('service_id')" still wins when re-displaying the
-                     form after a validation error with a different choice. --}}
-                <option value="{{ $service->id }}" @selected((int) old('service_id', $servicio ?? '') === $service->id)>{{ $service->name }} ({{ $service->duration_label }})</option>
+                <label class="flex items-center gap-3 min-h-11 cursor-pointer">
+                    <input type="checkbox" name="service_ids[]" value="{{ $service->id }}" class="w-5 h-5 shrink-0 accent-gold" @checked(in_array($service->id, $checkedServiceIds))>
+                    <span>{{ $service->name }} ({{ $service->duration_label }})</span>
+                </label>
             @endforeach
-        </select>
-        @error('service_id') <p id="service_id-error" class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
-    </div>
+        </div>
+        @error('service_ids') <p id="service_ids-error" class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
+        @error('service_ids.*') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
+    </fieldset>
 
     <div class="grid sm:grid-cols-2 gap-4">
         <div>

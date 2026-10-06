@@ -32,7 +32,7 @@ class UpdateAdminAppointmentRequest extends StoreAdminAppointmentRequest
         $appointment = $this->route('appointment');
 
         return array_merge(parent::rules(), [
-            'service_id' => ['required', 'integer', Rule::exists('services', 'id')->where(
+            'service_ids.*' => ['distinct', 'integer', Rule::exists('services', 'id')->where(
                 fn (Builder $query) => $query->where('is_active', true)->orWhereIn('id', $appointment->items()->pluck('service_id'))
             )],
             'force' => ['nullable', 'string', 'max:100'],
@@ -41,12 +41,15 @@ class UpdateAdminAppointmentRequest extends StoreAdminAppointmentRequest
     }
 
     /**
-     * Identifies the service, date and time a "save anyway" confirmation
-     * applies to.
+     * Identifies the service list (sorted, so the same set in any order
+     * matches), date and time a "save anyway" confirmation applies to.
      */
     public function slotKey(): string
     {
-        return implode('|', [$this->validated('service_id'), $this->validated('date'), $this->validated('time')]);
+        $ids = $this->validated('service_ids');
+        sort($ids);
+
+        return implode('|', [implode(',', $ids), $this->validated('date'), $this->validated('time')]);
     }
 
     public function version(): int
