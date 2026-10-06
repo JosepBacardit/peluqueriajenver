@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Service;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -84,8 +85,9 @@ test('for an existing email it changes nothing when the change is declined', fun
     expect($user->fresh()->password)->toBe($originalHash);
 });
 
-test('the database seeder never creates admin accounts', function () {
+test('the database seeder never creates admin accounts, but does seed the real service catalogue', function () {
     $this->seed();
 
     expect(User::count())->toBe(0);
+    expect(Service::count())->toBe(24);
 });
