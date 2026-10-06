@@ -76,8 +76,13 @@
                         <a href="#cita-{{ $appointment->id }}"
                            class="flex items-center overflow-hidden px-1 text-[11px] leading-tight bg-[#1c1c1c] border {{ $segment['overCapacity'] ? 'border-amber-400' : 'border-gold/40' }} hover:border-gold"
                            style="{{ $gridArea }}"
-                           title="{{ $appointment->starts_at->format('H:i') }}–{{ $appointment->ends_at->format('H:i') }} {{ $appointment->services_label }}, {{ $appointment->customer_name }}"
-                           aria-label="{{ $datePrefix }}{{ $appointment->starts_at->format('H:i') }} {{ $appointment->services_label }}, {{ $appointment->customer_name }}{{ $segment['overCapacity'] ? ', sobre capacidad' : '' }}, plaza {{ $segment['lane'] + 1 }}">
+                           {{-- PRF-130: the full detail, including the
+                                total duration (durationMinutes(): just
+                                starts_at/ends_at, no items() — no N+1),
+                                for whoever can't read the truncated text
+                                below or the grid at all. --}}
+                           title="{{ $appointment->starts_at->format('H:i') }}–{{ $appointment->ends_at->format('H:i') }} ({{ \App\Models\Service::formatDuration($appointment->durationMinutes()) }}) {{ $appointment->services_label }}, {{ $appointment->customer_name }}"
+                           aria-label="{{ $datePrefix }}{{ $appointment->starts_at->format('H:i') }} {{ $appointment->services_label }}, duración {{ \App\Models\Service::formatDuration($appointment->durationMinutes()) }}, {{ $appointment->customer_name }}{{ $segment['overCapacity'] ? ', sobre capacidad' : '' }}, plaza {{ $segment['lane'] + 1 }}">
                             <span class="block truncate w-full">
                                 <span class="font-semibold text-gold">{{ $appointment->starts_at->format('H:i') }}</span>
                                 {{ $appointment->customer_name }}@unless ($compact) · {{ $appointment->services_label }}@endunless

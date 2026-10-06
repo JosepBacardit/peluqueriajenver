@@ -1,7 +1,7 @@
 <x-mail::message>
 # Nueva cita online
 
-- **Servicio:** {{ $appointment->services_label }}
+@include('mail.partials.appointment-services')
 - **Día:** {{ ucfirst($appointment->dayLabel()) }}
 - **Hora:** {{ $appointment->starts_at->format('H:i') }}–{{ $appointment->ends_at->format('H:i') }}
 - **Nombre:** {{ $appointment->customer_name }}

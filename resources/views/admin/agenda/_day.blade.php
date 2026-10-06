@@ -28,6 +28,12 @@
                     <p class="text-lg">
                         <span class="text-gold font-semibold">{{ $appointment->starts_at->format('H:i') }}–{{ $appointment->ends_at->format('H:i') }}</span>
                         · {{ $appointment->services_label }}
+                        {{-- PRF-130: the total duration, spelled out next
+                             to the summary — durationMinutes() is just
+                             starts_at/ends_at, already loaded, so this
+                             never needs items() (no N+1, same number of
+                             queries as before this card existed). --}}
+                        <span class="text-sm text-gray-400">({{ \App\Models\Service::formatDuration($appointment->durationMinutes()) }})</span>
                     </p>
                     <p>
                         {{ $appointment->customer_name }} · {{ $appointment->customer_phone }}

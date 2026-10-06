@@ -5,7 +5,7 @@ Hola, {{ $appointment->customer_name }}:
 
 Te esperamos en Peluquería Jenver.
 
-- **Servicio:** {{ $appointment->services_label }}
+@include('mail.partials.appointment-services')
 - **Día:** {{ ucfirst($appointment->dayLabel()) }}
 - **Hora:** {{ $appointment->starts_at->format('H:i') }}
 - **Dónde:** C/ Lleida, 21 · 08110 Montcada i Reixac

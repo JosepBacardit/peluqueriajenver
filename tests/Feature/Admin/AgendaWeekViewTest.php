@@ -194,7 +194,7 @@ test('the week view desktop grid links each appointment block to its card below'
     // Review finding M2: Semana's columns prefix every aria-label with
     // their own day; review finding N6 (no visible lane header fits a
     // narrow column): the plaza is folded into the aria-label instead.
-    expect($html)->toContain('aria-label="miércoles 9, 11:00 Peinado, Marta Ruiz, plaza 1"');
+    expect($html)->toContain('aria-label="miércoles 9, 11:00 Peinado, duración 30 min, Marta Ruiz, plaza 1"');
     expect($html)->toContain('id="cita-'.$appointment->id.'"'); // the card it jumps to
 });
 
