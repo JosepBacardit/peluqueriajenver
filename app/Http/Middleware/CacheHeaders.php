@@ -19,11 +19,24 @@ class CacheHeaders
             $response->header('Expires', gmdate('D, d M Y H:i:s \G\M\T', time() + 31536000));
             $response->header('Pragma', 'public');
         }
-        // Cache HTML pages (24 hours for homepage, 7 days for others)
-        elseif ($request->getMethod() === 'GET' && !$request->isJson() && !$this->isApi($path)) {
-            $maxAge = $path === '/' ? 86400 : 604800;
-            $response->header('Cache-Control', "public, max-age=$maxAge, must-revalidate");
-            $response->header('Expires', gmdate('D, d M Y H:i:s \G\M\T', time() + $maxAge));
+        // Public HTML pages (2026-10-06, user's decision): no long
+        // max-age any more — a schedule or "Reserva online" change must
+        // show up without waiting out a stale copy. Instead, an ETag
+        // from the rendered body lets the browser revalidate on every
+        // visit with a conditional GET, answered 304 (no body) whenever
+        // the content has not actually changed; only a 2xx body gets one
+        // (never a redirect, where a wrongly-matched If-None-Match would
+        // turn a 3xx into a 304 the browser would not follow).
+        elseif ($request->getMethod() === 'GET' && ! $request->isJson() && ! $this->isApi($path)) {
+            $response->header('Cache-Control', 'no-cache, private');
+
+            if ($response->isSuccessful()) {
+                $response->setEtag(md5($response->getContent()));
+                // A match turns this into a 304 with the body stripped;
+                // Cache-Control, ETag and the security headers below
+                // still go out as usual.
+                $response->isNotModified($request);
+            }
         }
         // Don't cache API responses
         else {
