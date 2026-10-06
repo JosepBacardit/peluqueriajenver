@@ -72,3 +72,35 @@ test('the settings module requires an authenticated user', function () {
     $this->put(route('admin.settings.update'), bookingSettingsPayload())->assertRedirect(route('login'));
     expect(BookingSetting::current()->capacity)->toBe(2);
 });
+
+/**
+ * Review finding M2 (.ai/reviews/opening-hours-ux.md, 2026-10-06): PRF-137
+ * ("guardar los demás ajustes sin tocar la casilla no debe desactivarla
+ * por sorpresa") exercised through the real form fields, via
+ * BookingSettingsController/Request, not OnlineBookingToggleTest's
+ * BookingSetting::current()->update() shortcut.
+ */
+test('saving the other settings through the real form, with "online_booking_enabled" absent, leaves the switch as it was', function () {
+    expect(BookingSetting::onlineBookingEnabled())->toBeTrue();
+
+    $this->put(route('admin.settings.update'), bookingSettingsPayload())
+        ->assertRedirect(route('admin.settings.edit'));
+
+    expect(BookingSetting::onlineBookingEnabled())->toBeTrue();
+});
+
+test('the hidden "0" (box unchecked) turns online booking off through the real form', function () {
+    $this->put(route('admin.settings.update'), bookingSettingsPayload(['online_booking_enabled' => '0']))
+        ->assertRedirect(route('admin.settings.edit'));
+
+    expect(BookingSetting::onlineBookingEnabled())->toBeFalse();
+});
+
+test('the checkbox at "1" turns online booking back on through the real form', function () {
+    BookingSetting::current()->update(['online_booking_enabled' => false]);
+
+    $this->put(route('admin.settings.update'), bookingSettingsPayload(['online_booking_enabled' => '1']))
+        ->assertRedirect(route('admin.settings.edit'));
+
+    expect(BookingSetting::onlineBookingEnabled())->toBeTrue();
+});

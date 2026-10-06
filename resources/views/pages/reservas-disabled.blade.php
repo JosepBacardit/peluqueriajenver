@@ -30,7 +30,10 @@
             <p>{{ \App\Booking\OpeningHoursSummary::text() }}</p>
         </div>
 
-        <a href="{{ route('contacto') }}" class="inline-block text-gold hover:text-gold-light transition-colors font-semibold">
+        {{-- Review finding N1 (coordinator): measured 24px tall before;
+             min-h-11 + inline-flex brings it to the same 44px touch
+             target as the call/WhatsApp buttons above. --}}
+        <a href="{{ route('contacto') }}" class="inline-flex items-center justify-center min-h-11 text-gold hover:text-gold-light transition-colors font-semibold">
             {{ __('reservas.disabled.contact_link') }}
         </a>
     </div>

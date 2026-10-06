@@ -33,10 +33,14 @@ test('/reservas answers 200 at its own url with a phone/whatsapp page while the 
     expect($html)->toContain('La reserva online no está disponible en este momento. Pide tu cita por teléfono o WhatsApp.');
     expect($html)->toContain('href="tel:+34633912050"');
     expect($html)->toContain('href="https://wa.me/34633912050');
-    expect($html)->toContain('min-h-11'); // the two buttons meet the 44px touch target
     expect($html)->toContain('C/ Lleida, 21'); // address
     expect($html)->toContain('Martes a sábado: 9:00–19:00 · Domingo y lunes: cerrado'); // OpeningHoursSummary
     expect($html)->toContain('href="'.route('contacto').'"');
+
+    // The two buttons and the "Ver más formas de contactar" link all meet
+    // the 44px touch target (review finding N1, coordinator: the link
+    // measured 24px before).
+    expect(substr_count($html, 'min-h-11'))->toBe(3);
 });
 
 test('/reservas shows the normal booking form while the switch is on', function () {

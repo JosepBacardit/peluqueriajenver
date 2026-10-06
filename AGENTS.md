@@ -58,15 +58,38 @@ pre-filled message per page); the salon records those in the admin agenda.
 ## Booking system and admin panel
 
 - **Admin panel** at `/admin`, hand-made Blade (no Filament/Livewire, user
-  decision 2026-10-03), behind Laravel's session `auth` with a hand-made
+  decision 2026-10-03), behind Laravel's session `auth` (plus
+  `auth.session`, 2026-10-06: see "Mi cuenta" below) with a hand-made
   login (`Admin\LoginController`, 5 failed attempts per minute per
-  email+IP). There is no public registration and no password reset screen.
-  Every account has the same permissions.
-- **Accounts:** created (or their password changed) only with
-  `php artisan admin:create-user`, which asks for the password
-  interactively. The repository is public: never seed accounts or commit
-  credentials (`DatabaseSeeder` is intentionally empty). On the VPS run it
-  as `deploy`, like every other `artisan` call.
+  email+IP). There is no public registration. Every account has the same
+  permissions, and a panel account can never change another's password
+  (see "Mi cuenta").
+- **Accounts:** created (or their password changed by someone with server
+  access) only with `php artisan admin:create-user`, which asks for the
+  password interactively — this is also the way to recover an account
+  whose own user forgot their password, since the panel itself (`Mi
+  cuenta`) refuses to touch anyone else's. The repository is public:
+  `DatabaseSeeder` never seeds accounts. A separate `AdminUsersSeeder`
+  exists only because the user explicitly asked for two named accounts
+  with a known password (2026-10-06, their own call, against this
+  project's own instinct) — it is **not** called from `DatabaseSeeder`
+  and only ever runs by hand: `php artisan db:seed --class=AdminUsersSeeder`
+  (as `deploy`/`www-data`, like every other `artisan` call). Never run it
+  without being asked to by name.
+- **Mi cuenta** (`/admin/cuenta`, 2026-10-06): the only way to change a
+  password from the panel, and only your own. `User::MIN_PASSWORD_LENGTH`
+  (12) is shared with `admin:create-user`'s own check, so the two can
+  never drift apart. The `admin.` route group carries `auth.session`
+  (`Illuminate\Session\Middleware\AuthenticateSession`, a framework
+  default alias — nothing to register) specifically so
+  `Auth::logoutOtherDevices()` in `AccountController::updatePassword()`
+  has something to act on: that middleware compares, on every request,
+  the password hash a session has cached against the user's current one,
+  and signs out whichever session still holds the old one on its next
+  request — the session that just made the change re-syncs itself right
+  after its own response, so it is never the one logged out by its own
+  change. `password-change` (`AppServiceProvider`) throttles attempts by
+  user id, not IP (it is already authenticated).
 - **Adding a module:** add one entry to the `$modules` array at the top of
   `resources/views/layouts/admin.blade.php` plus its routes inside the
   `auth` group in `routes/web.php`. Admin UI strings are written directly
@@ -76,7 +99,16 @@ pre-filled message per page); the salon records those in the admin agenda.
   limit, and the "Reserva online activa" switch) live in the single-row
   `booking_settings` table and the weekly schedule in `opening_hours`; both
   are created with their default values by their migrations. Services are
-  not seeded: the salon enters them. While the switch is off
+  not entered by hand: `ServiceCatalogSeeder` (2026-10-06, called from
+  `DatabaseSeeder` in every environment, including production) seeds the
+  salon's real 24-service catalogue, grouped by family in `sort_order`,
+  with no price (the salon sets those from the panel) — the few the site
+  advertises but the hairdresser never confirmed start `is_active = false`,
+  for the salon to turn on once she does. Editing a service afterwards
+  (from the panel, or by re-running this seeder) never changes an
+  appointment that already booked it: its name, duration and price are
+  copied once into `appointment_services` at booking time (PRF-126), never
+  read back from the service. While the switch is off
   (`BookingSetting::onlineBookingEnabled()`), `/reservas` keeps its URL and
   answers 200 with a phone/WhatsApp page instead of the form
   (`BookingController::index()`), a POST is rejected before any validation
@@ -402,8 +434,12 @@ Blocking prerequisites, all pending as of 2026-10-03:
   `appointments` would lack `services_label`), so ask the user before
   going further. See also "Production database".
 - **Admin account:** after deploying, create at least one with
-  `php artisan admin:create-user` (as `deploy`), then let the salon enter
-  its services in `/admin/servicios`. Until a bookable service exists,
+  `php artisan admin:create-user` (as `deploy`). `php artisan db:seed`
+  (if ever run) seeds the real service catalogue (`ServiceCatalogSeeder`)
+  but never an account; run `db:seed --class=AdminUsersSeeder` only if
+  asked to by name. The salon still reviews/edits the seeded catalogue
+  (and activates the services marked "a confirmar") in
+  `/admin/servicios`. Until at least one bookable service is active,
   `/reservas` shows the "call or WhatsApp" message.
 - **Cron:** add the entry above.
 - **nginx:** confirm the server config adds no HTML caching of its own —

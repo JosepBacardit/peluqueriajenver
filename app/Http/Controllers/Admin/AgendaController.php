@@ -65,6 +65,17 @@ class AgendaController extends Controller
         // "Reserva online desactivada" banner, instead of a second,
         // separate query for the banner on top of dayData()/weekData()'s
         // own (both already fixed-query-count, PRF-109/PRF-118).
+        //
+        // Review finding L3: this does add one query to vista Mes, which
+        // never read BookingSetting before — not trivial to remove, since
+        // the banner is meant to show on Mes too (an admin flipping to
+        // that tab should not stop seeing it), and showing it there
+        // needs this same read regardless of how the code is shaped;
+        // moving it inside match()'s 'mes' arm would just be the same
+        // query under a different line, not a real saving. Justified,
+        // not fixed: one extra cheap read per Mes page load, in exchange
+        // for the banner never going missing on the one tab that doesn't
+        // otherwise touch BookingSetting.
         $settings = BookingSetting::current();
 
         return view('admin.agenda.index', [

@@ -73,6 +73,66 @@ test('the ETag changes when the online booking switch changes', function () {
     expect($etagAfter)->not->toBe($etagBefore);
 });
 
+/**
+ * Review finding M1 (.ai/reviews/opening-hours-ux.md, 2026-10-06): a HEAD
+ * request to a public page used to fall through to the "no-store, no
+ * ETag" branch meant for the API/admin, since Laravel keeps
+ * $request->getMethod() as "HEAD" even though it routes it like a GET.
+ * NGINX-CACHE-CONFIG.md's own verification command is `curl -I` — a HEAD
+ * request — so this must behave exactly like GET on the same page.
+ */
+test('a HEAD request gets the same no-cache + ETag as the equivalent GET (M1)', function (string $path) {
+    $get = $this->get($path)->assertOk();
+    $head = $this->head($path)->assertOk();
+
+    expect($head->headers->get('Cache-Control'))->toBe($get->headers->get('Cache-Control'));
+    expect($head->headers->get('ETag'))->toBe($get->headers->get('ETag'));
+    expect($head->headers->get('ETag'))->not->toBeEmpty();
+    // Still a real HEAD response: no body, per RFC 2616 §14.13.
+    expect($head->getContent())->toBe('');
+})->with(['home' => '/', 'contacto' => '/contacto']);
+
+test('HEAD /reservas keeps the no-store policy, not the public ETag branch', function () {
+    $response = $this->head('/reservas');
+
+    expect($response->headers->get('Cache-Control'))->toContain('no-store');
+    expect($response->headers->get('ETag'))->toBeNull();
+});
+
+/**
+ * Review finding L1: the ETag scheme only ever answers 304 because none
+ * of these pages render a CSRF token, old() input or a session-dependent
+ * notice. Two different protections for the same assumption: the
+ * rendered HTML never carries the literal markers a form or a flash
+ * message would leave, and, separately, requesting the same page twice
+ * in the same session produces the exact same ETag (if either stopped
+ * being true, this would start failing instead of just quietly serving
+ * 200 instead of 304 on every single visit).
+ */
+test('no public cached page embeds a CSRF token or a session id (L1)', function (string $path) {
+    $html = $this->get($path)->assertOk()->getContent();
+
+    expect($html)->not->toContain('name="_token"');
+    expect($html)->not->toContain('csrf-token');
+})->with([
+    'home' => '/',
+    'contacto' => '/contacto',
+    'color-mechas' => '/color-y-mechas',
+    'corte-tratamientos' => '/corte-y-tratamientos',
+    'peinados-eventos' => '/peinados-eventos',
+    'belleza-estetica' => '/belleza-estetica',
+]);
+
+test('the same session gets the exact same ETag on repeated visits (L1)', function (string $path) {
+    $first = $this->get($path)->assertOk()->headers->get('ETag');
+    $second = $this->get($path)->assertOk()->headers->get('ETag');
+    $third = $this->get($path)->assertOk()->headers->get('ETag');
+
+    expect($first)->not->toBeEmpty();
+    expect($second)->toBe($first);
+    expect($third)->toBe($first);
+})->with(['home' => '/', 'contacto' => '/contacto']);
+
 test('a 404 page gets no ETag and no special treatment', function () {
     $response = $this->get('/esta-pagina-no-existe');
 
