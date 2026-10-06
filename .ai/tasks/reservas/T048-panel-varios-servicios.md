@@ -5,8 +5,16 @@
 - **Depende de:** T046
 - **Modelo:** Claude Sonnet 5.5 · **Esfuerzo:** `high`
 - **Motivo:** formularios y agenda del panel sobre la interfaz de T046. La concurrencia ya está resuelta en las Actions.
-- **Estado:** pending
-- **PR / rama:** `feature/multi-service-appointments`
+- **Estado:** done
+- **PR / rama:** `feature/multi-service-appointments`, commit `121ed38`.
+
+## Resolución
+
+`create`/`edit` cambian el `<select>` por casillas (`service_ids[]`, hasta el máximo, con `aria-invalid`/`aria-describedby`); `edit` marca ya todos los servicios de la cita, no solo el primero (el error que T046 avisó). `StoreAdminAppointmentRequest`/`UpdateAdminAppointmentRequest` validan `service_ids`/`service_ids.*`; `slotKey()` identifica la lista ordenada (no un id suelto), así que «Guardar igualmente» sigue encajando aunque el reenvío llegue en otro orden.
+
+Agenda: `AgendaController::serviciosFromQuery()` sustituye a `servicioFromQuery()` y devuelve una `Collection` (1 a `MAX_SERVICES`, inválidos ignorados en silencio); «Cabe» usa la suma de duraciones. El selector pasa de `<select>` a un `<details>` con casillas (cómodo a una mano, sin JavaScript); cada enlace que lleva `servicio` usa un escalar con un solo servicio y el array solo con más de uno, para no alargar las URL del caso más común.
+
+Tests: `tests/Feature/Admin/MultiServiceAdminTest.php` (nuevo, 7 casos) y ampliaciones de `AgendaServiceFilterTest`, `AdminAppointmentTest`, `AdminRescheduleAppointmentTest`.
 
 ## Objetivo
 

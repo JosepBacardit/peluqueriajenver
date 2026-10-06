@@ -5,8 +5,14 @@
 - **Depende de:** T046
 - **Modelo:** Claude Sonnet 5.5 · **Esfuerzo:** `high`
 - **Motivo:** funcionalidad visible en la página pública, sobre la interfaz de T046 y sin tocar el modelo.
-- **Estado:** pending
-- **PR / rama:** `feature/multi-service-appointments`
+- **Estado:** done
+- **PR / rama:** `feature/multi-service-appointments`, commit `590dea3`.
+
+## Resolución
+
+Paso 1 pasa de enlaces a casillas (`servicio[]`, de 1 a `Appointment::MAX_SERVICES`), con un formulario `GET` sin JavaScript obligatorio y un total en vivo con JS vanilla mínimo (oculto sin JS; el total se ve en el paso 2 de todas formas). `?servicio=3` (escalar) sigue funcionando; una selección repetida, con más del máximo o con un servicio no reservable online se rechaza entera, de vuelta al paso 1 con un aviso. `StoreBookingRequest` cambia `service_id` por `service_ids` (array, `distinct`, hasta el máximo); `BookingController::store()` rechaza la reserva entera si algún id no resuelve a un servicio reservable online, con el mismo mensaje de «hora no disponible» (PRF-128). El calendario, las horas y el total usan la suma de duraciones. La vuelta tras un error conserva toda la selección en la URL.
+
+Tests: `tests/Feature/Booking/MultiServiceBookingTest.php` (nuevo, 12 casos) y ajustes de `service_id`→`service_ids` en `PublicBookingTest`, `AppointmentNotificationsTest`, `BookingAbuseLimitsTest`.
 
 ## Objetivo
 

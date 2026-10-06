@@ -5,8 +5,14 @@
 - **Depende de:** T046
 - **Modelo:** Claude Sonnet 5.5 · **Esfuerzo:** `medium`
 - **Motivo:** presentación sobre datos que ya existen; no hay lógica nueva.
-- **Estado:** pending
-- **PR / rama:** `feature/multi-service-appointments`
+- **Estado:** done
+- **PR / rama:** `feature/multi-service-appointments`, commit `faf6b13`.
+
+## Resolución
+
+Un parcial compartido (`mail/partials/appointment-services.blade.php`) lista cada servicio con su duración más el total; lo incluyen los 5 correos. `/cita/{token}` hace lo mismo. La tarjeta de la agenda y el bloque de la rejilla añaden la duración total (`durationMinutes()`, solo `starts_at`/`ends_at`, nunca `items()`, así que el número de consultas de la agenda no cambia); el bloque sigue recortando el texto visible, con `title`/`aria-label` completos. Regeneradas las vistas previas de `storage/app/mail-preview/` (local, sin tocar MySQL: la cita y sus servicios se construyen en memoria con `setRelation()`).
+
+Tests: `tests/Feature/Booking/MultiServiceDisplayTest.php` (nuevo, 13 casos: los 5 correos, `/cita`, la tarjeta, el bloque, y Markdown en el nombre de un servicio); un `aria-label` exacto actualizado en `AgendaWeekViewTest`.
 
 ## Objetivo
 
