@@ -4,14 +4,26 @@ namespace App\Http\Requests\Admin;
 
 use App\Models\OpeningHour;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 /**
- * The weekly schedule form: for each ISO weekday (1-7), two optional
- * ranges `days[<weekday>][0|1][opens|closes]` in "HH:MM".
+ * The weekly schedule form. For each ISO weekday (1-7):
+ * `days[<weekday>][closed]` (checkbox) and, for each of up to two ranges,
+ * `days[<weekday>][<0|1>][opens_hour|opens_minute|closes_hour|closes_minute]`
+ * (native `<select>`s instead of `<input type="time">`, which the iPhone
+ * cannot clear — PRF-133). An hour of '' removes that range; its minute is
+ * then irrelevant. `closed` wins over anything sent for that day's ranges,
+ * even a tampered request (PRF-134).
  */
 class OpeningHoursRequest extends FormRequest
 {
+    /** @var list<string> */
+    public const HOURS = ['07', '08', '09', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22'];
+
+    /** @var list<string> */
+    public const MINUTES = ['00', '15', '30', '45'];
+
     public function authorize(): bool
     {
         return true;
@@ -22,32 +34,26 @@ class OpeningHoursRequest extends FormRequest
      */
     public function rules(): array
     {
-        $time = ['nullable', 'date_format:H:i', 'regex:/^\d{2}:\d[05]$/'];
+        $hour = ['nullable', Rule::in(['', ...self::HOURS])];
+        $minute = ['nullable', Rule::in(self::MINUTES)];
 
         return [
             'days' => ['required', 'array'],
-            'days.*' => ['array', 'max:2'],
-            'days.*.*.opens' => $time,
-            'days.*.*.closes' => $time,
-        ];
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'days.*.*.opens.regex' => 'Las horas deben ser múltiplos de 5 minutos.',
-            'days.*.*.closes.regex' => 'Las horas deben ser múltiplos de 5 minutos.',
-            'days.*.*.opens.date_format' => 'Escribe la hora con el formato HH:MM.',
-            'days.*.*.closes.date_format' => 'Escribe la hora con el formato HH:MM.',
+            'days.*' => ['array'],
+            'days.*.closed' => ['nullable', 'boolean'],
+            'days.*.0' => ['nullable', 'array'],
+            'days.*.1' => ['nullable', 'array'],
+            'days.*.*.opens_hour' => $hour,
+            'days.*.*.opens_minute' => $minute,
+            'days.*.*.closes_hour' => $hour,
+            'days.*.*.closes_minute' => $minute,
         ];
     }
 
     /**
      * Cross-field checks per day: complete ranges, end after start, and a
-     * second range that starts after the first one ends.
+     * second range that starts after the first one ends. Skipped entirely
+     * for a day marked "closed".
      *
      * @return array<int, callable>
      */
@@ -58,8 +64,12 @@ class OpeningHoursRequest extends FormRequest
                 return;
             }
 
-            foreach ($this->ranges() as $weekday => $ranges) {
-                $error = $this->dayError($this->input("days.{$weekday}", []));
+            foreach (array_keys(OpeningHour::WEEKDAY_NAMES) as $weekday) {
+                if ($this->dayClosed($weekday)) {
+                    continue;
+                }
+
+                $error = $this->dayError($this->rawRanges($weekday));
 
                 if ($error !== null) {
                     $validator->errors()->add("days.{$weekday}", OpeningHour::WEEKDAY_NAMES[$weekday].': '.$error);
@@ -69,7 +79,8 @@ class OpeningHoursRequest extends FormRequest
     }
 
     /**
-     * Complete ranges per weekday, as minutes since midnight.
+     * Complete ranges per weekday, as "HH:MM" strings ready to save. A day
+     * marked "closed" never contributes a range, whatever its selects held.
      *
      * @return array<int, list<array{opens: string, closes: string}>>
      */
@@ -80,8 +91,12 @@ class OpeningHoursRequest extends FormRequest
         foreach (array_keys(OpeningHour::WEEKDAY_NAMES) as $weekday) {
             $ranges[$weekday] = [];
 
-            foreach ((array) $this->input("days.{$weekday}", []) as $range) {
-                if (filled($range['opens'] ?? null) && filled($range['closes'] ?? null)) {
+            if ($this->dayClosed($weekday)) {
+                continue;
+            }
+
+            foreach ($this->rawRanges($weekday) as $range) {
+                if ($range['opens'] !== null) {
                     $ranges[$weekday][] = ['opens' => $range['opens'], 'closes' => $range['closes']];
                 }
             }
@@ -90,23 +105,55 @@ class OpeningHoursRequest extends FormRequest
         return $ranges;
     }
 
+    private function dayClosed(int $weekday): bool
+    {
+        return $this->boolean("days.{$weekday}.closed");
+    }
+
     /**
-     * @param  array<int, array{opens?: string|null, closes?: string|null}>  $dayInput
+     * The day's up to two ranges as "HH:MM" strings (or null when their
+     * hour select was left at "—").
+     *
+     * @return list<array{opens: string|null, closes: string|null}>
      */
-    private function dayError(array $dayInput): ?string
+    private function rawRanges(int $weekday): array
+    {
+        $ranges = [];
+
+        foreach ([0, 1] as $index) {
+            $range = (array) $this->input("days.{$weekday}.{$index}", []);
+
+            $ranges[] = [
+                'opens' => $this->combine($range['opens_hour'] ?? '', $range['opens_minute'] ?? '00'),
+                'closes' => $this->combine($range['closes_hour'] ?? '', $range['closes_minute'] ?? '00'),
+            ];
+        }
+
+        return $ranges;
+    }
+
+    private function combine(string $hour, string $minute): ?string
+    {
+        return $hour === '' ? null : sprintf('%02d:%02d', (int) $hour, (int) $minute);
+    }
+
+    /**
+     * @param  list<array{opens: string|null, closes: string|null}>  $dayRanges
+     */
+    private function dayError(array $dayRanges): ?string
     {
         $previousClose = null;
 
-        foreach ($dayInput as $range) {
-            $opens = $range['opens'] ?? null;
-            $closes = $range['closes'] ?? null;
+        foreach ($dayRanges as $range) {
+            $opens = $range['opens'];
+            $closes = $range['closes'];
 
-            if (blank($opens) && blank($closes)) {
+            if ($opens === null && $closes === null) {
                 continue;
             }
 
-            if (blank($opens) || blank($closes)) {
-                return 'cada tramo necesita hora de inicio y de fin.';
+            if ($opens === null || $closes === null) {
+                return 'Elige inicio y fin, o deja los dos en —.';
             }
 
             if (OpeningHour::toMinutes($closes) <= OpeningHour::toMinutes($opens)) {
