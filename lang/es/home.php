@@ -122,7 +122,7 @@ return [
     'reserva' => [
         'subtitle' => '¿Lista para tu cambio de look?',
         'title' => 'Reserva tu cita<br>en Peluquería Jenver',
-        'description' => 'Atendemos en C/ Lleida, 21 · Montcada i Reixac · Barcelona<br>Abiertos de martes a sábado, de 9:00 a 19:00',
+        'description' => 'Atendemos en C/ Lleida, 21 · Montcada i Reixac · Barcelona<br>:hours',
         'online_cta' => 'Reservar online',
         'phone_cta' => 'Llamar ahora: 633 912 050',
         'whatsapp_cta' => 'WhatsApp',
@@ -131,7 +131,7 @@ return [
     // Structured data (FAQPage) of the home page
     'faq' => [
         'online_question' => '¿Puedo pedir cita online?',
-        'online_answer' => 'Sí. Desde nuestra página de reservas eliges el servicio, el día y la hora entre los huecos libres, y recibes la confirmación por correo. Si lo prefieres, también puedes llamarnos o escribirnos por WhatsApp al 633 912 050. Nuestro horario es de martes a sábado de 9:00 a 19:00.',
+        'online_answer' => 'Sí. Desde nuestra página de reservas eliges el servicio, el día y la hora entre los huecos libres, y recibes la confirmación por correo. Si lo prefieres, también puedes llamarnos o escribirnos por WhatsApp al 633 912 050. Nuestro horario: :hours.',
     ],
 
     // Contacto Section
@@ -144,7 +144,6 @@ return [
         'address_city' => 'Barcelona, España',
         'phone_label' => 'Teléfono',
         'hours_label' => 'Horario',
-        'hours' => 'Martes a Sábado: 9:00 – 19:00<br>Lunes y Domingo: Cerrado',
         'maps_link' => 'Ver en Google Maps →',
     ],
 ];

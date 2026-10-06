@@ -340,7 +340,7 @@
             {!! __('home.reserva.title') !!}
         </h2>
         <p class="text-gray-300 text-lg mb-8">
-            {!! __('home.reserva.description') !!}
+            {!! __('home.reserva.description', ['hours' => \App\Booking\OpeningHoursSummary::text()]) !!}
         </p>
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -385,7 +385,7 @@
                     <div>
                         <p class="text-gold font-semibold mb-2">🕐 {{ __('home.contacto.hours_label') }}</p>
                         <p class="leading-relaxed">
-                            {!! __('home.contacto.hours') !!}
+                            {{ \App\Booking\OpeningHoursSummary::text() }}
                         </p>
                     </div>
 

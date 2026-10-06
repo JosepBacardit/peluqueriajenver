@@ -16,7 +16,7 @@ $faq = [
             "name" => __('home.faq.online_question'),
             "acceptedAnswer" => [
                 "@type" => "Answer",
-                "text" => __('home.faq.online_answer')
+                "text" => __('home.faq.online_answer', ['hours' => \App\Booking\OpeningHoursSummary::text()])
             ]
         ],
         [

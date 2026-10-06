@@ -28,20 +28,7 @@ $schema = [
         "latitude" => 41.4897,
         "longitude" => 2.1898
     ],
-    "openingHoursSpecification" => [
-        [
-            "@type" => "OpeningHoursSpecification",
-            "dayOfWeek" => ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-            "opens" => "09:00",
-            "closes" => "19:00"
-        ],
-        [
-            "@type" => "OpeningHoursSpecification",
-            "dayOfWeek" => ["Monday", "Sunday"],
-            "opens" => "00:00",
-            "closes" => "00:00"
-        ]
-    ],
+    "openingHoursSpecification" => \App\Booking\OpeningHoursSummary::schemaSpecifications(),
     "currenciesAccepted" => "EUR",
     "paymentAccepted" => "Cash, Credit Card",
     "areaServed" => ["Montcada i Reixac", "Ripollet", "Cerdanyola del Vallès", "Santa Coloma de Gramenet"],

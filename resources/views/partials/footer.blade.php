@@ -52,7 +52,7 @@
                     </div>
                     <div>
                         <div class="font-semibold text-gray-300">{{ __('navigation.footer.contact.hours_label') }}</div>
-                        <p>{{ __('navigation.footer.contact.hours') }}</p>
+                        <p>{{ \App\Booking\OpeningHoursSummary::text() }}</p>
                     </div>
                     <a href="https://maps.google.com/?q=Peluquería+Jenver+Carrer+Lleida+21+Montcada+i+Reixac" target="_blank" rel="noopener noreferrer" class="inline-block text-gold hover:text-gold-light transition-colors font-semibold">
                         {{ __('navigation.footer.contact.maps') }}
