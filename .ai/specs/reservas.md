@@ -8,7 +8,7 @@ ARCHITECTURAL. La web pasa de ser solo informativa a guardar datos de clientes, 
 
 ## Resultado para el usuario
 
-- Un **cliente** que entra en la web puede elegir un servicio, ver en un calendario los días y horas libres y reservar una cita sin llamar. Recibe un correo de confirmación con un enlace para cancelarla.
+- Un **cliente** que entra en la web puede elegir uno o varios servicios, ver en un calendario los días y horas libres y reservar una cita sin llamar. Recibe un correo de confirmación con un enlace para cancelarla.
 - Una persona del **salón** puede entrar en un panel privado y gestionar los servicios y su duración, el horario, los cierres, la capacidad y la agenda de citas, incluidas las que llegan por teléfono o WhatsApp.
 
 ## Comportamiento actual
@@ -30,11 +30,12 @@ La única forma de pedir cita es llamar o escribir por WhatsApp. El botón «Res
 - Adaptación del panel y de la reserva pública al móvil, donde el salón trabaja la mayor parte del tiempo (2026-10-05).
 - Vistas Día, Semana y Mes en la agenda del panel, con selector y navegación compartible por URL (2026-10-05).
 - Rejilla horaria de Día y Semana al estilo Google Calendar, con carriles por capacidad y creación de cita tocando un hueco libre (2026-10-05).
+- Varios servicios en una misma cita (de 1 a 5), en la reserva online, el panel, la agenda y los correos (2026-10-06).
 
 ## No-objetivos
 
 - Elegir peluquera o asignar citas a una persona concreta. **Descartado** por decisión del usuario: el salón trabaja con una capacidad común.
-- Varios servicios en una misma cita. **Descartado**: los combos se dan de alta como servicios propios.
+- Varios servicios en una misma cita. **Retomado el 2026-10-06** a petición del usuario (por ejemplo, «corte de pelo hombre» y «arreglo de barba» en la misma cita): ver PRF-125 y siguientes.
 - Cambiar la fecha u hora de una cita ya hecha **desde la página de la clienta**. **Pospuesto**: el cliente sigue cancelando y reservando otra vez. Revisado el 2026-10-05: el salón sí puede moverla desde el panel (PRF-077 y siguientes); solo queda pospuesto el autoservicio de la clienta.
 - Recordatorio por correo antes de la cita y borrado automático de citas antiguas. **Pospuesto** al PR 5.
 - Calendario sin recargar la página. **Pospuesto** al PR 5.
@@ -80,10 +81,10 @@ Reglas de los campos de un servicio (conjunto único de valores válidos, válid
 - **PRF-010.** Una persona del salón **debe** poder dar de alta un servicio con los campos de la tabla. Si algún valor no es válido, ve el error junto al campo y no se guarda nada.
 - **PRF-011.** Una persona del salón **debe** poder editar cualquier campo de un servicio existente con las mismas reglas.
 - **PRF-012.** La lista de servicios del panel **debe** mostrar todos los servicios ordenados por «Orden» y después por nombre, con su duración, precio interno, si es reservable online y si está activo. Sin servicios, muestra «Todavía no hay servicios. Crea el primero para poder recibir reservas.».
-- **PRF-013.** El panel **no debe** permitir borrar servicios. Un servicio que ya no se ofrece se marca como no activo, y sus citas pasadas y futuras se conservan con el nombre y la duración que tenían al reservarse.
+- **PRF-013.** El panel **no debe** permitir borrar servicios. Un servicio que ya no se ofrece se marca como no activo, y sus citas pasadas y futuras se conservan con el nombre y la duración que tenían al reservarse. Con varios servicios en una cita (PRF-125), cada uno conserva el nombre y la duración que tenía al reservarse (PRF-126).
 - **PRF-014.** El precio interno **no debe** aparecer en ninguna página pública ni en ningún correo al cliente.
-- **PRF-015.** Cambiar la duración de un servicio **no debe** cambiar la hora de fin de las citas ya existentes.
-- **PRF-016.** Un servicio no activo o no reservable online **no debe** ofrecerse en la página pública de reservas. Un servicio no activo tampoco se ofrece al crear citas desde el panel.
+- **PRF-015.** Cambiar la duración de un servicio **no debe** cambiar la hora de fin de las citas ya existentes. Lo mismo con cada servicio de una cita con varios (PRF-126).
+- **PRF-016.** Un servicio no activo o no reservable online **no debe** ofrecerse en la página pública de reservas. Un servicio no activo tampoco se ofrece al crear citas desde el panel. En una cita con varios servicios, basta con que uno no lo cumpla para rechazarla entera (PRF-128).
 
 ### Horario semanal y ajustes
 
@@ -109,7 +110,7 @@ Reglas de los campos de un servicio (conjunto único de valores válidos, válid
 
 ### Disponibilidad
 
-Una hora de inicio está **disponible** para un servicio cuando se cumple todo esto:
+Una hora de inicio está **disponible** para un servicio (o para varios en la misma cita, con su duración total: PRF-125) cuando se cumple todo esto:
 
 1. La cita entera (de la hora de inicio a la hora de inicio más la duración) cabe dentro de un mismo tramo de apertura de ese día.
 2. En ningún momento de la cita, el número de citas confirmadas que se solapan con ella alcanza la capacidad efectiva. La capacidad efectiva en cada momento es la capacidad del ajuste menos las reducciones de los cierres que cubren ese momento; un cierre total la deja en 0.
@@ -134,13 +135,13 @@ Ejemplos resueltos (capacidad 2, intervalo de 15 minutos, tramo de 09:00 a 19:00
 
 ### Reserva pública
 
-- **PRF-027.** La web **debe** tener una página de reservas propia que muestre los servicios reservables online por orden, con su nombre y duración (por ejemplo, «1 h 30 min»), sin precio. Sin servicios reservables, muestra «Ahora mismo no se pueden hacer reservas online. Llámanos al 633 912 050 o escríbenos por WhatsApp.».
-- **PRF-028.** Al elegir un servicio, la página **debe** mostrar un calendario mensual en el que solo se pueden elegir los días con al menos una hora disponible. Los días sin horas, pasados o fuera de la antelación máxima, se ven pero no se pueden elegir. El calendario permite pasar de mes, sin ir a meses anteriores al actual ni posteriores al del último día reservable.
-- **PRF-029.** Al elegir un día, la página **debe** mostrar todas las horas disponibles de ese día para el servicio, en orden, y el formulario de datos.
+- **PRF-027.** La web **debe** tener una página de reservas propia que muestre los servicios reservables online por orden, con su nombre y duración (por ejemplo, «1 h 30 min»), sin precio. Sin servicios reservables, muestra «Ahora mismo no se pueden hacer reservas online. Llámanos al 633 912 050 o escríbenos por WhatsApp.». Se puede elegir más de un servicio para la misma cita (PRF-127).
+- **PRF-028.** Al elegir un servicio, la página **debe** mostrar un calendario mensual en el que solo se pueden elegir los días con al menos una hora disponible. Los días sin horas, pasados o fuera de la antelación máxima, se ven pero no se pueden elegir. El calendario permite pasar de mes, sin ir a meses anteriores al actual ni posteriores al del último día reservable. Con varios servicios elegidos, cuenta la duración total (PRF-125).
+- **PRF-029.** Al elegir un día, la página **debe** mostrar todas las horas disponibles de ese día para el servicio, en orden, y el formulario de datos. Con varios servicios, las horas son las de la duración total (PRF-125).
 - **PRF-030.** El formulario **debe** pedir: nombre (de 2 a 100 caracteres), teléfono (de 9 a 15 dígitos; se admiten espacios, guiones, paréntesis y un «+» inicial), email (válido, hasta 150 caracteres), observaciones opcionales (hasta 500 caracteres) y la casilla obligatoria «He leído la información sobre protección de datos». Junto al formulario debe aparecer la información básica sobre protección de datos: responsable, finalidad, base legal, destinatarios y derechos, con un enlace a la política de privacidad.
 - **PRF-031.** Con los datos válidos y la hora todavía disponible, la reserva **debe** quedar confirmada en ese momento, sin aprobación del salón. El cliente llega a la página de su cita con el mensaje «Tu cita está confirmada.».
 - **PRF-032.** Con algún dato no válido, la página **debe** volver a mostrar el formulario con el error junto al campo y los datos ya escritos. No se crea ninguna cita.
-- **PRF-033.** La página **no debe** aceptar un servicio no reservable, una hora fuera del intervalo ofrecido, una hora pasada o fuera de la antelación mínima o máxima, aunque se envíe manipulando el formulario. Se muestra «Esa hora ya no está disponible. Elige otra.» y no se crea ninguna cita.
+- **PRF-033.** La página **no debe** aceptar un servicio no reservable, una hora fuera del intervalo ofrecido, una hora pasada o fuera de la antelación mínima o máxima, aunque se envíe manipulando el formulario. Se muestra «Esa hora ya no está disponible. Elige otra.» y no se crea ninguna cita. Tampoco más servicios de los permitidos (PRF-125) ni un servicio repetido (PRF-127).
 - **PRF-034.** Si la hora elegida se ha ocupado mientras el cliente rellenaba el formulario, la página **debe** mostrar «Esa hora ya no está disponible. Elige otra.» con las horas que sigan libres ese día y conservar los datos escritos. No se crea ninguna cita.
 - **PRF-035.** Si ya existe una cita confirmada con el mismo email a la misma hora, la página **no debe** crear otra y debe mostrar «Ya tienes una cita confirmada a esa hora.».
 - **PRF-036.** Un envío que rellena el campo trampa invisible para personas **no debe** crear ninguna cita ni enviar correos. Se responde como si hubiera ido bien, sin datos de ninguna cita.
@@ -149,7 +150,7 @@ Ejemplos resueltos (capacidad 2, intervalo de 15 minutos, tramo de 09:00 a 19:00
 
 ### Página de la cita y cancelación
 
-- **PRF-039.** Cada cita **debe** tener un enlace personal, imposible de adivinar (al menos 40 caracteres aleatorios), que abre su página con el servicio, el día y la hora, el nombre y el estado. El enlace no caduca; solo se sustituye por otro si el salón cambia el email de la cita (PRF-087).
+- **PRF-039.** Cada cita **debe** tener un enlace personal, imposible de adivinar (al menos 40 caracteres aleatorios), que abre su página con el servicio, el día y la hora, el nombre y el estado. El enlace no caduca; solo se sustituye por otro si el salón cambia el email de la cita (PRF-087). Con varios servicios, la página los lista todos con la duración total (PRF-130).
 - **PRF-040.** Un enlace que no corresponde a ninguna cita **debe** mostrar la página de «no encontrado» y no revelar ningún dato.
 - **PRF-041.** El cliente **debe** poder cancelar su cita confirmada desde su página, tras confirmarlo, si falta al menos el plazo para cancelar del ajuste. La página muestra «Tu cita se ha cancelado.» y la hora vuelve a estar disponible.
 - **PRF-042.** Pasado el plazo para cancelar, o con la cita ya empezada, la página **no debe** permitir cancelar y debe mostrar «Ya no se puede cancelar online. Llámanos al 633 912 050.».
@@ -159,15 +160,15 @@ Ejemplos resueltos (capacidad 2, intervalo de 15 minutos, tramo de 09:00 a 19:00
 ### Agenda del panel
 
 - **PRF-045.** La agenda **debe** mostrar las citas de un día (por defecto, hoy) ordenadas por hora, con hora de inicio y fin, servicio, nombre, teléfono, email, observaciones, origen (web o panel) y estado. Se puede ir al día anterior, al siguiente, a hoy o a una fecha concreta. Sin citas ese día, muestra «No hay citas este día.».
-- **PRF-046.** Una persona del salón **debe** poder crear una cita desde el panel con servicio activo, fecha, hora (múltiplo de 5 minutos), nombre, teléfono, email opcional y observaciones. Se aplican las reglas 1 y 2 de disponibilidad, pero no la 3. Una cita del panel no puede empezar antes de ahora.
+- **PRF-046.** Una persona del salón **debe** poder crear una cita desde el panel con servicio activo, fecha, hora (múltiplo de 5 minutos), nombre, teléfono, email opcional y observaciones. Se aplican las reglas 1 y 2 de disponibilidad, pero no la 3. Una cita del panel no puede empezar antes de ahora. La cita del panel puede tener de 1 a 5 servicios activos (PRF-129).
 - **PRF-047.** Si la hora no está disponible, el panel **debe** mostrar «Esa hora no está disponible para este servicio.» y no crear la cita.
 - **PRF-048.** Una persona del salón **debe** poder cancelar cualquier cita confirmada, tras confirmarlo, sin límite de plazo. La cita queda cancelada y su hora vuelve a estar disponible.
 - **PRF-049.** El panel **no debe** permitir borrar citas: las canceladas se conservan en la agenda, marcadas como canceladas.
 
 ### Notificaciones
 
-- **PRF-050.** Al confirmarse una cita con email, el cliente **debe** recibir un correo con el servicio, el día, la hora, la dirección del salón, el teléfono y el enlace personal a su cita (PRF-039). No lleva precio.
-- **PRF-051.** Al confirmarse una cita reservada desde la web, el salón **debe** recibir un correo con todos los datos de la cita y el enlace a la agenda de ese día.
+- **PRF-050.** Al confirmarse una cita con email, el cliente **debe** recibir un correo con el servicio, el día, la hora, la dirección del salón, el teléfono y el enlace personal a su cita (PRF-039). No lleva precio. Con varios servicios, el correo los lista todos con la duración total (PRF-130).
+- **PRF-051.** Al confirmarse una cita reservada desde la web, el salón **debe** recibir un correo con todos los datos de la cita y el enlace a la agenda de ese día. Con varios servicios, el aviso al salón los lista todos con la duración total (PRF-130).
 - **PRF-052.** Si el correo de PRF-050 o PRF-051 no se puede enviar, la cita **debe** quedar confirmada igualmente y el cliente ve la misma página de éxito. El fallo queda registrado para el salón.
 - **PRF-053.** Una tarea periódica **debe** reintentar los avisos de PRF-050 y PRF-051 que no se enviaron, de citas confirmadas que todavía no han empezado y creadas hace más de 5 minutos. Cada aviso se envía como máximo una vez con éxito.
 - **PRF-054.** Cuando el cliente cancela, **debe** recibir un correo que lo confirma, y el salón otro que lo avisa. Cuando cancela el salón, el cliente con email **debe** recibir un correo que le informa y le invita a reservar otra hora. Si alguno falla, la cancelación se mantiene y el fallo queda registrado, sin reintento.
@@ -206,12 +207,12 @@ La imagen del logo de los correos es una excepción a la regla general de servir
 
 ### Edición de una cita desde el panel (2026-10-05)
 
-- **PRF-077.** Una persona del salón **debe** poder cambiar el día, la hora y, si hace falta, el servicio de una cita confirmada que todavía no ha empezado, desde la agenda del panel.
-- **PRF-078.** Al guardar el cambio, se aplican las mismas reglas de disponibilidad que al crear una cita desde el panel (reglas 1 y 2 de la sección «Disponibilidad», sin la regla 3), sin contar la propia cita en el hueco que deja libre.
+- **PRF-077.** Una persona del salón **debe** poder cambiar el día, la hora y, si hace falta, el servicio de una cita confirmada que todavía no ha empezado, desde la agenda del panel. Con varios servicios, se puede cambiar la lista entera (PRF-129).
+- **PRF-078.** Al guardar el cambio, se aplican las mismas reglas de disponibilidad que al crear una cita desde el panel (reglas 1 y 2 de la sección «Disponibilidad», sin la regla 3), sin contar la propia cita en el hueco que deja libre. Con varios servicios, la duración que se comprueba es la total (PRF-125).
 - **PRF-079.** Si el hueco elegido no tiene capacidad suficiente o cae fuera del horario de apertura, el panel **debe** avisarlo con un mensaje que lo explique antes de guardar nada.
 - **PRF-080.** Tras ese aviso, una persona del salón **debe** poder confirmar que quiere guardar el cambio igualmente. El panel **no debe** guardar un cambio con un hueco sin capacidad o fuera de horario sin esa confirmación explícita.
 - **PRF-081.** Una persona del salón **debe** poder editar también el nombre, el teléfono, el email y las observaciones de la clienta al mover la cita, con las mismas reglas de los campos que al crear una cita del panel (PRF-046).
-- **PRF-082.** Si la cita tiene email, la clienta **debe** recibir un correo que informe del cambio con la nueva fecha y hora y el mismo enlace personal a su cita (PRF-039), salvo que en el mismo cambio se haya cambiado su email (PRF-087).
+- **PRF-082.** Si la cita tiene email, la clienta **debe** recibir un correo que informe del cambio con la nueva fecha y hora y el mismo enlace personal a su cita (PRF-039), salvo que en el mismo cambio se haya cambiado su email (PRF-087). Con varios servicios, el correo los lista todos con la duración total (PRF-130).
 - **PRF-083.** Si el correo de PRF-082 no se puede enviar, el cambio **debe** mantenerse igualmente y el fallo queda registrado para el salón, sin reintento automático (igual que PRF-054).
 - **PRF-084.** Una cita cancelada, o una cuya hora ya ha pasado, **no debe** poder moverse: el panel no ofrece la opción de editar en esos casos.
 - **PRF-085.** Mover una cita **no debe** dejar ningún rastro del cambio en ningún campo visible para la clienta (por ejemplo, las observaciones). No se guarda un historial de los cambios de hora.
@@ -268,17 +269,30 @@ Decisión del usuario, 2026-10-05: para encontrar huecos libres al apuntar una c
 - **PRF-117.** Al abrir la vista Día o Semana, la rejilla **debe** desplazarse sola a la hora actual (si el día mostrado es hoy y «ahora» cae dentro del rango) o a la apertura, sin esperar ninguna interacción.
 - **PRF-118.** La vista Semana en pantallas de 768 px o más **debe** usar la misma rejilla horaria en 7 columnas, con el eje de horas una sola vez. En pantallas menores de 768 px, la tira de 7 días **debe** seguir mostrando debajo la rejilla horaria del día elegido (la vista Día).
 - **PRF-119.** La rejilla **debe** ser navegable por teclado, con cada hueco libre y cada bloque de cita como enlace real, en orden cronológico **global** en el HTML — intercalando los carriles por hora, no agrupado primero por carril (resuelta la ambigüedad de la revisión `agenda-timeline-grid`, hallazgo L4) —, con `aria-label` completo que incluya la plaza (PRF-109) y, en Semana, el día de esa columna (hallazgo M2). La rejilla **debe** llevar, además, un enlace «Saltar a las citas» al principio, para no obligar a tabular por cada hueco libre de la vista Día antes de llegar a la lista de tarjetas.
-- **PRF-120.** Encima de la rejilla de Día y Semana (no en Mes), un selector `<select>` **debe** ofrecer «Cualquiera» y cada servicio activo con su duración; elegir uno **debe** resaltar en la rejilla, en cada carril libre de esa media hora, dónde cabe completo (PRF-123, PRF-124). El selector se envía solo con JavaScript mínimo al cambiar; un botón «Ver» **debe** seguir funcionando sin JavaScript.
+- **PRF-120.** Encima de la rejilla de Día y Semana (no en Mes), un selector `<select>` **debe** ofrecer «Cualquiera» y cada servicio activo con su duración; elegir uno **debe** resaltar en la rejilla, en cada carril libre de esa media hora, dónde cabe completo (PRF-123, PRF-124). El selector se envía solo con JavaScript mínimo al cambiar; un botón «Ver» **debe** seguir funcionando sin JavaScript. *Actualización (2026-10-06):* el selector admite varios servicios a la vez (PRF-132).
 
 ### Filtro de servicio en la agenda: base de cálculo (2026-10-05)
 
-- **PRF-121.** Para resaltar dónde cabe un servicio, el panel **debe** decidir si un servicio de duración D cabe empezando a una hora dada con **solo** las reglas 1 y 2 de «Disponibilidad»: la cita completa dentro de un tramo de apertura del día, y sin alcanzar en ningún instante la capacidad efectiva (la capacidad menos las reducciones de los cierres parciales; un cierre total la deja en 0), contando solo las citas confirmadas. **No debe** aplicar la regla 3 (intervalo de la web, antelación mínima ni ventana de reserva), igual que al crear una cita desde el panel. Ese cálculo **no debe** hacer ninguna consulta a la base de datos: usa los tramos, las citas y los cierres que la agenda ya carga para dibujar la rejilla.
+- **PRF-121.** Para resaltar dónde cabe un servicio, el panel **debe** decidir si un servicio de duración D cabe empezando a una hora dada con **solo** las reglas 1 y 2 de «Disponibilidad»: la cita completa dentro de un tramo de apertura del día, y sin alcanzar en ningún instante la capacidad efectiva (la capacidad menos las reducciones de los cierres parciales; un cierre total la deja en 0), contando solo las citas confirmadas. **No debe** aplicar la regla 3 (intervalo de la web, antelación mínima ni ventana de reserva), igual que al crear una cita desde el panel. Ese cálculo **no debe** hacer ninguna consulta a la base de datos: usa los tramos, las citas y los cierres que la agenda ya carga para dibujar la rejilla. Con varios servicios elegidos, D es la suma de sus duraciones (PRF-132).
 - **PRF-122.** Para cualquier hora futura, el resultado de PRF-121 **debe** coincidir con el de la comprobación de disponibilidad del panel al crear una cita (`isAvailable(..., applyPublicRules: false)`): las dos comparten la misma comprobación de tramo y de capacidad, de modo que la rejilla nunca marque como «cabe» un hueco que el alta rechazaría, ni al revés.
 
 ### Filtro de servicio en la agenda: selector, resaltado y persistencia (2026-10-05)
 
-- **PRF-123.** El parámetro `servicio` de la URL **debe** sobrevivir a cualquier navegación dentro de la agenda: las pestañas Día/Semana/Mes, Anterior/Siguiente/Hoy, el formulario «Ir a la fecha», «Nueva cita» (donde además preselecciona el servicio, PRF-124) y cada hueco libre — incluida una visita a Mes, que no tiene selector propio pero no debe perder el filtro al volver a Día o Semana. `servicio` **no debe** fundirse nunca con `volver`: son parámetros independientes, igual que ya lo son `hora` y `volver`. Un valor que no sea un id de un servicio activo **debe** ignorarse en silencio (como «Cualquiera»), nunca un error.
-- **PRF-124.** Con un servicio elegido, cada media hora libre donde cabe completo (PRF-121) **debe** mostrar un borde y un fondo dorado sutil distintos del de un hueco libre normal — nunca solo un cambio de color — y, en vista Día, el texto «Cabe»; en Semana, sin ese texto (no cabe en columnas tan estrechas) pero siempre con un `aria-label` que lo diga. Un hueco libre donde el servicio no cabe **debe** seguir exactamente igual que sin ningún servicio elegido. Al tocar un hueco (quepa o no el servicio), «Nueva cita» **debe** abrir con ese servicio ya preseleccionado (T045).
+- **PRF-123.** El parámetro `servicio` de la URL **debe** sobrevivir a cualquier navegación dentro de la agenda: las pestañas Día/Semana/Mes, Anterior/Siguiente/Hoy, el formulario «Ir a la fecha», «Nueva cita» (donde además preselecciona el servicio, PRF-124) y cada hueco libre — incluida una visita a Mes, que no tiene selector propio pero no debe perder el filtro al volver a Día o Semana. `servicio` **no debe** fundirse nunca con `volver`: son parámetros independientes, igual que ya lo son `hora` y `volver`. Un valor que no sea un id de un servicio activo **debe** ignorarse en silencio (como «Cualquiera»), nunca un error. Con varios servicios, el parámetro es `servicio[]` (PRF-132).
+- **PRF-124.** Con un servicio elegido, cada media hora libre donde cabe completo (PRF-121) **debe** mostrar un borde y un fondo dorado sutil distintos del de un hueco libre normal — nunca solo un cambio de color — y, en vista Día, el texto «Cabe»; en Semana, sin ese texto (no cabe en columnas tan estrechas) pero siempre con un `aria-label` que lo diga. Un hueco libre donde el servicio no cabe **debe** seguir exactamente igual que sin ningún servicio elegido. Al tocar un hueco (quepa o no el servicio), «Nueva cita» **debe** abrir con ese servicio ya preseleccionado (T045). Con varios servicios, «Cabe» y la preselección valen para todos ellos (PRF-132).
+
+### Varios servicios en una cita (2026-10-06)
+
+Decisión del usuario, 2026-10-06: «se tiene que poder reservar para más de un servicio. Por ejemplo, yo que soy hombre cuando pido hora para la peluquería, estoy pidiendo hora para corte de pelo hombre y arreglo de barba, que son 2 servicios». Sustituye al no-objetivo anterior («los combos se dan de alta como servicios propios»). Las migraciones de reservas nunca se han ejecutado en producción, así que la cita nace ya con este modelo, sin migración de conversión.
+
+- **PRF-125.** Una cita **debe** poder incluir de 1 a 5 servicios distintos, en la reserva online y en el panel. Se hacen seguidos, en el orden de los servicios del salón («Orden» y después nombre), no en el orden en que se eligen. La cita dura la suma de sus duraciones y ocupa **una** plaza durante todo ese tiempo: las reglas de «Disponibilidad» se aplican a la duración total. El máximo de 5 es un único valor del sistema, no una cifra repetida.
+- **PRF-126.** Cada servicio de una cita **debe** guardar su nombre, su duración y su precio interno tal como eran al reservar. Cambiarlos después en el servicio no cambia la cita (como PRF-013 y PRF-015). El precio guardado sigue siendo interno: **no debe** aparecer en ninguna página pública ni en ningún correo al cliente (PRF-014).
+- **PRF-127.** La página de reservas **debe** permitir elegir de 1 a 5 servicios con casillas, mostrando la duración de cada uno y la duración total antes de elegir día. Funciona sin JavaScript: la elección viaja en la dirección de la página (`servicio[]`, un valor por servicio) por el calendario y las horas. Un enlace antiguo con un solo servicio (`?servicio=3`) **debe** seguir funcionando. Una elección con un servicio repetido, más de 5 o ninguno **no debe** aceptarse.
+- **PRF-128.** Si alguno de los servicios elegidos no existe, no está activo o no es reservable online, la reserva online **no debe** crearse con los demás: se rechaza entera, como PRF-033. En el panel, todos deben estar activos, salvo los que la cita ya tenía (como en T017).
+- **PRF-129.** Una persona del salón **debe** poder crear, editar y mover una cita con de 1 a 5 servicios. Al editarla, los servicios que se mantienen conservan los datos de PRF-126; los que se añaden toman los actuales del servicio. Un servicio que se ha desactivado puede seguir en la cita.
+- **PRF-130.** Los correos, la página de la cita, el aviso al salón y la agenda (tarjetas y bloques de la rejilla) **deben** mostrar todos los servicios de la cita con la duración total. En un bloque estrecho de la rejilla basta con el resumen recortado, siempre que el `aria-label` y el `title` lo lleven completo.
+- **PRF-131.** Los límites de abuso (PRF-037, el máximo de citas futuras por cliente) y la comprobación de PRF-035 **deben** seguir contando **citas**, no servicios: una cita con 3 servicios cuenta como una.
+- **PRF-132.** El selector «Cabe» de la agenda (PRF-120) **debe** admitir de 1 a 5 servicios a la vez (`servicio[]`, el mismo máximo que PRF-125) y marcar «Cabe» donde cabe la **suma** de sus duraciones, con la misma persistencia por toda la navegación que PRF-123 y la preselección de todos ellos en «Nueva cita». Decisión del usuario, 2026-10-06.
 
 ## Datos existentes y transición
 
@@ -303,6 +317,7 @@ El remitente de correo real (PRF-070, PRF-071) sigue pendiente del buzón y el s
 - **CA-13 (PRF-089 a PRF-098).** En 360-414 px de ancho: los botones y enlaces de acción del panel miden al menos 44×44 px; el panel tiene un botón hamburguesa que despliega un menú vertical desplazable con los módulos y «Cerrar sesión» al final, visible también sin JavaScript; los servicios se ven en tarjetas; la agenda ofrece «Mañana» y un botón flotante para crear una cita, y separa Editar de Cancelar; la tarjeta de una cita abre WhatsApp con el teléfono normalizado; el horario semanal no hace *scroll* horizontal; el calendario y las horas de `/reservas` miden al menos 44 px; el botón de cancelar de `/cita/{token}` ocupa todo el ancho.
 - **CA-14 (PRF-099 a PRF-107).** La agenda ofrece un selector Día/Semana/Mes con `vista`/`fecha` en la URL; un valor de `vista` desconocido cae a Día, que no cambia. Semana agrupa las citas de lunes a domingo con una sola consulta (rejilla en escritorio, tira de 7 días más la agenda del día elegido en móvil). Mes muestra el número de citas por día con una consulta agregada, y tocar un día abre su vista Día. Anterior/Siguiente/Hoy y el formulario «Ir a la fecha» se adaptan a la vista activa. Los días cerrados y el día de hoy se distinguen con texto o borde, no solo con color, y las rejillas de Semana (escritorio) y Mes son accesibles por teclado.
 - **CA-15 (PRF-108 a PRF-124).** Día y Semana (escritorio) muestran una rejilla horaria de 88 px/hora, desde la apertura más temprana al cierre más tardío de la semana. Cada columna tiene tantos carriles como la capacidad; una cita ocupa un carril, con carriles extra y el texto «Sobre capacidad» si se supera por un «Guardar igualmente». Fuera de horario, Cerrado y Cierre se ven sombreados con texto. Un hueco libre de al menos 30 minutos se puede tocar para crear una cita con la hora ya puesta; un bloque de cita lleva a su tarjeta de detalle. Hoy muestra la línea de «ahora» y la rejilla se desplaza sola al abrirse. Semana en móvil muestra la misma rejilla del día elegido bajo la tira de 7 días. Mes no cambia. Un selector de servicio (no en Mes) resalta, en cada carril libre, dónde cabe completo su duración, sin ninguna consulta adicional, y preselecciona el servicio al crear una cita desde un hueco.
+- **CA-16 (PRF-125 a PRF-132).** Una cita puede tener de 1 a 5 servicios, en el orden del salón, que ocupan una plaza durante la suma de sus duraciones. Cada servicio guarda su nombre, duración y precio interno del momento de reservar, y el precio nunca se ve fuera del panel. La web y el panel permiten elegir varios, rechazan una lista no válida entera y muestran la duración total; correos, página de la cita y agenda los listan todos. Los límites cuentan citas. El selector «Cabe» de la agenda admite varios servicios con su suma.
 
 ## Plan de verificación
 
@@ -424,6 +439,14 @@ El remitente de correo real (PRF-070, PRF-071) sigue pendiente del buzón y el s
 | PRF-122 | En muchos días aleatorios (con semilla), el resultado coincide con `isAvailable(..., applyPublicRules: false)` para cada hora candidata. |
 | PRF-123 | Con un servicio elegido, cambiar de pestaña, de semana/mes, de fecha o pasar por Mes conserva `servicio` en la URL; un valor inválido o de un servicio inactivo se ignora; `servicio` nunca aparece dentro de `volver`. |
 | PRF-124 | Con «Balayage» (2 h) elegido, las medias horas de 09:00 a 17:00 muestran «Cabe» (Día) o solo su `aria-label` (Semana) con borde/fondo dorado, en cada carril libre; de 17:30 en adelante (y donde la capacidad no deja hueco) quedan como un hueco libre normal. Tocar cualquier hueco preselecciona el servicio en «Nueva cita». |
+| PRF-125 | Reservar «Corte de Pelo Hombre» (15 min) + «Corte/Arreglo barba» (10 min) → una cita de 25 min en una plaza, con los dos servicios en el orden del salón; un sexto servicio → rechazado. |
+| PRF-126 | Cambiar después el nombre, la duración o el precio de uno de los servicios → la cita conserva los de la reserva; el precio no aparece en ninguna página pública ni correo. |
+| PRF-127 | Elegir dos servicios en `/reservas` sin JavaScript → la dirección lleva `servicio[]` dos veces, el calendario y las horas usan 25 min y se ve el total; `?servicio=3` sigue funcionando; un servicio repetido o 6 servicios → rechazado. |
+| PRF-128 | Enviar dos servicios, uno de ellos no reservable online → no se crea ninguna cita. |
+| PRF-129 | En el panel, crear una cita con 2 servicios, quitarle uno y añadir otro → el que se mantiene conserva sus datos; un servicio desactivado que ya tenía la cita sigue en ella. |
+| PRF-130 | Una cita con 2 servicios → los correos, `/cita/{token}`, el aviso al salón, la tarjeta y el bloque de la rejilla los muestran con la duración total. |
+| PRF-131 | Una clienta con una cita de 3 servicios puede reservar una segunda cita (límite de 2 citas, no de servicios). |
+| PRF-132 | En la agenda, elegir 2 servicios en «Cabe» → solo se marcan las medias horas donde cabe la suma; `servicio[]` se conserva al navegar y «Nueva cita» preselecciona los dos. |
 
 ## Riesgos y marcha atrás
 
