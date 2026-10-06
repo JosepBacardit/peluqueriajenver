@@ -379,10 +379,17 @@ Blocking prerequisites, all pending as of 2026-10-03:
   confirmar: proveedor de correo electrónico]" marker in `/privacidad`
   (the email provider) depends on the SMTP setup above and is decided
   together with it.
-- **Migrations:** the release adds five tables (`services`,
-  `opening_hours`, `booking_settings`, `appointments`, `schedule_blocks`),
-  additive only. Check `php artisan migrate:status` on the server first
-  (see "Production database").
+- **Migrations:** the release adds six tables (`services`,
+  `opening_hours`, `booking_settings`, `appointments`,
+  `appointment_services`, `schedule_blocks`), additive only. The booking
+  migrations (`2026_10_03_*`) were **edited in place** in this release
+  (several services per appointment, T046), on the premise that none of
+  them has ever run in production. Before deploying, run
+  `php artisan migrate:status` on the VPS (as `deploy`) and confirm that
+  **none** of the six `2026_10_03_*` migrations shows as `Ran`. If any
+  does, **stop**: the edited version would never be applied (e.g.
+  `appointments` would lack `services_label`), so ask the user before
+  going further. See also "Production database".
 - **Admin account:** after deploying, create at least one with
   `php artisan admin:create-user` (as `deploy`), then let the salon enter
   its services in `/admin/servicios`. Until a bookable service exists,

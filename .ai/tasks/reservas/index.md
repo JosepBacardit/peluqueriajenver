@@ -67,8 +67,8 @@
 | T047 | [Reserva pública con varios servicios](T047-reserva-publica-varios-servicios.md) | FEATURE | PRF-127, PRF-128, PRF-131 | T046 | Claude Sonnet 5.5 | `high` | Pest + Pint + navegador | done |
 | T048 | [Panel y «Cabe» con varios servicios](T048-panel-varios-servicios.md) | FEATURE | PRF-129, PRF-132 | T046 | Claude Sonnet 5.5 | `high` | Pest + Pint + navegador | done |
 | T049 | [Mostrar varios servicios en correos, cita y agenda](T049-mostrar-varios-servicios.md) | FEATURE | PRF-130 | T046 | Claude Sonnet 5.5 | `medium` | Pest + Pint + vistas previas | done |
-| T050 | [Revisión independiente de varios servicios](T050-revision-varios-servicios.md) | REVIEW | PRF-125–132 | T046–T049 | Claude Opus 5.5 | `medium` | Registro de revisión | pending |
-| T051 | [Resolver la revisión de varios servicios](T051-resolver-revision-varios-servicios.md) | FEATURE | según T050 | T050 | Claude Sonnet 5.5 (Opus si hay concurrencia) | `medium` | Pest + Pint | pending |
+| T050 | [Revisión independiente de varios servicios](T050-revision-varios-servicios.md) | REVIEW | PRF-125–132 | T046–T049 | Claude Opus 5.5 | `medium` | Registro de revisión | done |
+| T051 | [Resolver la revisión de varios servicios](T051-resolver-revision-varios-servicios.md) | FEATURE | PRF-125, PRF-127, PRF-129, PRF-132 | T050 | Claude Opus 5.5 (M1 es de concurrencia) | `medium` | Pest + Pint + `npm run build` | done |
 
 Nota de ejecución: las tareas T001–T012 las ejecutó una misma instancia del agente `programador` (Claude Opus 5.5), por indicación del agente principal, en lugar de alternar modelos por tarea.
 
@@ -159,14 +159,14 @@ Nota de ejecución: las tareas T001–T012 las ejecutó una misma instancia del 
 | PRF-122 | comportamiento | T042 | `AvailabilityFitForServiceTest` › «it always agrees with isAvailable for the panel» (25 días aleatorios con semilla × 4 duraciones) | covered |
 | PRF-123 | comportamiento y prohibición | T043 | `AgendaServiceFilterTest` (persiste en pestañas, Anterior/Siguiente/Hoy, Mes y «Nueva cita»; un valor inválido o inactivo se ignora; nunca se funde con `volver`) | covered |
 | PRF-124 | comportamiento | T044, T045 | `AgendaServiceFilterTest` (resaltado solo donde cabe, en cada carril; capacidad 1 con una cita real; Semana sin texto visible pero con `aria-label`, con recuento exacto; preselección en «Nueva cita») | covered |
-| PRF-125 | comportamiento | T046, T047, T048 | `MultiServiceAppointmentTest` (orden del salón, suma, una plaza, máximo, lista no válida), `MultiServiceBookingTest`, `MultiServiceAdminTest` (web y panel) | covered |
+| PRF-125 | comportamiento | T046, T047, T048, T051 | `MultiServiceAppointmentTest` (orden del salón, suma, una plaza, máximo, lista no válida), `MultiServiceBookingTest`, `MultiServiceAdminTest` (web y panel); T051: un solo criterio de orden, `sort_order` y después alta (`ServiceList::sort()`, L2) | covered |
 | PRF-126 | comportamiento y prohibición | T046, T049 | `MultiServiceAppointmentTest` (datos congelados al crear y al mover), `MultiServiceDisplayTest` (sin precio en correos ni en `/cita`) | covered |
-| PRF-127 | comportamiento | T047 | `MultiServiceBookingTest` (`servicio[]`, suma, `?servicio=3` sigue funcionando, repetido/6 servicios/no reservable rechazados) | covered |
+| PRF-127 | comportamiento | T047, T051 | `MultiServiceBookingTest` (`servicio[]`, suma, `?servicio=3` sigue funcionando, repetido/6 servicios/no reservable rechazados); T051: normalización del `GET` con aviso, `list` y vuelta al paso 1 ante una lista no válida (M2, L1), «Cambiar» con la elección marcada (L6); pendiente en el navegador: `/reservas` sin JavaScript y el total en vivo | partial |
 | PRF-128 | prohibición | T047, T048 | `MultiServiceBookingTest` › «one non-bookable-online service mixed with a valid one rejects the whole booking» | covered |
-| PRF-129 | comportamiento | T046, T048 | `MultiServiceAppointmentTest` (mover conservando o sustituyendo servicios, concurrencia), `MultiServiceAdminTest` (crear/editar en el panel, servicio desactivado propio) | covered |
-| PRF-130 | comportamiento | T049 | `MultiServiceDisplayTest` (los 5 correos, `/cita`, la tarjeta, el bloque de la rejilla) | covered |
+| PRF-129 | comportamiento | T046, T048, T051 | `MultiServiceAppointmentTest` (mover conservando o sustituyendo servicios, concurrencia), `MultiServiceAdminTest` (crear/editar en el panel, servicio desactivado propio); T051: ventana entre la relectura y el `UPDATE` (M1), mismo conjunto en otro orden sin cambio ni correo (L3), total en alta y edición (L6), errores con `aria` (L4); pendiente en el navegador: `edit` de una cita de 2 servicios y lector de pantalla | partial |
+| PRF-130 | comportamiento | T049 | `MultiServiceDisplayTest` (los 5 correos, `/cita`, la tarjeta, el bloque de la rejilla); pendiente: correos con 2 servicios en Gmail y Outlook | partial |
 | PRF-131 | prohibición | T046, T047 | `MultiServiceAppointmentTest` › «the per-customer limit of upcoming online bookings counts appointments, not services» | covered |
-| PRF-132 | comportamiento | T048 | `AgendaServiceFilterTest` (varios servicios en «Cabe», persistencia, consultas fijas) | covered |
+| PRF-132 | comportamiento | T048, T051 | `AgendaServiceFilterTest` (varios servicios en «Cabe», persistencia, consultas fijas); T051: «Cabe» en Semana con 2 servicios; pendiente en el navegador: `<details>` con el teclado y a 360 px | partial |
 
 ## Casos revisados que no aplican
 

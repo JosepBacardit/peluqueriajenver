@@ -49,7 +49,7 @@ appointment_services
 - `Appointment::durationMinutes(): int`: la duración total.
 - `Appointment->services_label` (string).
 - `AppointmentService::snapshotOf(Service $service, int $position): array`: la copia congelada.
-- `App\Booking\ServiceList::ordered(iterable $services): Collection<int, Service>`: valida de 1 a `MAX_SERVICES` servicios distintos y los ordena por `sort_order`, nombre e `id`. Lanza `InvalidArgumentException` si la lista no es válida. `ServiceList::label(iterable $names): string`.
+- `App\Booking\ServiceList::ordered(iterable $services): Collection<int, Service>`: valida de 1 a `MAX_SERVICES` servicios distintos y los ordena con `ServiceList::sort()`: `sort_order` y después `id` (T051, revisión L2: antes desempataba por nombre). Lanza `InvalidArgumentException` si la lista no es válida. `ServiceList::label(iterable $names): string`.
 - `CreateAppointment::handle(Collection $services, CarbonImmutable $startsAt, array $customer, AppointmentSource $source, bool $applyPublicRules, ?CarbonImmutable $now = null): Appointment`. Es la misma firma que antes, con una `Collection<int, Service>` en lugar de un `Service`.
 - `RescheduleAppointment::handle(Appointment $appointment, Collection $services, CarbonImmutable $startsAt, array $customer, bool $ignoreHoursAndCapacity, ?CarbonImmutable $now = null, ?int $expectedVersion = null): RescheduleOutcome`. `RescheduleOutcome::$rescheduled` es verdadero si cambian la hora **o la lista de servicios**.
 - `AvailabilityCalculator` no cambia: se le pasa la suma de duraciones.
