@@ -5,10 +5,12 @@
 @section('description', 'Política de privacidad de Peluquería Jenver. Conoce cómo tratamos y protegemos tus datos personales.')
 
 {{--
-    The bracketed "[Pendiente de confirmar: ...]" values are facts the client
-    has not provided yet. They are deliberately left visible instead of
-    invented, and block publishing the booking system (see AGENTS.md,
-    "Before deploying the booking system").
+    The data controller's legal name, NIF, contact email and retention
+    period were confirmed by the client on 2026-10-06. The one bracketed
+    "[Pendiente de confirmar: ...]" value left is the email provider, still
+    undecided (it depends on the SMTP setup) — deliberately left visible
+    instead of invented, and blocks publishing the booking system (see
+    AGENTS.md, "Before deploying the booking system").
 --}}
 
 @section('content')
@@ -20,12 +22,12 @@
             <h2 class="text-2xl font-serif font-semibold mt-8 mb-4 text-gold">1. Responsable del tratamiento</h2>
             <p class="text-gray-300">
                 <strong>Peluquería Jenver</strong><br>
-                Titular: [Pendiente de confirmar: nombre o razón social del titular]<br>
-                NIF: [Pendiente de confirmar: NIF]<br>
+                Titular: Isabel Lechuga Valverde<br>
+                NIF: 53650299Q<br>
                 C/ Lleida, 21<br>
                 08110 Montcada i Reixac (Barcelona)<br>
                 Teléfono: +34 633 912 050<br>
-                Email: [Pendiente de confirmar: email de contacto]
+                Email: peluqueriajenver@gmail.com
             </p>
         </section>
 
@@ -66,7 +68,7 @@
         <section>
             <h2 class="text-2xl font-serif font-semibold mt-8 mb-4 text-gold">6. Plazo de conservación</h2>
             <p class="text-gray-300">
-                Conservamos los datos de cada cita durante [Pendiente de confirmar: plazo de conservación de las citas] desde la fecha de la cita y, después, durante los plazos que exija la ley. Pasado ese tiempo se eliminan.
+                Conservamos los datos de cada cita durante 2 años desde la fecha de la cita y, después, durante los plazos que exija la ley. Pasado ese tiempo se eliminan.
             </p>
         </section>
 
@@ -84,7 +86,7 @@
                 <li><strong>Oposición</strong>: oponerte a su tratamiento.</li>
             </ul>
             <p class="text-gray-300">
-                Para ejercerlos, escríbenos a [Pendiente de confirmar: email de contacto] o llámanos al +34 633 912 050. Si crees que no hemos atendido bien tu solicitud, puedes presentar una reclamación ante la Agencia Española de Protección de Datos (www.aepd.es).
+                Para ejercerlos, escríbenos a peluqueriajenver@gmail.com o llámanos al +34 633 912 050. Si crees que no hemos atendido bien tu solicitud, puedes presentar una reclamación ante la Agencia Española de Protección de Datos (www.aepd.es).
             </p>
         </section>
 

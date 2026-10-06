@@ -371,10 +371,14 @@ Blocking prerequisites, all pending as of 2026-10-03:
   `/cita/{token}`, while the privacy policy says non-technical cookies rely
   on consent. Either gate them on consent or fix the policy text before
   going live (`.ai/reviews/reservas.md`).
-- **Privacy policy data:** `/privacidad` shows "[Pendiente de confirmar
-  …]" markers for the data controller's legal name, NIF, contact email
-  and the retention period. The client must provide them before going
-  live.
+- **Privacy policy data:** the data controller's legal name (Isabel
+  Lechuga Valverde), NIF, contact email and the citas retention period
+  were confirmed by the client on 2026-10-06 and are filled in across
+  `/privacidad`, `/avisos-legales`, `/cookies` and the booking form's
+  basic data-protection notice. The one remaining "[Pendiente de
+  confirmar: proveedor de correo electrónico]" marker in `/privacidad`
+  (the email provider) depends on the SMTP setup above and is decided
+  together with it.
 - **Migrations:** the release adds five tables (`services`,
   `opening_hours`, `booking_settings`, `appointments`, `schedule_blocks`),
   additive only. Check `php artisan migrate:status` on the server first

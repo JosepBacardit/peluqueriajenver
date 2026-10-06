@@ -41,7 +41,7 @@ return [
     'privacy_layer' => [
         'title' => 'Información básica sobre protección de datos',
         'controller_label' => 'Responsable',
-        'controller' => 'Peluquería Jenver. Titular: [Pendiente de confirmar: nombre o razón social del titular]. C/ Lleida, 21, 08110 Montcada i Reixac.',
+        'controller' => 'Peluquería Jenver. Titular: Isabel Lechuga Valverde. C/ Lleida, 21, 08110 Montcada i Reixac.',
         'purpose_label' => 'Finalidad',
         'purpose' => 'Gestionar tu cita y enviarte su confirmación y los avisos sobre ella.',
         'legal_basis_label' => 'Legitimación',

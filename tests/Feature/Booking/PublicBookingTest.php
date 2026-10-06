@@ -274,7 +274,7 @@ test('the month calendar needs a small, fixed number of queries', function () {
     expect($queries)->toBeLessThan(15);
 });
 
-test('the basic data-protection notice marks the data controller as pending like the privacy policy', function () {
+test('the basic data-protection notice names the confirmed data controller', function () {
     $this->get(route('reservas', ['servicio' => $this->service->id, 'fecha' => '2030-01-08']))
-        ->assertSee('[Pendiente de confirmar: nombre o razón social del titular]');
+        ->assertSee('Isabel Lechuga Valverde');
 });
