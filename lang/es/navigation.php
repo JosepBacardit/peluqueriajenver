@@ -60,6 +60,7 @@ return [
             'privacy' => 'Política de privacidad',
             'legal' => 'Aviso legal',
             'cookies' => 'Política de cookies',
+            'cookie_settings' => 'Configurar cookies',
         ],
     ],
 ];

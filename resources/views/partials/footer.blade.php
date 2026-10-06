@@ -66,17 +66,13 @@
                 <p class="text-gray-400 text-sm mb-6">
                     {{ __('navigation.footer.service_area.text') }}
                 </p>
-                <!-- Google Maps Embed -->
-                <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2990.320685050766!2d2.1876543!3d41.48972100000001!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x12a4a74d5d5d5d5d%3A0x5d5d5d5d5d5d5d5d!2sCarrer%20Lleida%2C%2021%2C%2008110%20Montcada%20i%20Reixac!5e0!3m2!1ses!2ses!4v1700000000000"
-                    width="100%"
-                    height="200"
-                    style="border:0; filter: grayscale(100%) invert(10%);"
-                    allowfullscreen=""
-                    loading="lazy"
-                    referrerpolicy="no-referrer-when-downgrade"
-                    class="rounded">
-                </iframe>
+                @include('partials.google-map-embed', [
+                    'id' => 'footer',
+                    'embedSrc' => 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2990.320685050766!2d2.1876543!3d41.48972100000001!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x12a4a74d5d5d5d5d%3A0x5d5d5d5d5d5d5d5d!2sCarrer%20Lleida%2C%2021%2C%2008110%20Montcada%20i%20Reixac!5e0!3m2!1ses!2ses!4v1700000000000',
+                    'height' => 200,
+                    'address' => 'C/ Lleida, 21 · 08110 Montcada i Reixac',
+                    'directionsUrl' => 'https://maps.google.com/?q=Peluquería+Jenver+Carrer+Lleida+21+Montcada+i+Reixac',
+                ])
             </div>
         </div>
     </div>
@@ -91,6 +87,8 @@
                 <a href="{{ route('avisos-legales') }}" class="hover:text-gold transition-colors">{{ __('navigation.footer.bottom.legal') }}</a>
                 <span>·</span>
                 <a href="{{ route('cookies') }}" class="hover:text-gold transition-colors">{{ __('navigation.footer.bottom.cookies') }}</a>
+                <span>·</span>
+                <a href="{{ route('cookies') }}" data-cookie-settings class="hover:text-gold transition-colors">{{ __('navigation.footer.bottom.cookie_settings') }}</a>
             </div>
         </div>
     </div>

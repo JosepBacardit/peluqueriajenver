@@ -12,9 +12,85 @@
 @source '../**/*.blade.php';
 @source '../js/**/*.js';
 
+/*
+ * Self-hosted fonts (resources/fonts/), so no visitor IP reaches Google.
+ * Referenced with relative url()s so Vite fingerprints them like any other
+ * CSS asset: the same hashed URL ends up here and in the Vite::asset() calls
+ * that build the <link rel="preload"> hrefs in layouts/app.blade.php, in
+ * both `npm run dev` and `npm run build` (a previous version pointed these
+ * at public/fonts/ with a plain, unhashed /fonts/... URL; that 404ed under
+ * the Vite dev server, which serves app.css from its own origin, not this
+ * site's, so a path starting with "/" never reached this app's /fonts/).
+ * Files are the "latin" subset woff2 from the official @fontsource npm
+ * packages (@fontsource/inter@5.2.6, @fontsource/playfair-display@5.3.0,
+ * OFL-1.1 licensed, see resources/fonts/OFL-inter.txt and
+ * OFL-playfair-display.txt), covering the weights and styles actually used
+ * on the site: Inter 400/500/600 normal, Playfair Display 400/700 normal.
+ * Inter 300/font-light and
+ * Playfair's italic 400 were requested from Google before but are dropped
+ * here: neither font-light nor font-weight: 300 appears anywhere in views,
+ * CSS or JS (review self-hosted-fonts.md B1), and no element pairs
+ * font-serif with italic. Inter's italic paragraphs
+ * (home.blade.php reviews) already render with the browser's synthetic
+ * italic today, unchanged by this. The "latin" subset covers Spanish and
+ * Catalan: á/é/í/ó/ú/ü/ñ/ç and the "l·l" middot all fall in U+0000-00FF,
+ * already inside this subset's unicode-range, so "latin-ext" is not needed.
+ */
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('../fonts/inter-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('../fonts/inter-latin-500-normal.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('../fonts/inter-latin-600-normal.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Playfair Display';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('../fonts/playfair-display-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Playfair Display';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('../fonts/playfair-display-latin-700-normal.woff2') format('woff2');
+}
+
 @theme {
-    --font-sans: 'Inter', system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-    --font-serif: 'Playfair Display', Georgia, serif;
+    /*
+     * Kept identical, character for character, to the --font-sans/
+     * --font-serif in layouts/app.blade.php's critical <style> (review
+     * fonts-applied.md finding 1). That block is plain, unlayered CSS, so
+     * by the Cascade Layers spec it always wins over these @theme values
+     * (Tailwind compiles @theme into @layer theme): the copy here has no
+     * effect on font-sans/font-serif today and is just kept in sync so it
+     * doesn't silently diverge from the one that actually applies, in case
+     * the critical <style> is ever moved into a layer itself. 'Inter
+     * Fallback'/'Playfair Display Fallback' are the metric-adjusted,
+     * local-only @font-face rules declared there too.
+     */
+    --font-sans: 'Inter', 'Inter Fallback', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+    --font-serif: 'Playfair Display', 'Playfair Display Fallback', Georgia, serif;
     --color-gold: #C9A84C;
     --color-gold-light: #E2C97E;
     --color-gold-dark: #A07830;
