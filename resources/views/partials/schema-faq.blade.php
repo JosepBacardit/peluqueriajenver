@@ -1,4 +1,6 @@
 <?php
+$onlineAnswerKey = \App\Models\BookingSetting::onlineBookingEnabled() ? 'home.faq.online_answer' : 'home.faq.online_answer_disabled';
+
 $faq = [
     "@context" => "https://schema.org",
     "@type" => "FAQPage",
@@ -16,7 +18,7 @@ $faq = [
             "name" => __('home.faq.online_question'),
             "acceptedAnswer" => [
                 "@type" => "Answer",
-                "text" => __('home.faq.online_answer', ['hours' => \App\Booking\OpeningHoursSummary::text()])
+                "text" => __($onlineAnswerKey, ['hours' => \App\Booking\OpeningHoursSummary::text()])
             ]
         ],
         [

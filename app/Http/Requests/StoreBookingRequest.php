@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Appointment;
+use App\Models\BookingSetting;
 use App\Rules\PhoneNumber;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Validation\Validator;
@@ -20,9 +21,24 @@ class StoreBookingRequest extends FormRequest
      */
     public const HONEYPOT = 'website';
 
+    /**
+     * False while the "Reserva online activa" switch is off: checked
+     * before any field rule, so a POST sent while it is off (a stale tab,
+     * a replayed request) never reaches validation or creates anything.
+     */
     public function authorize(): bool
     {
-        return true;
+        return BookingSetting::onlineBookingEnabled();
+    }
+
+    /**
+     * The switch being off is the only way authorization fails here, so
+     * this always means "booking is off" — sent back to /reservas, which
+     * shows that explanation on its own (BookingController::index()).
+     */
+    protected function failedAuthorization(): void
+    {
+        throw new HttpResponseException(redirect()->route('reservas'));
     }
 
     /**

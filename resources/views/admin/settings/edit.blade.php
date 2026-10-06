@@ -46,6 +46,23 @@
         @error('cancellation_limit_hours') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
     </div>
 
+    <div class="border border-[#2A2A2A] p-4">
+        <label class="flex items-center gap-3 min-h-11">
+            <input type="hidden" name="online_booking_enabled" value="0">
+            <input
+                id="online_booking_enabled"
+                type="checkbox"
+                name="online_booking_enabled"
+                value="1"
+                @checked(old('online_booking_enabled', $settings->online_booking_enabled))
+                class="w-5 h-5 shrink-0">
+            <span>
+                <span class="block text-white font-semibold">Reserva online activa</span>
+                <span class="block text-xs text-gray-400 mt-1">Si la desactivas, <code>/reservas</code> muestra el teléfono y el WhatsApp en vez del formulario, y los botones «Reservar cita» de la web llaman o escriben por WhatsApp.</span>
+            </span>
+        </label>
+    </div>
+
     <button type="submit" class="btn-gold">Guardar ajustes</button>
 </form>
 @endsection

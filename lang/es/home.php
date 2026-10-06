@@ -132,6 +132,8 @@ return [
     'faq' => [
         'online_question' => '¿Puedo pedir cita online?',
         'online_answer' => 'Sí. Desde nuestra página de reservas eliges el servicio, el día y la hora entre los huecos libres, y recibes la confirmación por correo. Si lo prefieres, también puedes llamarnos o escribirnos por WhatsApp al 633 912 050. Nuestro horario: :hours.',
+        // While "Reserva online activa" is off (Ajustes).
+        'online_answer_disabled' => 'Ahora mismo no, pero puedes llamarnos o escribirnos por WhatsApp al 633 912 050 y te damos cita. Nuestro horario: :hours.',
     ],
 
     // Contacto Section

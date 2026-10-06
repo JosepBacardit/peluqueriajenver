@@ -61,6 +61,12 @@ class AgendaController extends Controller
             default => ['servicio' => $servicioIds],
         };
 
+        // One fetch reused for the capacity (Día/Semana) and for the
+        // "Reserva online desactivada" banner, instead of a second,
+        // separate query for the banner on top of dayData()/weekData()'s
+        // own (both already fixed-query-count, PRF-109/PRF-118).
+        $settings = BookingSetting::current();
+
         return view('admin.agenda.index', [
             'vista' => $vista,
             'day' => $day,
@@ -77,10 +83,11 @@ class AgendaController extends Controller
             'services' => $services,
             'servicios' => $servicios,
             'servicioQuery' => $servicioQuery,
+            'onlineBookingEnabled' => $settings->online_booking_enabled,
             ...match ($vista) {
-                'semana' => $this->weekData($weekStart, $servicios),
+                'semana' => $this->weekData($weekStart, $servicios, $settings->capacity),
                 'mes' => $this->monthData($month),
-                default => $this->dayData($day, $servicios),
+                default => $this->dayData($day, $servicios, $settings->capacity),
             },
         ]);
     }
@@ -180,7 +187,7 @@ class AgendaController extends Controller
      *
      * @return array{appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>, gridStart: int, gridEnd: int, timeline: array, nowLineTop: int|null}
      */
-    private function dayData(CarbonImmutable $day, Collection $servicios): array
+    private function dayData(CarbonImmutable $day, Collection $servicios, int $capacity): array
     {
         $appointments = Appointment::query()
             ->where('starts_at', '>=', $day)
@@ -196,7 +203,6 @@ class AgendaController extends Controller
         // occupying an invisible lane — the grid grows to cover it.
         $bounds = DayTimeline::extendBounds($bounds['start'], $bounds['end'], $appointments);
         $dayRanges = $allRanges->where('weekday', $day->isoWeekday())->sortBy('opens_at')->values();
-        $capacity = BookingSetting::current()->capacity;
         $now = CarbonImmutable::now();
 
         $timeline = DayTimeline::build($day, $bounds['start'], $bounds['end'], $capacity, $dayRanges, $appointments, $blocks, $now);
@@ -245,7 +251,7 @@ class AgendaController extends Controller
      *
      * @return array{days: list<array{date: CarbonImmutable, appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>, isClosed: bool, hasPartialClosure: bool, isToday: bool, timeline: array}>, gridStart: int, gridEnd: int}
      */
-    private function weekData(CarbonImmutable $weekStart, Collection $servicios): array
+    private function weekData(CarbonImmutable $weekStart, Collection $servicios, int $capacity): array
     {
         $weekEnd = $weekStart->addWeek();
 
@@ -265,7 +271,6 @@ class AgendaController extends Controller
         // outside the normal opening hours in any of its 7 days is never
         // left occupying an invisible lane.
         $bounds = DayTimeline::extendBounds($bounds['start'], $bounds['end'], $appointments);
-        $capacity = BookingSetting::current()->capacity;
         $now = CarbonImmutable::now();
         $today = $now->startOfDay();
 

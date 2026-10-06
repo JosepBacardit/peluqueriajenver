@@ -37,9 +37,15 @@
 
         <!-- CTA Buttons -->
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <a href="{{ route('reservas') }}" class="btn-gold text-sm md:text-base">
-                {{ __('home.hero.cta_primary') }}
-            </a>
+            @if (\App\Models\BookingSetting::onlineBookingEnabled())
+                <a href="{{ route('reservas') }}" class="btn-gold text-sm md:text-base">
+                    {{ __('home.hero.cta_primary') }}
+                </a>
+            @else
+                <a href="tel:+34633912050" class="btn-gold text-sm md:text-base">
+                    {{ __('navigation.navbar.cta_disabled') }}
+                </a>
+            @endif
             <a href="#servicios" class="btn-outline text-sm md:text-base">
                 {{ __('home.hero.cta_secondary') }}
             </a>
@@ -344,9 +350,11 @@
         </p>
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="{{ route('reservas') }}" class="btn-gold text-sm md:text-base font-semibold px-8 py-3">
-                {{ __('home.reserva.online_cta') }}
-            </a>
+            @if (\App\Models\BookingSetting::onlineBookingEnabled())
+                <a href="{{ route('reservas') }}" class="btn-gold text-sm md:text-base font-semibold px-8 py-3">
+                    {{ __('home.reserva.online_cta') }}
+                </a>
+            @endif
             <a href="tel:+34633912050" class="btn-outline text-sm md:text-base font-semibold px-8 py-3">
                 {{ __('home.reserva.phone_cta') }}
             </a>

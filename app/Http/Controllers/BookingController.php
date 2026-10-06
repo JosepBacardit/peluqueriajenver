@@ -12,6 +12,7 @@ use App\Booking\TooManyUpcomingAppointmentsException;
 use App\Enums\AppointmentSource;
 use App\Http\Requests\StoreBookingRequest;
 use App\Models\Appointment;
+use App\Models\BookingSetting;
 use App\Models\Service;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -31,6 +32,14 @@ class BookingController extends Controller
 
     public function index(Request $request): View
     {
+        // The "Reserva online activa" switch (Ajustes): /reservas keeps
+        // its URL and answers 200 either way, so it never breaks a link
+        // or a bookmark — it just shows a phone/WhatsApp page instead of
+        // the form while the switch is off.
+        if (! BookingSetting::onlineBookingEnabled()) {
+            return view('pages.reservas-disabled');
+        }
+
         $services = Service::query()->bookableOnline()->ordered()->get();
         ['ids' => $requestedIds, 'adjusted' => $selectionAdjusted] = self::requestedServiceIds($request->query('servicio'));
         $selectedServices = self::selectedServices($requestedIds, $services);

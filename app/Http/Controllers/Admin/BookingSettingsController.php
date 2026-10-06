@@ -20,7 +20,13 @@ class BookingSettingsController extends Controller
 
     public function update(BookingSettingsRequest $request): RedirectResponse
     {
-        BookingSetting::current()->update($request->validated());
+        $settings = BookingSetting::current();
+        $data = $request->validated();
+        $data['online_booking_enabled'] = $request->has('online_booking_enabled')
+            ? $request->boolean('online_booking_enabled')
+            : $settings->online_booking_enabled;
+
+        $settings->update($data);
 
         return redirect()->route('admin.settings.edit')->with('status', 'Ajustes guardados.');
     }

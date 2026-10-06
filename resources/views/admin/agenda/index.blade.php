@@ -17,6 +17,17 @@
     };
 @endphp
 
+@if (! $onlineBookingEnabled)
+    {{-- So the salon never forgets the switch is off (Ajustes). Shown
+         here rather than in the shared layout so every other admin page
+         (Servicios, Horario, Cierres) keeps its own query count exactly
+         as before — the agenda already fetches BookingSetting for its
+         capacity, so this reuses that same read. --}}
+    <div role="status" class="mb-6 border border-amber-500/50 bg-amber-500/10 text-amber-200 px-4 py-3">
+        ⚠️ Reserva online desactivada — <a href="{{ route('admin.settings.edit') }}" class="underline hover:text-amber-100">activarla en Ajustes</a>
+    </div>
+@endif
+
 <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
     <div>
         <h1 class="font-serif text-3xl text-white">Agenda</h1>

@@ -17,6 +17,7 @@ return [
             'contact' => 'Contacto',
         ],
         'cta' => 'Reservar cita →',
+        'cta_disabled' => 'Llamar ahora →',
         'mobile_menu' => 'Abrir menú',
     ],
 

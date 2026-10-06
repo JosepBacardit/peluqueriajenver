@@ -43,19 +43,27 @@ $schema = [
         ["@type" => "Offer", "itemOffered" => ["@type" => "Service", "name" => "Corte de pelo"]],
         ["@type" => "Offer", "itemOffered" => ["@type" => "Service", "name" => "Peinado para eventos"]]
     ],
-    "potentialAction" => [
+    "hasMap" => [
+        "@type" => "Map",
+        "url" => "https://maps.google.com/?q=Peluquería+Jenver+Carrer+Lleida+21+Montcada+i+Reixac"
+    ]
+];
+
+// "Reserva online activa" (Ajustes): the ReserveAction only makes sense
+// while /reservas actually takes bookings. When it is off, the action is
+// simply omitted rather than pointed somewhere schema.org has no action
+// type for ("call this number"); the phone number stays in `telephone`
+// and `contactPoint` regardless.
+if (\App\Models\BookingSetting::onlineBookingEnabled()) {
+    $schema['potentialAction'] = [
         "@type" => "ReserveAction",
         "name" => "Reservar cita",
         "target" => [
             "@type" => "EntryPoint",
             "urlTemplate" => route('reservas')
         ]
-    ],
-    "hasMap" => [
-        "@type" => "Map",
-        "url" => "https://maps.google.com/?q=Peluquería+Jenver+Carrer+Lleida+21+Montcada+i+Reixac"
-    ]
-];
+    ];
+}
 ?>
 <script type="application/ld+json">
 {!! json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}

@@ -20,6 +20,12 @@ return new class extends Migration
             $table->unsignedSmallInteger('min_notice_minutes');
             $table->unsignedSmallInteger('max_advance_days');
             $table->unsignedSmallInteger('cancellation_limit_hours');
+            // The "Reserva online activa" switch (2026-10-06): on by
+            // default, so installing or seeding never silently turns
+            // booking off. These migrations have never run in
+            // production, so the column is added here rather than in a
+            // separate migration (same precedent as T046).
+            $table->boolean('online_booking_enabled')->default(true);
             $table->timestamps();
         });
 
@@ -29,6 +35,7 @@ return new class extends Migration
             'min_notice_minutes' => 120,
             'max_advance_days' => 60,
             'cancellation_limit_hours' => 24,
+            'online_booking_enabled' => true,
             'created_at' => now(),
             'updated_at' => now(),
         ]);

@@ -73,14 +73,25 @@ pre-filled message per page); the salon records those in the admin agenda.
   in Spanish in the admin views (internal tool, not SEO content), unlike
   public copy, which lives in `lang/es/`.
 - **Booking rules** (capacity, slot interval, min/max notice, cancellation
-  limit) live in the single-row `booking_settings` table and the weekly
-  schedule in `opening_hours`; both are created with their default values
-  by their migrations. Services are not seeded: the salon enters them.
+  limit, and the "Reserva online activa" switch) live in the single-row
+  `booking_settings` table and the weekly schedule in `opening_hours`; both
+  are created with their default values by their migrations. Services are
+  not seeded: the salon enters them. While the switch is off
+  (`BookingSetting::onlineBookingEnabled()`), `/reservas` keeps its URL and
+  answers 200 with a phone/WhatsApp page instead of the form
+  (`BookingController::index()`), a POST is rejected before any validation
+  (`StoreBookingRequest::authorize()`), every "Reservar cita"/"Reservar
+  online" link on the public site calls or opens WhatsApp instead, the
+  JSON-LD drops `potentialAction`, and the admin panel shows a banner on
+  the agenda (reusing its own existing `BookingSetting` read, so the
+  switch never adds a second query there — PRF-109/PRF-118's fixed query
+  counts would otherwise break).
 - **Public booking** at `/reservas` (server-rendered Blade, no JS; a
   vanilla-JS calendar is a possible later step) and the customer's page
   `/cita/{token}` (random 48-character token, `noindex`). Both are excluded
   from the public HTML cache in `App\Http\Middleware\CacheHeaders` (free
-  times change constantly and the forms carry a CSRF token). Availability
+  times change constantly and the forms carry a CSRF token) and keep a
+  `no-store` policy with no ETag. Availability
   lives in `App\Booking\AvailabilityCalculator`; every booking (web or
   admin) goes through `App\Actions\CreateAppointment`, which re-checks
   availability under a row lock on `booking_settings` so concurrent
@@ -395,8 +406,12 @@ Blocking prerequisites, all pending as of 2026-10-03:
   its services in `/admin/servicios`. Until a bookable service exists,
   `/reservas` shows the "call or WhatsApp" message.
 - **Cron:** add the entry above.
-- **nginx:** confirm the server config adds no HTML caching of its own for
-  `/reservas` or `/cita/` (the app already sends `no-store` for them).
+- **nginx:** confirm the server config adds no HTML caching of its own —
+  not just for `/reservas`/`/cita/` (`no-store`), but for every other
+  public page too: since 2026-10-06 those no longer get a long `max-age`
+  either, only an app-level ETag with `no-cache` (`App\Http\Middleware\CacheHeaders`,
+  `NGINX-CACHE-CONFIG.md`). Static assets (images, fonts, `/build/`) keep
+  their long cache in nginx, untouched.
 
 ### Before the first real deploy
 
