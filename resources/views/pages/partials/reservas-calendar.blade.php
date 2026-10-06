@@ -13,13 +13,13 @@
     <div class="border border-[#2A2A2A] p-4 sm:p-6">
         <div class="flex items-center justify-between mb-4 text-sm">
             @if ($previousMonth)
-                <a href="{{ route('reservas', ['servicio' => $service->id, 'mes' => $previousMonth->format('Y-m')]) }}" class="text-gray-300 hover:text-gold">{{ __('reservas.calendar.previous') }}</a>
+                <a href="{{ route('reservas', [...$servicioQuery, 'mes' => $previousMonth->format('Y-m')]) }}" class="text-gray-300 hover:text-gold">{{ __('reservas.calendar.previous') }}</a>
             @else
                 <span></span>
             @endif
             <p class="font-serif text-xl text-white" aria-live="polite">{{ $monthTitle }}</p>
             @if ($nextMonth)
-                <a href="{{ route('reservas', ['servicio' => $service->id, 'mes' => $nextMonth->format('Y-m')]) }}" class="text-gray-300 hover:text-gold">{{ __('reservas.calendar.next') }}</a>
+                <a href="{{ route('reservas', [...$servicioQuery, 'mes' => $nextMonth->format('Y-m')]) }}" class="text-gray-300 hover:text-gold">{{ __('reservas.calendar.next') }}</a>
             @else
                 <span></span>
             @endif
@@ -49,7 +49,7 @@
                                 $isSelected = $day !== null && $date->isSameDay($day);
                             @endphp
                             @if ($isAvailable)
-                                <a href="{{ route('reservas', ['servicio' => $service->id, 'mes' => $month->format('Y-m'), 'fecha' => $date->toDateString()]) }}#horas"
+                                <a href="{{ route('reservas', [...$servicioQuery, 'mes' => $month->format('Y-m'), 'fecha' => $date->toDateString()]) }}#horas"
                                    role="gridcell"
                                    class="min-h-11 flex items-center justify-center border {{ $isSelected ? 'bg-gold text-black border-gold font-semibold' : 'border-gold/40 text-white hover:bg-gold/20' }}"
                                    @if ($isSelected) aria-current="date" @endif>{{ $number }}</a>

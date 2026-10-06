@@ -5,7 +5,6 @@ use App\Models\Service;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\RateLimiter;
 
 uses(RefreshDatabase::class);
 
@@ -20,7 +19,7 @@ beforeEach(function () {
 function abusePayload(array $overrides = []): array
 {
     return array_merge([
-        'service_id' => test()->service->id,
+        'service_ids' => [test()->service->id],
         'date' => '2030-01-08',
         'time' => '10:00',
         'customer_name' => 'Ana',

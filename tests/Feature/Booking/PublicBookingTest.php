@@ -26,7 +26,7 @@ beforeEach(function () {
 function bookingPayload(array $overrides = []): array
 {
     return array_merge([
-        'service_id' => test()->service->id,
+        'service_ids' => [test()->service->id],
         'date' => '2030-01-08',
         'time' => '10:00',
         'customer_name' => 'Núria Martínez',
@@ -208,7 +208,7 @@ test('a time inside the minimum notice is refused', function () {
 test('a service that is not bookable online cannot be booked even by tampering', function () {
     $hidden = Service::factory()->notBookableOnline()->create();
 
-    $this->post(route('reservas.store'), bookingPayload(['service_id' => $hidden->id]))
+    $this->post(route('reservas.store'), bookingPayload(['service_ids' => [$hidden->id]]))
         ->assertSessionHasErrors(['time' => 'Esa hora ya no está disponible. Elige otra.']);
 
     expect(Appointment::count())->toBe(0);

@@ -8,7 +8,9 @@
 
     <form method="POST" action="{{ route('reservas.store') }}" class="space-y-6">
         @csrf
-        <input type="hidden" name="service_id" value="{{ $service->id }}">
+        @foreach ($selectedServices as $selectedService)
+            <input type="hidden" name="service_ids[]" value="{{ $selectedService->id }}">
+        @endforeach
         <input type="hidden" name="date" value="{{ $day->toDateString() }}">
 
         <fieldset>

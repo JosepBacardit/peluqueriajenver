@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Appointment;
 use App\Rules\PhoneNumber;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
@@ -42,7 +43,13 @@ class StoreBookingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'service_id' => ['required', 'integer'],
+            // PRF-127: 1 to MAX_SERVICES distinct services. Whether each
+            // exists and is reservable online is checked afterwards in the
+            // controller (as it already was for a single service), since
+            // rejecting the whole booking either way needs the same
+            // "esa hora ya no está disponible" message (PRF-128, PRF-033).
+            'service_ids' => ['required', 'array', 'min:1', 'max:'.Appointment::MAX_SERVICES],
+            'service_ids.*' => ['distinct', 'integer'],
             'date' => ['required', 'date_format:Y-m-d'],
             'time' => ['required', 'date_format:H:i'],
             'customer_name' => ['required', 'string', 'min:2', 'max:100'],

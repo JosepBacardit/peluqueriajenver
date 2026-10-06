@@ -10,16 +10,19 @@ use App\Booking\SlotUnavailableException;
 use App\Booking\TooManyUpcomingAppointmentsException;
 use App\Enums\AppointmentSource;
 use App\Http\Requests\StoreBookingRequest;
+use App\Models\Appointment;
 use App\Models\Service;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 /**
- * Public booking page, rendered entirely on the server: choose a service
- * (?servicio=), a day in the month calendar (?mes=Y-m&fecha=Y-m-d), then
- * a free time and the customer's details.
+ * Public booking page, rendered entirely on the server: choose 1 to
+ * Appointment::MAX_SERVICES services (?servicio[]=, or the legacy scalar
+ * ?servicio=, PRF-127), a day in the month calendar
+ * (?mes=Y-m&fecha=Y-m-d), then a free time and the customer's details.
  */
 class BookingController extends Controller
 {
@@ -28,12 +31,22 @@ class BookingController extends Controller
     public function index(Request $request): View
     {
         $services = Service::query()->bookableOnline()->ordered()->get();
-        $service = $services->firstWhere('id', (int) $request->query('servicio'));
+        $requestedIds = self::requestedServiceIds($request->query('servicio'));
+        $selectedServices = self::selectedServices($requestedIds, $services);
 
-        if ($service === null) {
-            return view('pages.reservas', ['services' => $services, 'service' => null]);
+        if ($selectedServices->isEmpty()) {
+            return view('pages.reservas', [
+                'services' => $services,
+                'selectedServices' => $selectedServices,
+                // A notice only once something was actually tried and
+                // failed (too many, none matching) — not on a first,
+                // empty visit to the page.
+                'invalidSelection' => $requestedIds !== [],
+                'checkedIds' => $requestedIds,
+            ]);
         }
 
+        $durationMinutes = (int) $selectedServices->sum('duration_minutes');
         $now = CarbonImmutable::now();
         $firstMonth = $now->startOfMonth();
         $lastDay = $this->calculator->lastBookableDay($now);
@@ -44,7 +57,7 @@ class BookingController extends Controller
         $month = $month->lt($firstMonth) ? $firstMonth : ($month->gt($lastMonth) ? $lastMonth : $month);
 
         $availableDays = $this->calculator->daysWithAvailability(
-            $service->duration_minutes,
+            $durationMinutes,
             $month->lt($now->startOfDay()) ? $now->startOfDay() : $month,
             $month->endOfMonth()->lt($lastDay) ? $month->endOfMonth()->startOfDay() : $lastDay,
             $now,
@@ -56,33 +69,97 @@ class BookingController extends Controller
 
         return view('pages.reservas', [
             'services' => $services,
-            'service' => $service,
+            'selectedServices' => $selectedServices,
+            'checkedIds' => $selectedServices->pluck('id')->all(),
+            'invalidSelection' => false,
+            // The "servicio" query fragment every link on step 2+ (the
+            // calendar's day/month links, "Cambiar") splats in — a scalar
+            // when there is only one (keeping that link exactly as short
+            // as the legacy single-service one, PRF-127), the full array
+            // otherwise.
+            'servicioQuery' => ['servicio' => self::servicioRouteParam($selectedServices->pluck('id')->all())],
             'month' => $month,
             'previousMonth' => $month->gt($firstMonth) ? $month->subMonth() : null,
             'nextMonth' => $month->lt($lastMonth) ? $month->addMonth() : null,
             'availableDays' => $availableDays,
             'requestedDay' => $requestedDay,
             'day' => $day,
-            'times' => $day === null ? [] : $this->calculator->availableStartTimes($service->duration_minutes, $day, $now),
+            'times' => $day === null ? [] : $this->calculator->availableStartTimes($durationMinutes, $day, $now),
         ]);
+    }
+
+    /**
+     * Deduplicated, numeric ids from "servicio" — a scalar (the legacy
+     * single-service link, PRF-127) or an array — or [] when missing.
+     * Never trusts the raw value past this: anything non-numeric is
+     * dropped.
+     *
+     * @return list<int>
+     */
+    private static function requestedServiceIds(mixed $value): array
+    {
+        if ($value === null || $value === '') {
+            return [];
+        }
+
+        $ids = is_array($value) ? $value : [$value];
+
+        return array_values(array_unique(array_map('intval', array_filter($ids, 'is_numeric'))));
+    }
+
+    /**
+     * The services for $ids, in the salon's order (PRF-125) — the order
+     * $services, already sorted, naturally keeps — or empty when $ids is
+     * empty, has more than MAX_SERVICES entries, or any of them is not a
+     * reservable-online service: PRF-127 rejects such a selection whole,
+     * never silently drops the bad ones and keeps the rest.
+     *
+     * @param  list<int>  $ids
+     * @param  Collection<int, Service>  $services
+     * @return Collection<int, Service>
+     */
+    private static function selectedServices(array $ids, Collection $services): Collection
+    {
+        if ($ids === [] || count($ids) > Appointment::MAX_SERVICES) {
+            return collect();
+        }
+
+        $matched = $services->whereIn('id', $ids)->values();
+
+        return $matched->count() === count($ids) ? $matched : collect();
+    }
+
+    /**
+     * A single id as itself (so the link stays exactly as short as the
+     * legacy one-service link, PRF-127), the whole list otherwise.
+     *
+     * @param  list<int>  $ids
+     */
+    private static function servicioRouteParam(array $ids): int|array
+    {
+        return count($ids) === 1 ? $ids[0] : $ids;
     }
 
     public function store(StoreBookingRequest $request, CreateAppointment $createAppointment, AppointmentNotifier $notifier): RedirectResponse
     {
         $startsAt = $request->startsAt();
-        $service = Service::query()->bookableOnline()->find($request->validated('service_id'));
+        $serviceIds = $request->validated('service_ids');
+        $services = Service::query()->bookableOnline()->whereIn('id', $serviceIds)->get();
         $backToDay = route('reservas', [
-            'servicio' => $request->validated('service_id'),
+            'servicio' => self::servicioRouteParam($serviceIds),
             'mes' => $startsAt->format('Y-m'),
             'fecha' => $startsAt->toDateString(),
         ]).'#horas';
 
         try {
-            if ($service === null) {
+            // PRF-128: any id that does not exist or is not reservable
+            // online rejects the whole booking, exactly as a single
+            // invalid service already did.
+            if ($services->count() !== count($serviceIds)) {
                 throw new SlotUnavailableException;
             }
 
-            $appointment = $createAppointment->handle(collect([$service]), $startsAt, $request->customer(), AppointmentSource::Web, applyPublicRules: true);
+            $appointment = $createAppointment->handle($services, $startsAt, $request->customer(), AppointmentSource::Web, applyPublicRules: true);
         } catch (SlotUnavailableException) {
             return redirect()->to($backToDay)->withInput()->withErrors(['time' => __('reservas.messages.slot_unavailable')]);
         } catch (DuplicateAppointmentException) {

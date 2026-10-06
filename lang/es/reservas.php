@@ -10,12 +10,15 @@ return [
         'subtitle' => 'Elige el servicio, el día y la hora. La cita queda confirmada al momento y te enviamos un email con los detalles.',
     ],
     'steps' => [
-        'service' => '1. Elige el servicio',
+        'service' => '1. Elige el servicio o servicios',
         'day' => '2. Elige el día',
         'time' => '3. Elige la hora y déjanos tus datos',
     ],
     'no_services' => 'Ahora mismo no se pueden hacer reservas online. Llámanos al 633 912 050 o escríbenos por WhatsApp.',
-    'change_service' => 'Cambiar de servicio',
+    'max_services' => 'Hasta :max servicios por cita.',
+    'view_days' => 'Ver días y horas',
+    'change_service' => 'Cambiar',
+    'total_label' => 'Duración total',
     'calendar' => [
         'previous' => '← Mes anterior',
         'next' => 'Mes siguiente →',
@@ -50,6 +53,7 @@ return [
         'more' => 'Más información en la política de privacidad',
     ],
     'messages' => [
+        'invalid_services' => 'Esa selección de servicios no es válida. Elige de nuevo.',
         'slot_unavailable' => 'Esa hora ya no está disponible. Elige otra.',
         'duplicate' => 'Ya tienes una cita confirmada a esa hora.',
         'too_many_attempts' => 'Demasiados intentos. Espera un minuto y vuelve a probar.',
