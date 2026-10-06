@@ -18,6 +18,8 @@
 
 **Resolución (2026-10-03, agente `programador`, rama `feature/booking-review-fixes`):** 13 hallazgos resueltos (H1, M1–M3, L1–L9; L3 en parte, con el resto justificado) y 1 pendiente de decisión del usuario (M4). Cada uno lleva su resolución y su evidencia debajo.
 
+**M4 resuelto (2026-10-06):** la PR #7 (`fix/cookie-consent`) condicionó GTM/GA4/Ahrefs al consentimiento y quitó el *beacon* `<noscript>` que no se podía condicionar; fusionada en `main` y de ahí a esta rama. Los 14 hallazgos de esta revisión quedan resueltos.
+
 ---
 
 ## High
@@ -89,8 +91,8 @@
 
 ### M4. La nueva política de privacidad afirma que las cookies no técnicas dependen del consentimiento, pero la analítica se carga siempre
 
-- **Estado:** pending (decisión del usuario)
-- **Resolución:** sin cambios, por indicación del usuario: afecta a todo el sitio. Queda anotado como bloqueante en `AGENTS.md` («Before deploying the booking system»). Tras H1, la página de la cita ya no carga analítica.
+- **Estado:** resolved (2026-10-06)
+- **Resolución:** corregido en la PR #7 (`fix/cookie-consent`, fusionada en `main` en `ebe99d1`, y de ahí a esta rama con el commit de merge `037516e`): GTM, GA4 y Ahrefs ya solo se cargan si `localStorage.cookieConsent === 'accepted'` (`window.__analyticsConsentLoaders`, consultado también al pulsar «Aceptar» en el banner); el *beacon* `<noscript>` de GTM, que se dispara sin JavaScript y no se podía condicionar, se ha quitado. Lo que decía la política de privacidad («Las cookies que no son técnicas se basan en tu consentimiento») ya es cierto. Sigue vigente, sin relación con esto, que `/cita/{token}` (H1) no carga ninguna analítica en absoluto. Quitado de los bloqueantes de `AGENTS.md` («Before deploying the booking system»).
 - **Evidencia:**
   - `resources/views/pages/privacidad.blade.php:51` dice: «Las cookies que no son técnicas se basan en tu consentimiento.».
   - Sin embargo, `layouts/app.blade.php:4-9` y `:123-145` cargan GTM, GA4 y Ahrefs antes de cualquier elección.

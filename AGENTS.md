@@ -419,11 +419,6 @@ Blocking prerequisites, all pending as of 2026-10-03:
   sending domain, then run `php artisan deploy:check --smtp` as `deploy`.
 - **`SESSION_SECURE_COOKIE=true`** in the VPS `.env` (required by
   `deploy:check`).
-- **Analytics consent (review finding M4, pending the user's decision):**
-  GTM/GA4/Ahrefs still load before any cookie choice on every page except
-  `/cita/{token}`, while the privacy policy says non-technical cookies rely
-  on consent. Either gate them on consent or fix the policy text before
-  going live (`.ai/reviews/reservas.md`).
 - **Privacy policy data:** the data controller's legal name (Isabel
   Lechuga Valverde), NIF, contact email and the citas retention period
   were confirmed by the client on 2026-10-06 and are filled in across

@@ -28,8 +28,20 @@ test('the appointment page loads no analytics and never exposes its token in met
     expect($html)->toContain('<meta property="og:url" content="'.route('reservas').'">');
 });
 
-test('marketing pages keep their analytics', function () {
+/*
+ * Since the cookie-consent merge (2026-10-06, PR #7): the tracker code is
+ * always present in the markup (CacheHeaders caches this page for days,
+ * so the gate has to be client-side JS, see CookieConsentTest), but it
+ * only ever runs if cookieConsent === 'accepted' in localStorage — unlike
+ * before, "the HTML mentions googletagmanager/ahrefs" alone no longer
+ * means tracking is unconditional, so this also pins the consent check
+ * right there, not just the tracker ids.
+ */
+test('marketing pages ship the analytics code, gated on cookie consent', function () {
     $html = $this->get('/')->getContent();
 
-    expect($html)->toContain('googletagmanager')->toContain('ahrefs');
+    expect($html)
+        ->toContain('googletagmanager')
+        ->toContain('ahrefs')
+        ->toContain("cookieConsent') === 'accepted'");
 });
