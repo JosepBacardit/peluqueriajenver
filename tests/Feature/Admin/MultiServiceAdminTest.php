@@ -5,6 +5,7 @@ use App\Models\Service;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
 
@@ -42,7 +43,8 @@ test('creating a panel appointment with two services books both in the salon\'s 
         ->assertRedirect(route('admin.agenda', ['fecha' => '2030-01-08']));
 
     $appointment = Appointment::sole();
-    expect($appointment->items->pluck('service_name')->all())->toBe(['Barba', 'Corte']);
+    // Same "Orden": creation order (Corte was created first), not the name (review finding L2).
+    expect($appointment->items->pluck('service_name')->all())->toBe(['Corte', 'Barba']);
     expect($appointment->durationMinutes())->toBe(45);
     expect($appointment->ends_at->format('H:i'))->toBe('10:45');
 });
@@ -80,8 +82,8 @@ test('editing an appointment to drop one service and add another keeps the kept 
     ])->assertSessionHasNoErrors();
 
     $appointment->refresh();
-    expect($appointment->items->pluck('service_name')->all())->toBe(['Color', 'Corte']); // kept its frozen name
-    expect($appointment->items->pluck('duration_minutes')->all())->toBe([60, 30]); // kept its frozen duration
+    expect($appointment->items->pluck('service_name')->all())->toBe(['Corte', 'Color']); // Corte kept its frozen name
+    expect($appointment->items->pluck('duration_minutes')->all())->toBe([30, 60]); // and its frozen duration
     expect($appointment->durationMinutes())->toBe(90);
 });
 
@@ -154,4 +156,62 @@ test('"save anyway" still matches when the services are resubmitted in a differe
     ])->assertSessionHasNoErrors();
 
     expect($appointment->fresh()->starts_at->format('H:i'))->toBe('12:00');
+});
+
+test('a refused list of services is announced on the checkboxes and points to one message that exists', function (Closure $serviceIds) {
+    $this->from(route('admin.appointments.create'))
+        ->post(route('admin.appointments.store'), multiAdminPayload(['service_ids' => $serviceIds()]));
+    $html = $this->get(route('admin.appointments.create'))->getContent();
+
+    expect($html)->toMatch('/<fieldset id="service_ids"\s+aria-describedby="service_ids-error"/');
+    expect(substr_count($html, 'id="service_ids-error"'))->toBe(1);
+    expect($html)->toMatch('/name="service_ids\[\]" value="'.$this->haircut->id.'"[^>]*aria-invalid="true"/');
+})->with([
+    'an item error (repeated)' => [fn () => [test()->haircut->id, test()->haircut->id]],
+    'an item error (inactive)' => [fn () => [Service::factory()->inactive()->create()->id]],
+    'a list error (none)' => [fn () => []],
+]);
+
+test('the create form shows the total length of the chosen services, live and without JavaScript', function () {
+    $html = $this->get(route('admin.appointments.create', ['servicio' => [$this->haircut->id, $this->beard->id]]))->assertOk()->getContent();
+
+    expect($html)->toContain('id="service-total"');
+    expect($html)->toContain('Duración total: 45 min');
+    expect($html)->toContain('document.getElementById("service-total")');
+    expect($html)->toMatch('/class="service-checkbox[^"]*" data-minutes="30"/');
+});
+
+test('after a validation error the create form shows the total of what was checked', function () {
+    $this->from(route('admin.appointments.create'))
+        ->post(route('admin.appointments.store'), multiAdminPayload(['service_ids' => [$this->haircut->id, $this->color->id], 'customer_name' => '']));
+
+    $this->get(route('admin.appointments.create'))->assertSee('Duración total: 1 h 30 min');
+});
+
+test('the edit form totals the services the way the move counts them, with each kept service\'s booked length', function () {
+    $appointment = Appointment::factory()->withServices($this->haircut, $this->beard)->create(['starts_at' => '2030-01-08 10:00']);
+    $this->haircut->update(['duration_minutes' => 90]);
+
+    $html = $this->get(route('admin.appointments.edit', $appointment))->assertOk()->getContent();
+
+    expect($html)->toContain('Duración total: 45 min');
+    expect($html)->toMatch('/value="'.$this->haircut->id.'" class="service-checkbox[^"]*" data-minutes="30"/');
+});
+
+test('saving the same services after the catalogue was reordered sends no email and changes nothing', function () {
+    Mail::fake();
+    $appointment = Appointment::factory()->withServices($this->haircut, $this->beard)->create(['starts_at' => '2030-01-08 10:00', 'customer_email' => 'rosa@example.test', 'customer_notified_at' => now()]);
+    $itemIds = $appointment->items()->pluck('id')->all();
+    $this->beard->update(['sort_order' => -1]);
+
+    $this->put(route('admin.appointments.update', $appointment), [
+        'service_ids' => [$this->beard->id, $this->haircut->id],
+        'date' => '2030-01-08', 'time' => '10:00',
+        'customer_name' => 'Rosa Vidal', 'customer_phone' => '611 222 333', 'customer_email' => 'rosa@example.test',
+        'version' => $appointment->updated_at->getTimestamp(),
+    ])->assertSessionHas('status', 'Cita actualizada.');
+
+    Mail::assertNothingSent();
+    expect($appointment->items()->pluck('id')->all())->toBe($itemIds);
+    expect($appointment->fresh()->customer_phone)->toBe('611 222 333');
 });

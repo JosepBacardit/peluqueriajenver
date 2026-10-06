@@ -320,8 +320,8 @@ test('choosing two services in the agenda filter marks "Cabe" only where the sum
 
     // 45 minutes: 18:30 + 45 = 19:15, past closing — does not fit; 18:00
     // does (18:00 + 45 = 18:45).
-    expect($html)->toContain('aria-label="Hueco libre a las 18:00, plaza 1, cabe Barba + Corte"');
-    expect($html)->not->toContain('aria-label="Hueco libre a las 18:30, plaza 1, cabe Barba + Corte"');
+    expect($html)->toContain('aria-label="Hueco libre a las 18:00, plaza 1, cabe Corte + Barba"');
+    expect($html)->not->toContain('aria-label="Hueco libre a las 18:30, plaza 1, cabe Corte + Barba"');
 });
 
 /**
@@ -333,11 +333,11 @@ test('the service filter survives navigating the tabs with several services sele
     $haircut = Service::factory()->create(['name' => 'Corte']);
     $beard = Service::factory()->create(['name' => 'Barba']);
     // AgendaController::serviciosFromQuery() returns them in the salon's
-    // order (sort_order, then name), not the order given in the query —
-    // "Barba" sorts before "Corte".
-    $servicioParam = ['servicio' => [$beard->id, $haircut->id]];
+    // order (ServiceList::sort(): sort_order, then creation order — review
+    // finding L2), not the order given in the query.
+    $servicioParam = ['servicio' => [$haircut->id, $beard->id]];
 
-    $html = $this->get(route('admin.agenda', ['servicio' => [$haircut->id, $beard->id]]))->assertOk()->getContent();
+    $html = $this->get(route('admin.agenda', ['servicio' => [$beard->id, $haircut->id]]))->assertOk()->getContent();
 
     expect($html)->toContain(e(route('admin.agenda', ['vista' => 'semana', 'fecha' => '2030-01-08', ...$servicioParam])));
     expect($html)->toContain(e(route('admin.appointments.create', ['fecha' => '2030-01-08', 'volver' => 'dia:2030-01-08', ...$servicioParam])));
@@ -361,4 +361,19 @@ test('selecting two services keeps vista Día at a fixed number of queries', fun
     expect($countOf('opening_hours'))->toBe(1);
     expect($countOf('booking_settings'))->toBe(1);
     expect($countOf('services'))->toBe(1);
+});
+
+/**
+ * PRF-132 in vista Semana (review T050): the desktop columns' aria-label
+ * names every chosen service and marks only where their sum fits.
+ */
+test('semana with two services marks only where their sum fits, naming both', function () {
+    $haircut = Service::factory()->create(['name' => 'Corte', 'duration_minutes' => 30]);
+    $beard = Service::factory()->create(['name' => 'Barba', 'duration_minutes' => 15]);
+
+    $html = $this->get(route('admin.agenda', ['vista' => 'semana', 'servicio' => [$haircut->id, $beard->id]]))->assertOk()->getContent();
+
+    // 45 minutes: 18:00 fits (until 18:45), 18:30 does not (19:15).
+    expect($html)->toContain('martes 8, Hueco libre a las 18:00, plaza 1, cabe Corte + Barba');
+    expect($html)->not->toContain('martes 8, Hueco libre a las 18:30, plaza 1, cabe Corte + Barba');
 });

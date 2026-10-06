@@ -32,20 +32,27 @@
         // was filtered by (or whose "Cabe" hueco was tapped);
         // "old('service_ids')" still wins when re-displaying the form
         // after a validation error with a different choice.
-        $checkedServiceIds = old('service_ids', $servicios ?? []);
+        $checkedServiceIds = array_map('intval', (array) old('service_ids', $servicios ?? []));
+        // Review finding L4: one message for the list and its items, with
+        // the id the fieldset points to; aria-invalid on each checkbox
+        // (a fieldset does not expose it).
+        $servicesError = $errors->first('service_ids') ?: $errors->first('service_ids.*');
+        // Review finding L6: the total also without JavaScript (and after
+        // a validation error); the script below keeps it live.
+        $checkedMinutes = (int) $services->whereIn('id', $checkedServiceIds)->sum('duration_minutes');
     @endphp
-    <fieldset>
+    <fieldset id="service_ids" @if ($servicesError) aria-describedby="service_ids-error" @endif>
         <legend class="block text-sm mb-1">Servicios (hasta {{ \App\Models\Appointment::MAX_SERVICES }})</legend>
-        <div id="service_ids" class="space-y-2" {!! $fieldAria('service_ids') !!}>
+        <div class="space-y-2">
             @foreach ($services as $service)
                 <label class="flex items-center gap-3 min-h-11 cursor-pointer">
-                    <input type="checkbox" name="service_ids[]" value="{{ $service->id }}" class="w-5 h-5 shrink-0 accent-gold" @checked(in_array($service->id, $checkedServiceIds))>
+                    <input type="checkbox" name="service_ids[]" value="{{ $service->id }}" class="service-checkbox w-5 h-5 shrink-0 accent-gold" data-minutes="{{ $service->duration_minutes }}" @checked(in_array($service->id, $checkedServiceIds, true)) @if ($servicesError) aria-invalid="true" @endif>
                     <span>{{ $service->name }} ({{ $service->duration_label }})</span>
                 </label>
             @endforeach
         </div>
-        @error('service_ids') <p id="service_ids-error" class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
-        @error('service_ids.*') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
+        <p id="service-total" class="text-sm text-gold-light mt-2 {{ $checkedMinutes > 0 ? '' : 'hidden' }}" aria-live="polite">Duración total: {{ \App\Models\Service::formatDuration($checkedMinutes) }}</p>
+        @if ($servicesError) <p id="service_ids-error" class="text-red-400 text-sm mt-1">{{ $servicesError }}</p> @endif
     </fieldset>
 
     <div class="grid sm:grid-cols-2 gap-4">
@@ -97,5 +104,6 @@
         <a href="{{ route('admin.agenda', $backRoute) }}" class="text-gray-300 hover:text-gold">Volver a la agenda</a>
     </div>
 </form>
+@include('partials.service-total-script', ['targetId' => 'service-total', 'label' => 'Duración total'])
 @endif
 @endsection

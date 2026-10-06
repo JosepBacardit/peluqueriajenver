@@ -151,3 +151,74 @@ test('no price ever appears with two services selected', function () {
 
     expect($html)->not->toContain('€')->not->toContain('99,99');
 });
+
+test('a submitted service list whose keys are not a list is refused without a server error', function (array $serviceIds) {
+    $this->post(route('reservas.store'), multiBookingPayload(['service_ids' => $serviceIds]))
+        ->assertStatus(302)
+        ->assertSessionHasErrors('service_ids');
+
+    expect(Appointment::count())->toBe(0);
+})->with([
+    'a non-numeric key' => [fn () => ['a' => test()->haircut->id]],
+    'a key that does not start at 0' => [fn () => [5 => test()->haircut->id]],
+]);
+
+test('a refused list of services sends the customer back to step 1 with a visible notice tied to the checkboxes', function (Closure $serviceIds) {
+    $response = $this->followingRedirects()
+        ->post(route('reservas.store'), multiBookingPayload(['service_ids' => $serviceIds()]))
+        ->assertOk();
+
+    $html = $response->getContent();
+    expect($html)->toContain('id="services-error" role="alert"');
+    expect($html)->toContain('Esa selección de servicios no es válida. Elige de nuevo.');
+    expect($html)->toMatch('/<fieldset\s+aria-describedby="services-error"/');
+    expect($html)->toMatch('/name="servicio\[\]" value="'.$this->haircut->id.'"[^>]*checked[^>]*aria-invalid="true"/');
+    expect(Appointment::count())->toBe(0);
+})->with([
+    'repeated' => [fn () => [test()->haircut->id, test()->haircut->id]],
+    'keys that are not a list' => [fn () => [5 => test()->haircut->id]],
+]);
+
+test('repeated or non-numeric services in the page address are tidied up with a discreet notice, never a broken page', function (array $servicio) {
+    $html = $this->get(route('reservas', ['servicio' => $servicio, 'fecha' => '2030-01-08']))->assertOk()->getContent();
+
+    // Step 2 with the haircut alone, and the notice.
+    expect($html)->toContain('Duración total: 30 min');
+    expect($html)->toContain('Hemos quitado de tu selección los servicios repetidos o no válidos.');
+    expect($html)->not->toContain('name="servicio[]"');
+})->with([
+    'repeated' => [fn () => [test()->haircut->id, test()->haircut->id]],
+    'the same service six times' => [fn () => array_fill(0, 6, test()->haircut->id)],
+    'not a number' => [fn () => [test()->haircut->id, 'abc']],
+]);
+
+test('a clean selection shows no "tidied up" notice', function () {
+    $this->get(route('reservas', ['servicio' => [$this->haircut->id, $this->beard->id]]))
+        ->assertOk()
+        ->assertDontSee('Hemos quitado de tu selección');
+});
+
+test('"Cambiar" goes back to step 1 with the chosen services still checked', function () {
+    $ids = [$this->haircut->id, $this->beard->id];
+    $step2 = $this->get(route('reservas', ['servicio' => $ids]))->assertOk()->getContent();
+
+    $changeUrl = route('reservas', ['servicio' => $ids, 'cambiar' => 1]);
+    expect($step2)->toContain('href="'.e($changeUrl).'"');
+
+    $step1 = $this->get($changeUrl)->assertOk()->getContent();
+    expect($step1)->toMatch('/name="servicio\[\]" value="'.$this->haircut->id.'"[^>]*checked/');
+    expect($step1)->toMatch('/name="servicio\[\]" value="'.$this->beard->id.'"[^>]*checked/');
+    expect($step1)->not->toContain('Esa selección de servicios no es válida');
+});
+
+test('step 2 and the saved booking put services with the same "Orden" in the same order', function () {
+    // Same "Orden"; created in this order, while by name "Arreglo" goes first.
+    $corte = Service::factory()->create(['name' => 'Corte X', 'duration_minutes' => 15, 'sort_order' => 9]);
+    $arreglo = Service::factory()->create(['name' => 'arreglo X', 'duration_minutes' => 10, 'sort_order' => 9]);
+
+    $this->get(route('reservas', ['servicio' => [$arreglo->id, $corte->id]]))->assertOk()->assertSee('Corte X + arreglo X');
+
+    $this->post(route('reservas.store'), multiBookingPayload(['service_ids' => [$arreglo->id, $corte->id]]));
+
+    expect(Appointment::sole()->services_label)->toBe('Corte X + arreglo X');
+});

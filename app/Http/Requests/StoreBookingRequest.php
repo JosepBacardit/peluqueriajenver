@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Appointment;
 use App\Rules\PhoneNumber;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
@@ -48,7 +49,10 @@ class StoreBookingRequest extends FormRequest
             // controller (as it already was for a single service), since
             // rejecting the whole booking either way needs the same
             // "esa hora ya no está disponible" message (PRF-128, PRF-033).
-            'service_ids' => ['required', 'array', 'min:1', 'max:'.Appointment::MAX_SERVICES],
+            // "list" (review finding M2): service_ids[a]=3 or
+            // service_ids[5]=3 is rejected here instead of reaching the
+            // controller with keys it does not expect.
+            'service_ids' => ['required', 'list', 'min:1', 'max:'.Appointment::MAX_SERVICES],
             'service_ids.*' => ['distinct', 'integer'],
             'date' => ['required', 'date_format:Y-m-d'],
             'time' => ['required', 'date_format:H:i'],
@@ -58,6 +62,29 @@ class StoreBookingRequest extends FormRequest
             'notes' => ['nullable', 'string', 'max:500'],
             'privacy' => ['accepted'],
         ];
+    }
+
+    /**
+     * A bad list of services (repeated, more than MAX_SERVICES, keys that
+     * are not a list, not ids) can only come from a tampered form, and the
+     * step it was sent from has no checkboxes to show the error next to.
+     * So, instead of going back there with an error nobody would see
+     * (review finding M2), it goes back to step 1 with whatever valid ids
+     * it had checked and the "invalid selection" notice linked to the
+     * checkboxes.
+     */
+    protected function failedValidation(Validator $validator): void
+    {
+        $servicesFailed = collect($validator->errors()->keys())
+            ->contains(fn (string $key) => $key === 'service_ids' || str_starts_with($key, 'service_ids.'));
+
+        if ($servicesFailed) {
+            $raw = $this->input('service_ids');
+            $ids = array_values(array_unique(array_filter(is_array($raw) ? $raw : [$raw], fn ($id) => is_int($id) || (is_string($id) && ctype_digit($id)))));
+            $this->redirect = route('reservas', $ids === [] ? [] : ['servicio' => $ids, 'cambiar' => 1]);
+        }
+
+        parent::failedValidation($validator);
     }
 
     public function startsAt(): CarbonImmutable

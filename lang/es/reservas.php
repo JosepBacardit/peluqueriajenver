@@ -54,6 +54,7 @@ return [
     ],
     'messages' => [
         'invalid_services' => 'Esa selección de servicios no es válida. Elige de nuevo.',
+        'services_adjusted' => 'Hemos quitado de tu selección los servicios repetidos o no válidos.',
         'slot_unavailable' => 'Esa hora ya no está disponible. Elige otra.',
         'duplicate' => 'Ya tienes una cita confirmada a esa hora.',
         'too_many_attempts' => 'Demasiados intentos. Espera un minuto y vuelve a probar.',

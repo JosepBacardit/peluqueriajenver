@@ -9,8 +9,8 @@ use InvalidArgumentException;
 
 /**
  * The services of one appointment (PRF-125): 1 to Appointment::MAX_SERVICES
- * distinct services, done one after another in the salon's order (sort
- * order, then name), whatever order they were chosen in. Shared by
+ * distinct services, done one after another in the salon's order (sort(),
+ * whatever order they were chosen in). Shared by
  * CreateAppointment and RescheduleAppointment so both apply the same rules;
  * the form requests reject a bad list first, so a bad list reaching here
  * is a programming error.
@@ -35,7 +35,27 @@ final class ServiceList
             throw new InvalidArgumentException('An appointment cannot hold the same service twice.');
         }
 
-        return $services->sortBy([['sort_order', 'asc'], ['name', 'asc'], ['id', 'asc']])->values();
+        return self::sort($services);
+    }
+
+    /**
+     * The salon's order of an appointment's services: "Orden" (sort_order),
+     * then the order they were created in (id). The single criterion for
+     * every place that puts an appointment's services in order — saving
+     * them, the summary on /reservas, the agenda's "Cabe" selection — so
+     * they can never disagree (review finding L2). Names are deliberately
+     * not compared: PHP and MySQL collate them differently (case and
+     * accents), while integers order the same everywhere. Catalogue lists
+     * (Service::scopeOrdered(), PRF-012) still sort by name for display.
+     *
+     * @param  iterable<Service>  $services
+     * @return Collection<int, Service>
+     */
+    public static function sort(iterable $services): Collection
+    {
+        return collect($services)
+            ->sortBy([['sort_order', 'asc'], ['id', 'asc']])
+            ->values();
     }
 
     /**

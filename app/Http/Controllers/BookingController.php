@@ -6,6 +6,7 @@ use App\Actions\CreateAppointment;
 use App\Booking\AppointmentNotifier;
 use App\Booking\AvailabilityCalculator;
 use App\Booking\DuplicateAppointmentException;
+use App\Booking\ServiceList;
 use App\Booking\SlotUnavailableException;
 use App\Booking\TooManyUpcomingAppointmentsException;
 use App\Enums\AppointmentSource;
@@ -31,17 +32,20 @@ class BookingController extends Controller
     public function index(Request $request): View
     {
         $services = Service::query()->bookableOnline()->ordered()->get();
-        $requestedIds = self::requestedServiceIds($request->query('servicio'));
+        ['ids' => $requestedIds, 'adjusted' => $selectionAdjusted] = self::requestedServiceIds($request->query('servicio'));
         $selectedServices = self::selectedServices($requestedIds, $services);
 
-        if ($selectedServices->isEmpty()) {
+        // Step 1 also when "Cambiar" was pressed on step 2 (cambiar=1,
+        // review finding L6): the choice comes back already checked.
+        if ($selectedServices->isEmpty() || $request->boolean('cambiar')) {
             return view('pages.reservas', [
                 'services' => $services,
-                'selectedServices' => $selectedServices,
+                'selectedServices' => collect(),
                 // A notice only once something was actually tried and
                 // failed (too many, none matching) — not on a first,
-                // empty visit to the page.
-                'invalidSelection' => $requestedIds !== [],
+                // empty visit to the page, nor when coming back to change
+                // a valid choice.
+                'invalidSelection' => $selectedServices->isEmpty() && $requestedIds !== [],
                 'checkedIds' => $requestedIds,
             ]);
         }
@@ -72,6 +76,7 @@ class BookingController extends Controller
             'selectedServices' => $selectedServices,
             'checkedIds' => $selectedServices->pluck('id')->all(),
             'invalidSelection' => false,
+            'selectionAdjusted' => $selectionAdjusted,
             // The "servicio" query fragment every link on step 2+ (the
             // calendar's day/month links, "Cambiar") splats in — a scalar
             // when there is only one (keeping that link exactly as short
@@ -89,27 +94,32 @@ class BookingController extends Controller
     }
 
     /**
-     * Deduplicated, numeric ids from "servicio" — a scalar (the legacy
-     * single-service link, PRF-127) or an array — or [] when missing.
-     * Never trusts the raw value past this: anything non-numeric is
-     * dropped.
+     * Ids from "servicio" — a scalar (the legacy single-service link,
+     * PRF-127) or an array — or [] when missing. PRF-127 (review finding
+     * L1): a repeated id or a value that is not an id is normalised away
+     * here (never trusted past this point), and 'adjusted' says so, so
+     * step 2 can show a discreet notice instead of a broken page. More
+     * than MAX_SERVICES distinct ids, or ids that are not reservable
+     * online, are not normalised: selectedServices() rejects them whole.
      *
-     * @return list<int>
+     * @return array{ids: list<int>, adjusted: bool}
      */
     private static function requestedServiceIds(mixed $value): array
     {
         if ($value === null || $value === '') {
-            return [];
+            return ['ids' => [], 'adjusted' => false];
         }
 
-        $ids = is_array($value) ? $value : [$value];
+        $raw = is_array($value) ? array_values($value) : [$value];
+        $ids = array_values(array_unique(array_map('intval', array_filter($raw, fn ($id) => is_int($id) || (is_string($id) && ctype_digit($id))))));
 
-        return array_values(array_unique(array_map('intval', array_filter($ids, 'is_numeric'))));
+        return ['ids' => $ids, 'adjusted' => count($ids) !== count($raw)];
     }
 
     /**
-     * The services for $ids, in the salon's order (PRF-125) — the order
-     * $services, already sorted, naturally keeps — or empty when $ids is
+     * The services for $ids, in the salon's order (PRF-125,
+     * ServiceList::sort(), the same order the booking is saved in) — or
+     * empty when $ids is
      * empty, has more than MAX_SERVICES entries, or any of them is not a
      * reservable-online service: PRF-127 rejects such a selection whole,
      * never silently drops the bad ones and keeps the rest.
@@ -126,7 +136,7 @@ class BookingController extends Controller
 
         $matched = $services->whereIn('id', $ids)->values();
 
-        return $matched->count() === count($ids) ? $matched : collect();
+        return $matched->count() === count($ids) ? ServiceList::sort($matched) : collect();
     }
 
     /**
@@ -137,13 +147,15 @@ class BookingController extends Controller
      */
     private static function servicioRouteParam(array $ids): int|array
     {
+        $ids = array_values($ids);
+
         return count($ids) === 1 ? $ids[0] : $ids;
     }
 
     public function store(StoreBookingRequest $request, CreateAppointment $createAppointment, AppointmentNotifier $notifier): RedirectResponse
     {
         $startsAt = $request->startsAt();
-        $serviceIds = $request->validated('service_ids');
+        $serviceIds = array_values($request->validated('service_ids'));
         $services = Service::query()->bookableOnline()->whereIn('id', $serviceIds)->get();
         $backToDay = route('reservas', [
             'servicio' => self::servicioRouteParam($serviceIds),

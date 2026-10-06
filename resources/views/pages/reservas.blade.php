@@ -35,11 +35,18 @@
                 <h2 class="font-serif text-2xl text-white mb-2">{{ __('reservas.steps.service') }}</h2>
                 <p class="text-sm text-gray-400 mb-6">{{ __('reservas.max_services', ['max' => \App\Models\Appointment::MAX_SERVICES]) }}</p>
 
-                @if ($invalidSelection)
-                    <p role="alert" class="border border-red-500/50 bg-red-500/10 text-red-200 px-4 py-3 mb-6">{{ __('reservas.messages.invalid_services') }}</p>
+                @php
+                    // Also a list of services refused when the booking was
+                    // sent (StoreBookingRequest::failedValidation()).
+                    $servicesInvalid = $invalidSelection || $errors->has('service_ids') || $errors->has('service_ids.*');
+                @endphp
+                @if ($servicesInvalid)
+                    <p id="services-error" role="alert" class="border border-red-500/50 bg-red-500/10 text-red-200 px-4 py-3 mb-6">{{ __('reservas.messages.invalid_services') }}</p>
                 @endif
 
                 <form method="GET" action="{{ route('reservas') }}">
+                    <fieldset @if ($servicesInvalid) aria-describedby="services-error" @endif>
+                    <legend class="sr-only">{{ __('reservas.steps.service') }}</legend>
                     <ul class="grid sm:grid-cols-2 gap-4 mb-6">
                         @foreach ($services as $item)
                             <li>
@@ -51,11 +58,12 @@
                                         <span class="block text-white font-semibold">{{ $item->name }}</span>
                                         <span class="block text-sm text-gray-400 mt-1">{{ $item->duration_label }}</span>
                                     </span>
-                                    <input type="checkbox" name="servicio[]" value="{{ $item->id }}" class="service-checkbox w-5 h-5 shrink-0 accent-gold" data-minutes="{{ $item->duration_minutes }}" @checked(in_array($item->id, $checkedIds, true))>
+                                    <input type="checkbox" name="servicio[]" value="{{ $item->id }}" class="service-checkbox w-5 h-5 shrink-0 accent-gold" data-minutes="{{ $item->duration_minutes }}" @checked(in_array($item->id, $checkedIds, true)) @if ($servicesInvalid) aria-invalid="true" @endif>
                                 </label>
                             </li>
                         @endforeach
                     </ul>
+                    </fieldset>
 
                     {{-- Progressive enhancement only: hidden without
                          JavaScript, where the total is shown on step 2
@@ -65,46 +73,20 @@
                     <button type="submit" class="btn-gold">{{ __('reservas.view_days') }}</button>
                 </form>
             </div>
-            <script>
-                (function () {
-                    var boxes = document.querySelectorAll('.service-checkbox');
-                    var preview = document.getElementById('service-total-preview');
-
-                    function formatMinutes(minutes) {
-                        var hours = Math.floor(minutes / 60), rest = minutes % 60;
-                        if (hours === 0) return rest + ' min';
-                        if (rest === 0) return hours + ' h';
-                        return hours + ' h ' + rest + ' min';
-                    }
-
-                    function update() {
-                        var totalMinutes = 0, count = 0;
-                        boxes.forEach(function (box) {
-                            if (box.checked) {
-                                totalMinutes += parseInt(box.dataset.minutes, 10);
-                                count++;
-                            }
-                        });
-                        if (count > 0) {
-                            preview.textContent = '{{ __('reservas.total_label') }}: ' + formatMinutes(totalMinutes);
-                            preview.classList.remove('hidden');
-                        } else {
-                            preview.classList.add('hidden');
-                        }
-                    }
-
-                    boxes.forEach(function (box) { box.addEventListener('change', update); });
-                    update();
-                })();
-            </script>
+            @include('partials.service-total-script', ['targetId' => 'service-total-preview', 'label' => __('reservas.total_label')])
         @else
             <div class="flex flex-wrap items-center justify-between gap-4 border border-[#2A2A2A] p-4">
                 <p class="text-white">
-                    <span class="text-gold">{{ $selectedServices->pluck('name')->implode(' + ') }}</span>
+                    <span class="text-gold">{{ \App\Booking\ServiceList::label($selectedServices->pluck('name')) }}</span>
                     · {{ __('reservas.total_label') }}: {{ \App\Models\Service::formatDuration((int) $selectedServices->sum('duration_minutes')) }}
                 </p>
-                <a href="{{ route('reservas') }}" class="text-sm text-gray-300 hover:text-gold underline">{{ __('reservas.change_service') }}</a>
+                {{-- Back to step 1 with this choice still checked (review
+                     finding L6). --}}
+                <a href="{{ route('reservas', [...$servicioQuery, 'cambiar' => 1]) }}" class="text-sm text-gray-300 hover:text-gold underline">{{ __('reservas.change_service') }}</a>
             </div>
+            @if ($selectionAdjusted)
+                <p role="status" class="text-sm text-gray-400">{{ __('reservas.messages.services_adjusted') }}</p>
+            @endif
 
             {{-- Step 2: day --}}
             @include('pages.partials.reservas-calendar')

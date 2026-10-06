@@ -75,7 +75,8 @@ class RescheduleAppointment
      *
      * $services are the 1 to Appointment::MAX_SERVICES services the
      * appointment will hold, put in the salon's order
-     * (ServiceList::ordered()). When the list does not change, the
+     * (ServiceList::ordered()). When the set of services does not change
+     * (in whatever order), the
      * appointment keeps its services, label and length exactly as booked;
      * when it does, each service it already had keeps the name, duration
      * and price frozen when it was booked (PRF-126, as when a service is
@@ -137,8 +138,13 @@ class RescheduleAppointment
             }
 
             $currentItems = AppointmentService::query()->where('appointment_id', $current->id)->orderBy('position')->get();
-            $keepsServices = $currentItems->pluck('service_id')->map(fn ($id) => (int) $id)->all()
-                === $services->pluck('id')->map(fn ($id) => (int) $id)->all();
+            // Compared as sets (review finding L3): the same services in a
+            // different order — e.g. after the salon reorders its
+            // catalogue — are not a change, so the rows, the summary and
+            // the order the appointment was booked with are kept and the
+            // customer gets no "your appointment changed" email.
+            $keepsServices = $currentItems->pluck('service_id')->map(fn ($id) => (int) $id)->sort()->values()->all()
+                === $services->pluck('id')->map(fn ($id) => (int) $id)->sort()->values()->all();
             $items = $keepsServices ? [] : $services->values()->map(function (Service $service, int $index) use ($currentItems): array {
                 $kept = $currentItems->first(fn (AppointmentService $item) => (int) $item->service_id === (int) $service->id);
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Booking\AvailabilityCalculator;
 use App\Booking\DayTimeline;
+use App\Booking\ServiceList;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\BookingSetting;
@@ -106,7 +107,9 @@ class AgendaController extends Controller
         $ids = array_values(array_unique(array_map('intval', array_filter($ids, 'is_numeric'))));
         $ids = array_slice($ids, 0, Appointment::MAX_SERVICES);
 
-        return $services->whereIn('id', $ids)->values();
+        // The salon's order of an appointment's services (review finding
+        // L2): the same ServiceList::sort() the booking is saved with.
+        return ServiceList::sort($services->whereIn('id', $ids));
     }
 
     /**

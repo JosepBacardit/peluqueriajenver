@@ -298,3 +298,86 @@ test('ServiceList returns a plain collection in the salon\'s order', function ()
     expect($ordered)->toBeInstanceOf(Collection::class);
     expect($ordered->pluck('id')->all())->toBe([$this->corte->id, $this->barba->id, $this->tinte->id]);
 });
+
+/**
+ * Runs $sideEffect once, right after the move has re-read the
+ * appointment's services — that is, inside the window between that
+ * re-read and the conditional UPDATE, where a cancellation (which takes no
+ * lock on booking_settings) can still commit (review finding M1). SQLite
+ * has a single connection, so the side effect runs inside the move's own
+ * transaction: when the move is refused and rolled back, the side effect
+ * is rolled back with it. What these tests check is that the move refuses
+ * and writes nothing of its own, or overwrites everything consistently.
+ */
+function duringMoveWindow(Closure $sideEffect): void
+{
+    $fired = false;
+
+    DB::listen(function ($query) use (&$fired, $sideEffect) {
+        if (! $fired && str_starts_with($query->sql, 'select') && str_contains($query->sql, 'from "appointment_services" where "appointment_id"')) {
+            $fired = true;
+            $sideEffect();
+        }
+    });
+}
+
+test('a cancellation committed between the re-read and the conditional update stops the move before it touches the services', function () {
+    $appointment = bookServices([$this->corte]);
+    $itemsBefore = itemsOf($appointment);
+
+    duringMoveWindow(fn () => DB::table('appointments')->where('id', $appointment->id)->update(['status' => 'cancelled', 'cancelled_at' => now()]));
+
+    expect(fn () => rebook($appointment, [$this->corte, $this->barba], '2030-01-08 12:00'))->toThrow(AppointmentNotMovableException::class);
+
+    // The refused move wrote nothing: same time, same summary, same rows.
+    $after = $appointment->fresh();
+    expect($after->starts_at->format('H:i'))->toBe('10:00');
+    expect($after->services_label)->toBe('Corte de Pelo Hombre');
+    expect(itemsOf($after))->toBe($itemsBefore);
+});
+
+test('a move committed by someone else inside the window is overwritten whole, never mixed', function () {
+    $appointment = bookServices([$this->corte]);
+
+    // What another move would have committed: a new time, label and rows.
+    duringMoveWindow(function () use ($appointment) {
+        DB::table('appointments')->where('id', $appointment->id)->update(['services_label' => 'Tinte', 'starts_at' => '2030-01-08 15:00:00', 'ends_at' => '2030-01-08 16:00:00']);
+        DB::table('appointment_services')->where('appointment_id', $appointment->id)->delete();
+        DB::table('appointment_services')->insert(['appointment_id' => $appointment->id, 'service_id' => $this->tinte->id, 'position' => 1, 'service_name' => 'Tinte', 'duration_minutes' => 60, 'price_cents' => 3500, 'created_at' => now(), 'updated_at' => now()]);
+    });
+
+    rebook($appointment, [$this->corte, $this->barba], '2030-01-08 12:00');
+
+    $final = $appointment->fresh();
+    expect($final->services_label)->toBe('Corte de Pelo Hombre + Corte/Arreglo barba');
+    expect($final->starts_at->format('H:i'))->toBe('12:00');
+    expect(collect(itemsOf($final))->pluck('service_id')->all())->toBe([$this->corte->id, $this->barba->id]);
+    expect(AppointmentService::count())->toBe(2);
+});
+
+test('the same services in a different order are not a change: rows, summary and order are kept', function () {
+    $appointment = bookServices([$this->corte, $this->barba]);
+    $itemIds = AppointmentService::where('appointment_id', $appointment->id)->orderBy('position')->pluck('id')->all();
+    // The salon reorders its catalogue: the beard now goes first.
+    $this->barba->update(['sort_order' => 0]);
+
+    $outcome = app(RescheduleAppointment::class)->handle(
+        $appointment, collect([$this->barba, $this->corte]), CarbonImmutable::parse('2030-01-08 10:00'),
+        $appointment->only(['customer_name', 'customer_phone', 'customer_email', 'notes']), false, $this->now,
+    );
+
+    expect($outcome->rescheduled)->toBeFalse();
+    expect(AppointmentService::where('appointment_id', $appointment->id)->orderBy('position')->pluck('id')->all())->toBe($itemIds);
+    expect($appointment->fresh()->services_label)->toBe('Corte de Pelo Hombre + Corte/Arreglo barba');
+});
+
+test('services with the same "Orden" go in the order they were created, never by name', function () {
+    // Created in this order; by name (any collation) "Arreglo" would go first.
+    $corte = Service::factory()->create(['name' => 'Corte', 'duration_minutes' => 15, 'sort_order' => 7]);
+    $arreglo = Service::factory()->create(['name' => 'arreglo', 'duration_minutes' => 10, 'sort_order' => 7]);
+
+    $appointment = bookServices([$arreglo, $corte]);
+
+    expect($appointment->services_label)->toBe('Corte + arreglo');
+    expect(ServiceList::sort([$arreglo, $corte])->pluck('id')->all())->toBe([$corte->id, $arreglo->id]);
+});

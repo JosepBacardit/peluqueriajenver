@@ -40,20 +40,32 @@
         // (the bug this task fixes: the old single <select> only ever
         // sent the first one back); "old('service_ids')" wins after a
         // validation error with a different choice made in the form.
-        $checkedServiceIds = old('service_ids', $selectedIds);
+        $checkedServiceIds = array_map('intval', (array) old('service_ids', $selectedIds));
+        // Review finding L4: one message for the list and its items, with
+        // the id the fieldset points to; aria-invalid on each checkbox
+        // (a fieldset does not expose it).
+        $servicesError = $errors->first('service_ids') ?: $errors->first('service_ids.*');
+        $servicesDescribedBy = implode(' ', array_filter([$servicesError ? 'service_ids-error' : null, $slotWarning ? 'slot-warning-text' : null]));
+        // Review finding L6: the minutes each service would add, the way
+        // RescheduleAppointment counts them (a service the appointment
+        // already has keeps its booked length), for the total shown with
+        // and without JavaScript.
+        $frozenMinutes = $appointment->items->pluck('duration_minutes', 'service_id');
+        $minutesOf = fn ($service) => (int) ($frozenMinutes[$service->id] ?? $service->duration_minutes);
+        $checkedMinutes = (int) $services->whereIn('id', $checkedServiceIds)->sum($minutesOf);
     @endphp
-    <fieldset>
+    <fieldset id="service_ids" @if ($servicesDescribedBy !== '') aria-describedby="{{ $servicesDescribedBy }}" @endif>
         <legend class="block text-sm mb-1">Servicios (hasta {{ \App\Models\Appointment::MAX_SERVICES }})</legend>
-        <div id="service_ids" class="space-y-2" {!! $fieldAria('service_ids', true) !!}>
+        <div class="space-y-2">
             @foreach ($services as $service)
                 <label class="flex items-center gap-3 min-h-11 cursor-pointer">
-                    <input type="checkbox" name="service_ids[]" value="{{ $service->id }}" class="w-5 h-5 shrink-0 accent-gold" @checked(in_array($service->id, $checkedServiceIds))>
+                    <input type="checkbox" name="service_ids[]" value="{{ $service->id }}" class="service-checkbox w-5 h-5 shrink-0 accent-gold" data-minutes="{{ $minutesOf($service) }}" @checked(in_array($service->id, $checkedServiceIds, true)) @if ($servicesError) aria-invalid="true" @endif>
                     <span>{{ $service->name }} ({{ $service->duration_label }}){{ $service->is_active ? '' : ' · inactivo' }}</span>
                 </label>
             @endforeach
         </div>
-        @error('service_ids') <p id="service_ids-error" class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
-        @error('service_ids.*') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
+        <p id="service-total" class="text-sm text-gold-light mt-2 {{ $checkedMinutes > 0 ? '' : 'hidden' }}" aria-live="polite">Duración total: {{ \App\Models\Service::formatDuration($checkedMinutes) }}</p>
+        @if ($servicesError) <p id="service_ids-error" class="text-red-400 text-sm mt-1">{{ $servicesError }}</p> @endif
     </fieldset>
 
     <div class="grid sm:grid-cols-2 gap-4">
@@ -120,4 +132,5 @@
         <script>document.getElementById('slot-warning').focus();</script>
     @endif
 </form>
+@include('partials.service-total-script', ['targetId' => 'service-total', 'label' => 'Duración total'])
 @endsection
