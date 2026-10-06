@@ -1,12 +1,39 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <!-- Google Tag Manager (required early for tracking) -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-NP6KXF9K');</script>
+    <!-- Google Tag Manager (required early for tracking; gated on cookie consent, see .ai/reviews/reservas.md M4) -->
+    <script>
+      (function () {
+        let loaded = false;
+        function loadGoogleTagManager() {
+          if (loaded) {
+            return;
+          }
+          loaded = true;
+          (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+          new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+          j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+          'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+          })(window,document,'script','dataLayer','GTM-NP6KXF9K');
+        }
+
+        window.__analyticsConsentLoaders = window.__analyticsConsentLoaders || [];
+        window.__analyticsConsentLoaders.push(loadGoogleTagManager);
+
+        // A blocked localStorage must never load a tracker: treat the throw
+        // as "no confirmed consent".
+        let consentAccepted = false;
+        try {
+          consentAccepted = localStorage.getItem('cookieConsent') === 'accepted';
+        } catch (e) {
+          consentAccepted = false;
+        }
+
+        if (consentAccepted) {
+          loadGoogleTagManager();
+        }
+      })();
+    </script>
     <!-- End Google Tag Manager -->
 
     <meta charset="UTF-8">
@@ -44,35 +71,95 @@
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
 
-    <!-- DNS prefetch y preconnect para Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    {{--
+        Fonts are self-hosted (resources/fonts/, @font-face rules in
+        resources/css/app.css) so no request and no visitor IP ever reaches
+        Google's font servers. Only the two weights needed before first
+        paint of the hero text are preloaded here; the rest load with the
+        rest of app.css below. crossorigin is required even for a
+        same-origin font preload, or the browser fetches it twice.
 
-    <!-- Preload crítico de fuentes woff2 para evitar FOUT -->
-    <link rel="preload" as="font" type="font/woff2" href="https://fonts.gstatic.com/s/playfairdisplay/v30/nuFiD-vYS-_2YttRW7dM7IitM_b85eLs6Gs.woff2" crossorigin>
-    <link rel="preload" as="font" type="font/woff2" href="https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3i6t4kDjJwO5Do-5d-PXqqKOnQigVc.woff2" crossorigin>
+        Playfair Display 700, not 400: the <h1> is the only Playfair
+        element above the fold on every page that has a hero section (home
+        and the 4 service pages), and it is always font-serif + font-bold
+        (see .section-title in app.css, and every other font-serif use in
+        resources/views, for the same reason: Playfair Display 400/regular
+        is not used anywhere on the site today). Inter 400 covers the
+        hero's body text (subtitle, nav, buttons), which has no bold/
+        semibold weight above the fold.
 
-    <!-- Preconnect and preload fonts for early discovery -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        Vite::asset() (not asset()) so this resolves to the exact URL the
+        browser will later request for the @font-face src: Vite's own
+        hashed /build/assets/... URL in both `npm run dev` (proxied through
+        the dev server) and `npm run build`, matching the url() in app.css,
+        which references the same resources/fonts/ file with a relative
+        path so Vite fingerprints it too. A plain asset('fonts/...') (a
+        public/ path) broke under `npm run dev`: app.css is then served
+        from the Vite dev server's own origin (localhost:5175 locally), so
+        a path starting with "/" resolved against that origin instead of
+        this site's, 404ing every font.
+    --}}
+    <link rel="preload" as="font" type="font/woff2" href="{{ Vite::asset('resources/fonts/playfair-display-latin-700-normal.woff2') }}" crossorigin>
+    <link rel="preload" as="font" type="font/woff2" href="{{ Vite::asset('resources/fonts/inter-latin-400-normal.woff2') }}" crossorigin>
 
-    <!-- Preload font CSS to hint browser to prioritize download -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap">
+    {{--
+        Bug found in browser (not by the independent reviewer, see
+        .ai/reviews/self-hosted-fonts.md): this plain, unlayered <style>
+        set a literal fallback as the real font-family for body/h1-h6
+        ("font-family: -apple-system..."/"Georgia, serif"), never
+        var(--font-serif)/var(--font-sans). Unlayered CSS always wins over
+        Tailwind's utilities, which live inside @layer, so Playfair
+        Display and Inter were downloaded and preloaded but never
+        actually applied anywhere on the site. Now body/h1-h6 use the
+        variables themselves, whose fallback segment is only shown while
+        the webfont downloads (font-display: swap).
 
-    <!-- Load Google Fonts asynchronously to avoid render blocking -->
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"></noscript>
-
-    <!-- System font stack with metrics that match Google Fonts -->
+        The two local-only @font-face rules below (Arial/Georgia,
+        read: as the system already has them, no network request) are
+        metric-adjusted so the fallback occupies almost the same vertical
+        space as the real webfont, to shrink the swap's layout shift.
+        Overrides computed from @capsizecss/metrics (the same font-metrics
+        database next/font uses): size-adjust = (webfont avg char width /
+        unitsPerEm) ÷ (fallback avg char width / unitsPerEm); ascent/
+        descent/line-gap-override = the webfont's own value (as a
+        fraction of its unitsPerEm) ÷ that size-adjust. ascent-override/
+        descent-override/line-gap-override have no effect on Safari
+        (Chromium 87+/Firefox 89+ only); harmless there, just no CLS gain.
+    --}}
     <style>
+      @font-face {
+        font-family: 'Playfair Display Fallback';
+        src: local('Georgia');
+        ascent-override: 106.72%;
+        descent-override: 24.76%;
+        line-gap-override: 0%;
+        size-adjust: 101.39%;
+      }
+
+      @font-face {
+        font-family: 'Inter Fallback';
+        src: local('Arial');
+        ascent-override: 90.44%;
+        descent-override: 22.52%;
+        line-gap-override: 0%;
+        size-adjust: 107.12%;
+      }
+
+      {{--
+          Being unlayered, this :root always wins over @theme's --font-sans/
+          --font-serif in resources/css/app.css (review fonts-applied.md
+          finding 1), so this copy is the one that actually applies
+          everywhere, including Tailwind's font-sans/font-serif utilities.
+          Keep both lists identical, character for character, or the
+          @theme copy becomes a silent lie about what's really rendered.
+      --}}
       :root {
-        --font-serif: 'Playfair Display', Georgia, serif;
-        --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+        --font-serif: 'Playfair Display', 'Playfair Display Fallback', Georgia, serif;
+        --font-sans: 'Inter', 'Inter Fallback', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
       }
 
       body {
-        /* Fallback: system fonts with similar metrics to prevent FOUT */
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+        font-family: var(--font-sans);
         font-size: 16px;
         line-height: 1.5;
         /* Normalize character height to reduce shift when fonts load */
@@ -81,7 +168,7 @@
       }
 
       h1, h2, h3, h4, h5, h6, .font-serif {
-        font-family: Georgia, serif;
+        font-family: var(--font-serif);
       }
     </style>
 
@@ -103,10 +190,9 @@
     @stack('head')
 </head>
 <body class="bg-[#0A0A0A] text-white font-sans antialiased">
-    <!-- Google Tag Manager (noscript) -->
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NP6KXF9K"
-    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-    <!-- End Google Tag Manager (noscript) -->
+    {{-- The GTM noscript beacon is removed: it fires with no JS at all, so it
+         cannot be gated behind cookie consent like the scripts above (see
+         .ai/reviews/reservas.md M4). --}}
 
     @include('partials.header')
 
@@ -120,28 +206,99 @@
 
     @stack('scripts')
 
-    <!-- Defer analytics until after page load to avoid reflows -->
+    <!-- Defer analytics until after page load to avoid reflows; gated on cookie consent (see .ai/reviews/reservas.md M4) -->
     <script>
-      // Load Google Analytics after page renders
-      window.addEventListener('load', function() {
-        const script = document.createElement('script');
-        script.async = true;
-        script.src = 'https://www.googletagmanager.com/gtag/js?id=G-EX4HPXH0WV';
-        document.head.appendChild(script);
+      (function () {
+        function loadGoogleAnalytics() {
+          const script = document.createElement('script');
+          script.async = true;
+          script.src = 'https://www.googletagmanager.com/gtag/js?id=G-EX4HPXH0WV';
+          document.head.appendChild(script);
 
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-EX4HPXH0WV');
-      });
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-EX4HPXH0WV');
+        }
 
-      // Load Ahrefs Analytics after page renders
-      window.addEventListener('load', function() {
-        const script = document.createElement('script');
-        script.src = 'https://analytics.ahrefs.com/analytics.js';
-        script.setAttribute('data-key', '13MiFXBj6SD9DxTnh4TmCQ');
-        script.async = true;
-        document.body.appendChild(script);
+        function loadAhrefsAnalytics() {
+          const script = document.createElement('script');
+          script.src = 'https://analytics.ahrefs.com/analytics.js';
+          script.setAttribute('data-key', '13MiFXBj6SD9DxTnh4TmCQ');
+          script.async = true;
+          document.body.appendChild(script);
+        }
+
+        let loaded = false;
+        function loadDeferredAnalytics() {
+          if (loaded) {
+            return;
+          }
+          loaded = true;
+          loadGoogleAnalytics();
+          loadAhrefsAnalytics();
+        }
+
+        window.__analyticsConsentLoaders = window.__analyticsConsentLoaders || [];
+        window.__analyticsConsentLoaders.push(loadDeferredAnalytics);
+
+        // Load Google Analytics and Ahrefs after page renders, same as before.
+        window.addEventListener('load', function() {
+          let consentAccepted = false;
+          try {
+            consentAccepted = localStorage.getItem('cookieConsent') === 'accepted';
+          } catch (e) {
+            consentAccepted = false;
+          }
+
+          if (consentAccepted) {
+            loadDeferredAnalytics();
+          }
+        });
+      })();
+    </script>
+
+    <!--
+        Google Maps embeds (partials/google-map-embed.blade.php) only load
+        when the visitor clicks "Ver mapa"; this is independent of the
+        analytics cookie consent above and never reads or writes it. One
+        delegated listener here covers every map on the page, however many
+        times the partial is included.
+    -->
+    <script>
+      document.addEventListener('click', function (event) {
+        const trigger = event.target.closest('[data-google-map-trigger]');
+        if (!trigger) {
+          return;
+        }
+
+        const container = trigger.closest('[data-google-map]');
+        if (!container || container.querySelector('iframe')) {
+          return;
+        }
+
+        const iframe = document.createElement('iframe');
+        iframe.src = container.getAttribute('data-embed-src');
+        iframe.title = 'Mapa de ubicación de Peluquería Jenver';
+        iframe.width = '100%';
+        iframe.height = '100%';
+        iframe.style.position = 'absolute';
+        iframe.style.inset = '0';
+        iframe.style.border = '0';
+        iframe.style.filter = 'grayscale(100%) invert(10%)';
+        iframe.referrerPolicy = 'no-referrer-when-downgrade';
+        iframe.setAttribute('allowfullscreen', '');
+        // The "Ver mapa" button is removed right below: move the focus to
+        // the iframe once it loads so it is never left on a detached element.
+        iframe.addEventListener('load', function () {
+          iframe.focus();
+        });
+        container.appendChild(iframe);
+
+        const placeholder = container.querySelector('[data-google-map-placeholder]');
+        if (placeholder) {
+          placeholder.remove();
+        }
       });
     </script>
 </body>

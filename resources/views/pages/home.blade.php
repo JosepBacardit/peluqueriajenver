@@ -394,15 +394,13 @@
 
             <!-- Map (Right) -->
             <div class="bg-[#1A1A1A] border border-[#2A2A2A] overflow-hidden">
-                <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2990.3206850357657!2d2.1876543!3d41.489721!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x12a4a74d5b5b5b5d%3A0x5b5b5b5b5b5b5b5b!2sCarrer%20Lleida%2C%2021%2C%2008110%20Montcada%20i%20Reixac%2C%20Barcelona!5e0!3m2!1ses!2ses!4v1234567890"
-                    width="100%"
-                    height="350"
-                    style="border:0; filter: grayscale(100%) invert(10%);"
-                    allowfullscreen=""
-                    loading="lazy"
-                    referrerpolicy="no-referrer-when-downgrade">
-                </iframe>
+                @include('partials.google-map-embed', [
+                    'id' => 'home',
+                    'embedSrc' => 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2990.3206850357657!2d2.1876543!3d41.489721!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x12a4a74d5b5b5b5d%3A0x5b5b5b5b5b5b5b5b!2sCarrer%20Lleida%2C%2021%2C%2008110%20Montcada%20i%20Reixac%2C%20Barcelona!5e0!3m2!1ses!2ses!4v1234567890',
+                    'height' => 350,
+                    'address' => 'C/ Lleida, 21 · 08110 Montcada i Reixac',
+                    'directionsUrl' => 'https://maps.google.com/?q=Peluquería+Jenver+Carrer+Lleida+21+Montcada+i+Reixac',
+                ])
             </div>
         </div>
     </div>
