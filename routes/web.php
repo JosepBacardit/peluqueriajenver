@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\AgendaController;
 use App\Http\Controllers\Admin\AppointmentController;
 use App\Http\Controllers\Admin\BookingSettingsController;
@@ -69,8 +70,16 @@ Route::prefix('admin')->group(function () {
 
     Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
 
-    Route::middleware('auth')->name('admin.')->group(function () {
+    // auth.session (2026-10-06): together with Auth::logoutOtherDevices()
+    // in AccountController, this is what actually signs the *other*
+    // sessions of an account out once its password changes from "Mi
+    // cuenta" — it compares, on every request, the password hash each
+    // session has cached against the user's current one.
+    Route::middleware(['auth', 'auth.session'])->name('admin.')->group(function () {
         Route::redirect('/', '/admin/agenda')->name('home');
+
+        Route::get('/cuenta', [AccountController::class, 'edit'])->name('account.edit');
+        Route::put('/cuenta/password', [AccountController::class, 'updatePassword'])->middleware('throttle:password-change')->name('account.update-password');
 
         Route::get('/agenda', [AgendaController::class, 'index'])->name('agenda');
         Route::get('/citas/crear', [AppointmentController::class, 'create'])->name('appointments.create');

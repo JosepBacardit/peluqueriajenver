@@ -18,6 +18,12 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
+     * Shared by `admin:create-user` and the panel's own "Mi cuenta"
+     * password change, so the two can never drift apart.
+     */
+    public const MIN_PASSWORD_LENGTH = 12;
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

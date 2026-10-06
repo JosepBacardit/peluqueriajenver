@@ -18,8 +18,6 @@ use Illuminate\Support\Facades\Validator;
 #[Description('Create an admin panel account, or change the password of an existing one')]
 class CreateAdminUserCommand extends Command
 {
-    private const MIN_PASSWORD_LENGTH = 12;
-
     public function handle(): int
     {
         $name = trim((string) $this->ask('Name'));
@@ -39,11 +37,11 @@ class CreateAdminUserCommand extends Command
             return self::SUCCESS;
         }
 
-        $password = (string) $this->secret('Password (at least '.self::MIN_PASSWORD_LENGTH.' characters)');
+        $password = (string) $this->secret('Password (at least '.User::MIN_PASSWORD_LENGTH.' characters)');
         $confirmation = (string) $this->secret('Repeat the password');
 
-        if (mb_strlen($password) < self::MIN_PASSWORD_LENGTH) {
-            $this->error('The password must be at least '.self::MIN_PASSWORD_LENGTH.' characters long.');
+        if (mb_strlen($password) < User::MIN_PASSWORD_LENGTH) {
+            $this->error('The password must be at least '.User::MIN_PASSWORD_LENGTH.' characters long.');
 
             return self::FAILURE;
         }

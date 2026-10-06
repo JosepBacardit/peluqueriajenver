@@ -98,9 +98,9 @@ test('the panel shows a hamburger menu for phones with the five modules and the 
     expect(substr_count($html, 'aria-current="page"'))->toBe(2);
     expect($html)->toContain('min-h-11');
 
-    // "Cerrar sesión" is inside the dropdown, at the end, visually
-    // separated (its own form, with a border above it).
-    expect($html)->toMatch('/<form method="POST" action="[^"]*logout"[^>]*class="mt-2 border-t[^>]*>.*Cerrar sesión/s');
+    // "Mi cuenta" and "Cerrar sesión" are inside the dropdown, at the end,
+    // visually separated from the modules (a border above "Mi cuenta").
+    expect($html)->toMatch('/<a href="[^"]*cuenta"[^>]*class="[^"]*border-t[^"]*"[^>]*>Mi cuenta.*<form method="POST" action="[^"]*logout".*Cerrar sesión/s');
 
     // Every module has its own icon, hidden from assistive tech (the
     // visible label is the accessible name).

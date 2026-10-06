@@ -37,11 +37,13 @@
                     @endforeach
                 </nav>
 
-                <form method="POST" action="{{ route('logout') }}" class="hidden md:flex ml-auto items-center gap-3 text-sm">
-                    @csrf
-                    <span class="text-gray-400">{{ auth()->user()->name }}</span>
-                    <button type="submit" class="btn-outline text-xs px-3">Cerrar sesión</button>
-                </form>
+                <div class="hidden md:flex ml-auto items-center gap-3 text-sm">
+                    <a href="{{ route('admin.account.edit') }}" class="text-gray-400 hover:text-gold {{ request()->routeIs('admin.account.*') ? 'text-gold font-semibold' : '' }}" @if (request()->routeIs('admin.account.*')) aria-current="page" @endif>{{ auth()->user()->name }}</a>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="btn-outline text-xs px-3">Cerrar sesión</button>
+                    </form>
+                </div>
 
                 {{-- Hamburger, phones and small tablets only (<768px). The
                      panel will grow past 5 modules, so a scrollable dropdown
@@ -100,9 +102,14 @@
                         @endif
                     @endforeach
 
-                    <form method="POST" action="{{ route('logout') }}" class="mt-2 border-t border-[#2A2A2A] pt-2">
+                    @php($accountActive = request()->routeIs('admin.account.*'))
+                    <a href="{{ route('admin.account.edit') }}"
+                       class="flex items-center min-h-11 px-2 border-t border-[#2A2A2A] mt-2 pt-2 {{ $accountActive ? 'text-gold font-semibold' : 'text-gray-300 hover:text-gold' }}"
+                       @if ($accountActive) aria-current="page" @endif>Mi cuenta ({{ auth()->user()->name }})</a>
+
+                    <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="flex items-center min-h-11 px-2 w-full text-left text-gray-300 hover:text-gold">Cerrar sesión ({{ auth()->user()->name }})</button>
+                        <button type="submit" class="flex items-center min-h-11 px-2 w-full text-left text-gray-300 hover:text-gold">Cerrar sesión</button>
                     </form>
                 </div>
             </nav>
