@@ -13,7 +13,7 @@ Hola, {{ $appointment->customer_name }}:
 Lo sentimos: el salón ha tenido que cancelar tu cita. Puedes reservar otra hora cuando quieras o llamarnos al 633 912 050.
 @endif
 
-- **Servicio:** {{ $appointment->service_name }}
+- **Servicio:** {{ $appointment->services_label }}
 - **Día:** {{ ucfirst($appointment->dayLabel()) }}
 - **Hora:** {{ $appointment->starts_at->format('H:i') }}
 

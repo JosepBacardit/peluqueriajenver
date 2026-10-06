@@ -6,15 +6,19 @@ use App\Booking\AppointmentChangedException;
 use App\Booking\AppointmentNotMovableException;
 use App\Booking\AvailabilityCalculator;
 use App\Booking\RescheduleOutcome;
+use App\Booking\ServiceList;
 use App\Booking\SlotUnavailableException;
 use App\Booking\StartTimeInPastException;
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
+use App\Models\AppointmentService;
 use App\Models\BookingSetting;
 use App\Models\Service;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 /**
  * Moves a confirmed, upcoming appointment to another time and/or service
@@ -69,9 +73,24 @@ class RescheduleAppointment
      * or outside opening hours; a start time in the past is refused even
      * then.
      *
-     * When the service does not change, the appointment keeps the name and
-     * duration it was booked with (as when the service is edited later);
-     * a different service brings its own current name and duration.
+     * $services are the 1 to Appointment::MAX_SERVICES services the
+     * appointment will hold, put in the salon's order
+     * (ServiceList::ordered()). When the list does not change, the
+     * appointment keeps its services, label and length exactly as booked;
+     * when it does, each service it already had keeps the name, duration
+     * and price frozen when it was booked (PRF-126, as when a service is
+     * edited later) and each new one brings its current ones, and the
+     * length is the sum (PRF-125, PRF-129).
+     *
+     * The services are rewritten (appointment_services) inside the same
+     * transaction, after the conditional UPDATE has matched the row: a
+     * cancellation that commits first makes the UPDATE match nothing and
+     * the move is refused before any service is touched, so the
+     * appointment is never left with a mix of old and new services or with
+     * services but no change of time (and the rollback undoes everything
+     * if anything fails halfway). Concurrent moves are serialised by the
+     * lock, so each one reads and replaces the services the previous one
+     * left.
      *
      * A different email address gets a new token: whoever received the
      * old personal link (e.g. at a mistyped address) can no longer see or
@@ -79,8 +98,10 @@ class RescheduleAppointment
      * (customer_notified_at = null) until the new address is emailed, so
      * appointments:notify-pending resends it if that email fails.
      *
+     * @param  Collection<int, Service>  $services
      * @param  array{customer_name: string, customer_phone: string, customer_email: string|null, notes: string|null}  $customer
      *
+     * @throws InvalidArgumentException when $services is empty, over the maximum or repeats a service
      * @throws AppointmentNotMovableException
      * @throws AppointmentChangedException
      * @throws StartTimeInPastException
@@ -88,7 +109,7 @@ class RescheduleAppointment
      */
     public function handle(
         Appointment $appointment,
-        Service $service,
+        Collection $services,
         CarbonImmutable $startsAt,
         array $customer,
         bool $ignoreHoursAndCapacity,
@@ -96,8 +117,9 @@ class RescheduleAppointment
         ?int $expectedVersion = null,
     ): RescheduleOutcome {
         $now ??= CarbonImmutable::now();
+        $services = ServiceList::ordered($services);
 
-        return DB::transaction(function () use ($appointment, $service, $startsAt, $customer, $ignoreHoursAndCapacity, $now, $expectedVersion): RescheduleOutcome {
+        return DB::transaction(function () use ($appointment, $services, $startsAt, $customer, $ignoreHoursAndCapacity, $now, $expectedVersion): RescheduleOutcome {
             BookingSetting::query()->lockForUpdate()->orderBy('id')->firstOrFail();
 
             $current = Appointment::query()->find($appointment->getKey());
@@ -114,9 +136,18 @@ class RescheduleAppointment
                 throw new StartTimeInPastException;
             }
 
-            $keepsService = (int) $current->service_id === (int) $service->id;
-            $currentDurationMinutes = (int) $current->starts_at->diffInMinutes($current->ends_at);
-            $durationMinutes = $keepsService ? $currentDurationMinutes : $service->duration_minutes;
+            $currentItems = AppointmentService::query()->where('appointment_id', $current->id)->orderBy('position')->get();
+            $keepsServices = $currentItems->pluck('service_id')->map(fn ($id) => (int) $id)->all()
+                === $services->pluck('id')->map(fn ($id) => (int) $id)->all();
+            $items = $keepsServices ? [] : $services->values()->map(function (Service $service, int $index) use ($currentItems): array {
+                $kept = $currentItems->first(fn (AppointmentService $item) => (int) $item->service_id === (int) $service->id);
+
+                return $kept === null
+                    ? AppointmentService::snapshotOf($service, $index + 1)
+                    : ['service_id' => $service->id, 'position' => $index + 1, 'service_name' => $kept->service_name, 'duration_minutes' => $kept->duration_minutes, 'price_cents' => $kept->price_cents];
+            })->all();
+            $currentDurationMinutes = $current->durationMinutes();
+            $durationMinutes = $keepsServices ? $currentDurationMinutes : (int) array_sum(array_column($items, 'duration_minutes'));
             $keepsSlot = $startsAt->eq($current->starts_at) && $durationMinutes === $currentDurationMinutes;
 
             if (! $ignoreHoursAndCapacity && ! $keepsSlot) {
@@ -131,8 +162,7 @@ class RescheduleAppointment
             $emailChanged = $email !== $current->customer_email;
 
             $attributes = [
-                'service_id' => $service->id,
-                'service_name' => $keepsService ? $current->service_name : $service->name,
+                'services_label' => $keepsServices ? $current->services_label : ServiceList::label(array_column($items, 'service_name')),
                 'starts_at' => $startsAt,
                 'ends_at' => $startsAt->addMinutes($durationMinutes),
                 'customer_name' => trim($customer['customer_name']),
@@ -156,9 +186,16 @@ class RescheduleAppointment
                 throw new AppointmentNotMovableException;
             }
 
+            if (! $keepsServices) {
+                AppointmentService::query()->where('appointment_id', $current->id)->delete();
+                $current->items()->createMany($items);
+            }
+
+            $appointment->unsetRelation('items')->unsetRelation('services');
+
             return new RescheduleOutcome(
                 appointment: $appointment->forceFill($attributes + ['status' => AppointmentStatus::Confirmed])->syncOriginal(),
-                rescheduled: ! $startsAt->eq($current->starts_at) || ! $keepsService,
+                rescheduled: ! $startsAt->eq($current->starts_at) || ! $keepsServices,
                 emailChanged: $emailChanged,
             );
         });

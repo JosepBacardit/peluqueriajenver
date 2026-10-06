@@ -184,7 +184,7 @@ test('a short partial closure still has an aria-label, even with no visible text
 test('a short appointment block shows a single truncated line, not a broken second line', function () {
     Appointment::factory()->create([
         'starts_at' => '2030-01-08 11:40', 'ends_at' => '2030-01-08 11:55',
-        'customer_name' => 'Josep', 'service_name' => 'Barba',
+        'customer_name' => 'Josep', 'services_label' => 'Barba',
     ]);
 
     $html = $this->get(route('admin.agenda'))->assertOk()->getContent();

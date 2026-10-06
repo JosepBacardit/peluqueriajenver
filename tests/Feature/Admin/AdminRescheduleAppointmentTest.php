@@ -9,7 +9,9 @@ use App\Models\Service;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Mail\MailManager;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Testing\Fakes\MailFake;
 
 uses(RefreshDatabase::class);
 
@@ -21,8 +23,7 @@ beforeEach(function () {
     $this->actingAs(User::factory()->create());
     $this->travelTo(CarbonImmutable::parse('2030-01-08 08:00'));
     $this->service = Service::factory()->create(['name' => 'Corte', 'duration_minutes' => 60]);
-    $this->appointment = Appointment::factory()->create([
-        'service_id' => $this->service->id,
+    $this->appointment = Appointment::factory()->withServices($this->service)->create([
         'starts_at' => '2030-01-08 10:00',
         'ends_at' => '2030-01-08 11:00',
         'customer_name' => 'Rosa Vidal',
@@ -278,7 +279,7 @@ test('when the email with the new link fails, the panel says the old link no lon
     expect($appointment->customer_email)->toBe('rosa.nueva@example.test');
     expect($appointment->customer_notified_at)->toBeNull();
 
-    Mail::swap(new Illuminate\Support\Testing\Fakes\MailFake(new Illuminate\Mail\MailManager(app())));
+    Mail::swap(new MailFake(new MailManager(app())));
     $this->travel(10)->minutes();
     $this->artisan('appointments:notify-pending')->assertSuccessful();
 

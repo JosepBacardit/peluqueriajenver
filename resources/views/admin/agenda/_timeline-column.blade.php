@@ -74,11 +74,11 @@
                         <a href="#cita-{{ $appointment->id }}"
                            class="flex items-center overflow-hidden px-1 text-[11px] leading-tight bg-[#1c1c1c] border {{ $segment['overCapacity'] ? 'border-amber-400' : 'border-gold/40' }} hover:border-gold"
                            style="{{ $gridArea }}"
-                           title="{{ $appointment->starts_at->format('H:i') }}–{{ $appointment->ends_at->format('H:i') }} {{ $appointment->service_name }}, {{ $appointment->customer_name }}"
-                           aria-label="{{ $datePrefix }}{{ $appointment->starts_at->format('H:i') }} {{ $appointment->service_name }}, {{ $appointment->customer_name }}{{ $segment['overCapacity'] ? ', sobre capacidad' : '' }}, plaza {{ $segment['lane'] + 1 }}">
+                           title="{{ $appointment->starts_at->format('H:i') }}–{{ $appointment->ends_at->format('H:i') }} {{ $appointment->services_label }}, {{ $appointment->customer_name }}"
+                           aria-label="{{ $datePrefix }}{{ $appointment->starts_at->format('H:i') }} {{ $appointment->services_label }}, {{ $appointment->customer_name }}{{ $segment['overCapacity'] ? ', sobre capacidad' : '' }}, plaza {{ $segment['lane'] + 1 }}">
                             <span class="block truncate w-full">
                                 <span class="font-semibold text-gold">{{ $appointment->starts_at->format('H:i') }}</span>
-                                {{ $appointment->customer_name }}@unless ($compact) · {{ $appointment->service_name }}@endunless
+                                {{ $appointment->customer_name }}@unless ($compact) · {{ $appointment->services_label }}@endunless
                             </span>
                         </a>
                     @elseif ($segment['type'] === 'cierre-parcial')

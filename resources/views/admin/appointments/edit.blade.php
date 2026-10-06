@@ -38,7 +38,7 @@
         <label for="service_id" class="block text-sm mb-1">Servicio</label>
         <select id="service_id" name="service_id" required class="{{ $inputClass }}" {!! $fieldAria('service_id', true) !!}>
             @foreach ($services as $service)
-                <option value="{{ $service->id }}" @selected((int) old('service_id', $appointment->service_id) === $service->id)>{{ $service->name }} ({{ $service->duration_label }}){{ $service->is_active ? '' : ' · inactivo' }}</option>
+                <option value="{{ $service->id }}" @selected((int) old('service_id', $appointment->items->first()?->service_id) === $service->id)>{{ $service->name }} ({{ $service->duration_label }}){{ $service->is_active ? '' : ' · inactivo' }}</option>
             @endforeach
         </select>
         @error('service_id') <p id="service_id-error" class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror

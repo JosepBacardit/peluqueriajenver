@@ -13,11 +13,13 @@ return new class extends Migration
     {
         Schema::create('appointments', function (Blueprint $table) {
             $table->id();
-            // Services are never deleted (only deactivated), so this never dangles.
-            $table->foreignId('service_id')->constrained()->restrictOnDelete();
-            // Copied at booking time so later edits to the service do not
-            // change existing appointments.
-            $table->string('service_name', 100);
+            // Its 1 to Appointment::MAX_SERVICES services, frozen at booking
+            // time, live in appointment_services. This is their names joined
+            // with " + " in the same order (5 names of up to 100 characters
+            // plus separators fit in 512), written in the same statement as
+            // the services so the agenda, its cards and the emails can show
+            // them without loading the services.
+            $table->string('services_label', 512);
             // Salon-local times (the app runs on Europe/Madrid).
             $table->dateTime('starts_at');
             $table->dateTime('ends_at');

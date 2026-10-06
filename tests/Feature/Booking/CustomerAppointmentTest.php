@@ -15,7 +15,7 @@ beforeEach(function () {
 
 test('the personal link shows the appointment details', function () {
     $appointment = Appointment::factory()->create([
-        'service_name' => 'Balayage', 'customer_name' => 'Núria',
+        'services_label' => 'Balayage', 'customer_name' => 'Núria',
         'starts_at' => '2030-01-10 11:00', 'ends_at' => '2030-01-10 14:00',
     ]);
 

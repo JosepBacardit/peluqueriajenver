@@ -65,7 +65,7 @@ test('the week view marks days without opening hours as closed', function () {
  * PRF-100: the desktop grid lists each day's appointments sorted by time.
  */
 test('the week view desktop grid lists each day with its weekday name', function () {
-    Appointment::factory()->create(['starts_at' => '2030-01-09 11:00', 'ends_at' => '2030-01-09 11:30', 'service_name' => 'Peinado']);
+    Appointment::factory()->create(['starts_at' => '2030-01-09 11:00', 'ends_at' => '2030-01-09 11:30', 'services_label' => 'Peinado']);
 
     $html = $this->get(route('admin.agenda', ['vista' => 'semana']))->assertOk()->getContent();
 
@@ -183,7 +183,7 @@ test('the week view flags a day with a partial closure, without marking it close
 test('the week view desktop grid links each appointment block to its card below', function () {
     $appointment = Appointment::factory()->create([
         'starts_at' => '2030-01-09 11:00', 'ends_at' => '2030-01-09 11:30',
-        'service_name' => 'Peinado', 'customer_name' => 'Marta Ruiz',
+        'services_label' => 'Peinado', 'customer_name' => 'Marta Ruiz',
     ]);
 
     // Select that same Wednesday so its card (which only the selected
@@ -207,7 +207,7 @@ test('the week view desktop grid links each appointment block to its card below'
 test('the week view desktop grid does not render a block for a cancelled appointment', function () {
     $appointment = Appointment::factory()->cancelled()->create([
         'starts_at' => '2030-01-09 11:00', 'ends_at' => '2030-01-09 11:30',
-        'service_name' => 'Peinado', 'customer_name' => 'Marta Ruiz',
+        'services_label' => 'Peinado', 'customer_name' => 'Marta Ruiz',
     ]);
 
     $html = $this->get(route('admin.agenda', ['vista' => 'semana', 'fecha' => '2030-01-09']))->assertOk()->getContent();

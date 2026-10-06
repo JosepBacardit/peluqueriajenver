@@ -65,7 +65,7 @@ class AppointmentController extends Controller
         $startsAt = $request->startsAt();
 
         try {
-            $appointment = $createAppointment->handle($service, $startsAt, $request->customer(), AppointmentSource::Admin, applyPublicRules: false);
+            $appointment = $createAppointment->handle(collect([$service]), $startsAt, $request->customer(), AppointmentSource::Admin, applyPublicRules: false);
         } catch (SlotUnavailableException) {
             return back()->withInput()->withErrors(['time' => 'Esa hora no está disponible para este servicio.']);
         } catch (DuplicateAppointmentException) {
@@ -89,7 +89,7 @@ class AppointmentController extends Controller
             'appointment' => $appointment,
             'services' => Service::query()
                 ->where('is_active', true)
-                ->orWhere('id', $appointment->service_id)
+                ->orWhereIn('id', $appointment->items()->pluck('service_id'))
                 ->ordered()
                 ->get(),
             'volver' => self::volverParam($request->query('volver')),
@@ -110,7 +110,7 @@ class AppointmentController extends Controller
 
         try {
             $outcome = $rescheduleAppointment->handle(
-                $appointment, $service, $request->startsAt(), $request->customer(),
+                $appointment, collect([$service]), $request->startsAt(), $request->customer(),
                 ignoreHoursAndCapacity: $request->confirmsSlot(),
                 expectedVersion: $request->version(),
             );

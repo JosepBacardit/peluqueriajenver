@@ -26,8 +26,7 @@ beforeEach(function () {
     BookingSetting::current()->update(['capacity' => 1, 'min_notice_minutes' => 0]);
     $this->now = CarbonImmutable::parse('2030-01-07 20:00');
     $this->service = Service::factory()->create(['name' => 'Corte', 'duration_minutes' => 60]);
-    $this->appointment = Appointment::factory()->create([
-        'service_id' => $this->service->id,
+    $this->appointment = Appointment::factory()->withServices($this->service)->create([
         'starts_at' => '2030-01-08 10:00',
         'ends_at' => '2030-01-08 11:00',
         'customer_name' => 'Rosa Vidal',
@@ -49,7 +48,7 @@ function moveAppointment(Appointment $appointment, string $startsAt, ?Service $s
 {
     return app(RescheduleAppointment::class)->handle(
         $appointment,
-        $service ?? test()->service,
+        collect([$service ?? test()->service]),
         CarbonImmutable::parse($startsAt),
         $customer ?? unchangedCustomer($appointment),
         $ignoreHoursAndCapacity,
@@ -84,8 +83,8 @@ test('it copies the name and duration of a new service', function () {
     moveAppointment($this->appointment, '2030-01-08 12:00', $balayage);
 
     $moved = $this->appointment->fresh();
-    expect($moved->service_id)->toBe($balayage->id);
-    expect($moved->service_name)->toBe('Balayage');
+    expect($moved->items()->pluck('service_id')->all())->toBe([$balayage->id]);
+    expect($moved->services_label)->toBe('Balayage');
     expect($moved->ends_at->format('H:i'))->toBe('14:30');
 });
 
@@ -95,7 +94,8 @@ test('keeping the service keeps the duration and name the appointment was booked
     moveAppointment($this->appointment, '2030-01-08 12:00');
 
     $moved = $this->appointment->fresh();
-    expect($moved->service_name)->toBe('Corte');
+    expect($moved->services_label)->toBe('Corte');
+    expect($moved->items()->sole()->only(['service_name', 'duration_minutes']))->toBe(['service_name' => 'Corte', 'duration_minutes' => 60]);
     expect($moved->ends_at->format('H:i'))->toBe('13:00');
 });
 

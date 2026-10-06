@@ -84,7 +84,13 @@ pre-filled message per page); the salon records those in the admin agenda.
   lives in `App\Booking\AvailabilityCalculator`; every booking (web or
   admin) goes through `App\Actions\CreateAppointment`, which re-checks
   availability under a row lock on `booking_settings` so concurrent
-  bookings cannot overbook. The salon moves an appointment (same row and
+  bookings cannot overbook. An appointment holds 1 to
+  `Appointment::MAX_SERVICES` (5) services, done back to back in the
+  salon's order and taking one place for the sum of their durations;
+  each is a frozen copy (name, duration, internal price) in
+  `appointment_services`, and `appointments.services_label` is their
+  names joined, written together with them for the agenda and emails.
+  The salon moves an appointment (same row and
   id; the token only changes, invalidating the old link, when the email
   changes) from the agenda's "Editar" link through
   `App\Actions\RescheduleAppointment`, which takes the same lock first,

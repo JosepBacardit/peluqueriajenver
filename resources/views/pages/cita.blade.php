@@ -27,7 +27,7 @@
         <dl class="border border-[#2A2A2A] divide-y divide-[#2A2A2A]">
             <div class="grid grid-cols-3 gap-4 p-4">
                 <dt class="text-gray-400">{{ __('reservas.appointment.service') }}</dt>
-                <dd class="col-span-2 text-white">{{ $appointment->service_name }}</dd>
+                <dd class="col-span-2 text-white">{{ $appointment->services_label }}</dd>
             </div>
             <div class="grid grid-cols-3 gap-4 p-4">
                 <dt class="text-gray-400">{{ __('reservas.appointment.when') }}</dt>

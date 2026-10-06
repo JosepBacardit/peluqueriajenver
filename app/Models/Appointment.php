@@ -10,16 +10,18 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property CarbonInterface $starts_at
  * @property CarbonInterface $ends_at
  * @property AppointmentStatus $status
  * @property AppointmentSource $source
+ * @property string $services_label
  */
 #[Fillable([
-    'service_id', 'service_name', 'starts_at', 'ends_at',
+    'services_label', 'starts_at', 'ends_at',
     'customer_name', 'customer_phone', 'customer_email', 'notes',
     'status', 'source', 'token', 'cancelled_at', 'privacy_accepted_at',
     'customer_notified_at', 'salon_notified_at',
@@ -28,6 +30,17 @@ class Appointment extends Model
 {
     /** @use HasFactory<AppointmentFactory> */
     use HasFactory;
+
+    /**
+     * The most services one appointment can hold, online and in the panel
+     * (PRF-125). The single place this limit is written.
+     */
+    public const MAX_SERVICES = 5;
+
+    /**
+     * Separator between the service names in services_label.
+     */
+    public const SERVICES_LABEL_SEPARATOR = ' + ';
 
     /**
      * @return array<string, string>
@@ -47,11 +60,38 @@ class Appointment extends Model
     }
 
     /**
-     * @return BelongsTo<Service, $this>
+     * The appointment's services as booked (name, duration and price frozen
+     * at booking time, PRF-126), in the order they are done.
+     *
+     * @return HasMany<AppointmentService, $this>
      */
-    public function service(): BelongsTo
+    public function items(): HasMany
     {
-        return $this->belongsTo(Service::class);
+        return $this->hasMany(AppointmentService::class)->orderBy('position');
+    }
+
+    /**
+     * The current Service rows behind items(), in the same order (their
+     * name or duration may have changed since; use items() to show the
+     * appointment).
+     *
+     * @return BelongsToMany<Service, $this>
+     */
+    public function services(): BelongsToMany
+    {
+        return $this->belongsToMany(Service::class, 'appointment_services')
+            ->withPivot(['position', 'service_name', 'duration_minutes', 'price_cents'])
+            ->withTimestamps()
+            ->orderByPivot('position');
+    }
+
+    /**
+     * Total length of the appointment (the sum of its services'
+     * durations), in minutes.
+     */
+    public function durationMinutes(): int
+    {
+        return (int) $this->starts_at->diffInMinutes($this->ends_at);
     }
 
     /**

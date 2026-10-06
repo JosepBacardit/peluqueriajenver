@@ -82,7 +82,7 @@ class BookingController extends Controller
                 throw new SlotUnavailableException;
             }
 
-            $appointment = $createAppointment->handle($service, $startsAt, $request->customer(), AppointmentSource::Web, applyPublicRules: true);
+            $appointment = $createAppointment->handle(collect([$service]), $startsAt, $request->customer(), AppointmentSource::Web, applyPublicRules: true);
         } catch (SlotUnavailableException) {
             return redirect()->to($backToDay)->withInput()->withErrors(['time' => __('reservas.messages.slot_unavailable')]);
         } catch (DuplicateAppointmentException) {

@@ -4,16 +4,20 @@ namespace App\Actions;
 
 use App\Booking\AvailabilityCalculator;
 use App\Booking\DuplicateAppointmentException;
+use App\Booking\ServiceList;
 use App\Booking\SlotUnavailableException;
 use App\Booking\TooManyUpcomingAppointmentsException;
 use App\Enums\AppointmentSource;
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
+use App\Models\AppointmentService;
 use App\Models\BookingSetting;
 use App\Models\Service;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 class CreateAppointment
 {
@@ -41,14 +45,24 @@ class CreateAppointment
      * freeze an older snapshot and reopen overbooking. A test asserts the
      * lock comes first.
      *
+     * $services are the 1 to Appointment::MAX_SERVICES services booked
+     * together (PRF-125): they are done one after another in the salon's
+     * order (ServiceList::ordered()), so availability is checked for the
+     * sum of their durations and the appointment takes one place for all
+     * of it. The appointment and its frozen copies of the services
+     * (appointment_services, PRF-126) are written in this same transaction,
+     * after the lock, so a booking never exists without its services.
+     *
+     * @param  Collection<int, Service>  $services
      * @param  array{customer_name: string, customer_phone: string, customer_email: string|null, notes: string|null}  $customer
      *
+     * @throws InvalidArgumentException when $services is empty, over the maximum or repeats a service
      * @throws SlotUnavailableException
      * @throws DuplicateAppointmentException
      * @throws TooManyUpcomingAppointmentsException
      */
     public function handle(
-        Service $service,
+        Collection $services,
         CarbonImmutable $startsAt,
         array $customer,
         AppointmentSource $source,
@@ -57,8 +71,10 @@ class CreateAppointment
     ): Appointment {
         $now ??= CarbonImmutable::now();
         $email = $customer['customer_email'] === null ? null : Str::lower(trim($customer['customer_email']));
+        $services = ServiceList::ordered($services);
+        $durationMinutes = (int) $services->sum('duration_minutes');
 
-        return DB::transaction(function () use ($service, $startsAt, $customer, $source, $applyPublicRules, $now, $email): Appointment {
+        return DB::transaction(function () use ($services, $durationMinutes, $startsAt, $customer, $source, $applyPublicRules, $now, $email): Appointment {
             BookingSetting::query()->lockForUpdate()->orderBy('id')->firstOrFail();
 
             if ($email !== null && Appointment::query()->confirmed()
@@ -72,15 +88,14 @@ class CreateAppointment
                 throw new TooManyUpcomingAppointmentsException;
             }
 
-            if (! $this->calculator->isAvailable($service->duration_minutes, $startsAt, $now, $applyPublicRules)) {
+            if (! $this->calculator->isAvailable($durationMinutes, $startsAt, $now, $applyPublicRules)) {
                 throw new SlotUnavailableException;
             }
 
-            return Appointment::create([
-                'service_id' => $service->id,
-                'service_name' => $service->name,
+            $appointment = Appointment::create([
+                'services_label' => ServiceList::label($services->pluck('name')),
                 'starts_at' => $startsAt,
-                'ends_at' => $startsAt->addMinutes($service->duration_minutes),
+                'ends_at' => $startsAt->addMinutes($durationMinutes),
                 'customer_name' => trim($customer['customer_name']),
                 'customer_phone' => trim($customer['customer_phone']),
                 'customer_email' => $email,
@@ -90,6 +105,12 @@ class CreateAppointment
                 'token' => Str::random(48),
                 'privacy_accepted_at' => $source === AppointmentSource::Web ? $now : null,
             ]);
+
+            $appointment->items()->createMany(
+                $services->map(fn (Service $service, int $index) => AppointmentService::snapshotOf($service, $index + 1))->all(),
+            );
+
+            return $appointment;
         });
     }
 

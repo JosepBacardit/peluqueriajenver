@@ -19,12 +19,12 @@ test('the admin home opens today\'s agenda', function () {
 
 test('the agenda lists the day\'s appointments by time with every detail', function () {
     Appointment::factory()->create([
-        'starts_at' => '2030-01-08 12:00', 'ends_at' => '2030-01-08 13:30', 'service_name' => 'Balayage',
+        'starts_at' => '2030-01-08 12:00', 'ends_at' => '2030-01-08 13:30', 'services_label' => 'Balayage',
         'customer_name' => 'Laura Pérez', 'customer_phone' => '600 111 222', 'customer_email' => 'laura@example.test',
         'notes' => 'Primera visita', 'source' => AppointmentSource::Web,
     ]);
     Appointment::factory()->create([
-        'starts_at' => '2030-01-08 09:30', 'ends_at' => '2030-01-08 10:00', 'service_name' => 'Corte',
+        'starts_at' => '2030-01-08 09:30', 'ends_at' => '2030-01-08 10:00', 'services_label' => 'Corte',
         'customer_name' => 'Marc Soler', 'customer_email' => null, 'source' => AppointmentSource::Admin,
     ]);
     Appointment::factory()->create(['starts_at' => '2030-01-09 10:00', 'ends_at' => '2030-01-09 11:00', 'customer_name' => 'Otro Día']);

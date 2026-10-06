@@ -9,8 +9,8 @@ use Illuminate\Validation\Rule;
 /**
  * Moving an appointment from the panel and editing its customer details,
  * with the same field rules as recording a new one. The appointment may
- * keep its own service even if it has been deactivated since; any other
- * service must be active.
+ * keep its own services even if they have been deactivated since; any
+ * other service must be active.
  *
  * `force` is the salon's explicit "save anyway" after the warning that the
  * new time is full or outside opening hours. The button carries the
@@ -33,7 +33,7 @@ class UpdateAdminAppointmentRequest extends StoreAdminAppointmentRequest
 
         return array_merge(parent::rules(), [
             'service_id' => ['required', 'integer', Rule::exists('services', 'id')->where(
-                fn (Builder $query) => $query->where('is_active', true)->orWhere('id', $appointment->service_id)
+                fn (Builder $query) => $query->where('is_active', true)->orWhereIn('id', $appointment->items()->pluck('service_id'))
             )],
             'force' => ['nullable', 'string', 'max:100'],
             'version' => ['required', 'integer'],

@@ -38,8 +38,7 @@ function fitMinute(string $time): int
 
 function fitBook(string $from, string $to, string $date = '2030-01-08', AppointmentStatus $status = AppointmentStatus::Confirmed): void
 {
-    Appointment::factory()->create([
-        'service_id' => test()->service->id,
+    Appointment::factory()->withServices(test()->service)->create([
         'starts_at' => CarbonImmutable::parse("{$date} {$from}"),
         'ends_at' => CarbonImmutable::parse("{$date} {$to}"),
         'status' => $status,

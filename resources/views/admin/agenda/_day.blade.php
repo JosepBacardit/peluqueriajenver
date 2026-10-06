@@ -27,7 +27,7 @@
                 <div class="space-y-1">
                     <p class="text-lg">
                         <span class="text-gold font-semibold">{{ $appointment->starts_at->format('H:i') }}–{{ $appointment->ends_at->format('H:i') }}</span>
-                        · {{ $appointment->service_name }}
+                        · {{ $appointment->services_label }}
                     </p>
                     <p>
                         {{ $appointment->customer_name }} · {{ $appointment->customer_phone }}
