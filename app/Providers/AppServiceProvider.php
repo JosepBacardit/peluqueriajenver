@@ -44,12 +44,13 @@ class AppServiceProvider extends ServiceProvider
                 ->response(fn () => back()->withInput()->withErrors(['booking' => __('reservas.messages.too_many_today')])),
         ]);
 
-        // "Mi cuenta"'s password change: by user, not by IP, since it is
-        // already authenticated (two salon computers sharing one IP must
-        // not throttle each other's own account).
-        RateLimiter::for('password-change', fn (Request $request) => Limit::perMinutes(10, 5)
-            ->by('password-change:'.$request->user()->id)
-            ->response(fn () => back()->withErrors(['current_password' => 'Demasiados intentos. Espera unos minutos y vuelve a probar.'])));
+        // "Mi cuenta"'s password change is throttled by user, not by IP
+        // or via a named limiter here: UpdatePasswordRequest calls
+        // RateLimiter directly (same key, "password-change:{id}"), the
+        // only way to hit on a wrong current password and clear on
+        // success without the throttle: middleware's own hashed cache
+        // key getting in the way (review finding L2,
+        // .ai/reviews/seeders-account.md).
     }
 
     private static function perMinuteBookingLimit(Request $request): Limit

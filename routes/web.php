@@ -79,7 +79,12 @@ Route::prefix('admin')->group(function () {
         Route::redirect('/', '/admin/agenda')->name('home');
 
         Route::get('/cuenta', [AccountController::class, 'edit'])->name('account.edit');
-        Route::put('/cuenta/password', [AccountController::class, 'updatePassword'])->middleware('throttle:password-change')->name('account.update-password');
+        // No throttle: middleware here (review finding L2): the hit/clear
+        // throttling lives entirely in UpdatePasswordRequest, which can
+        // tell a wrong current password apart from anything else; the
+        // generic middleware cannot, and hashes its own cache key in a
+        // way RateLimiter::clear() from outside it could never reach.
+        Route::put('/cuenta/password', [AccountController::class, 'updatePassword'])->name('account.update-password');
 
         Route::get('/agenda', [AgendaController::class, 'index'])->name('agenda');
         Route::get('/citas/crear', [AppointmentController::class, 'create'])->name('appointments.create');

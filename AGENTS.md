@@ -88,8 +88,18 @@ pre-filled message per page); the salon records those in the admin agenda.
   and signs out whichever session still holds the old one on its next
   request — the session that just made the change re-syncs itself right
   after its own response, so it is never the one logged out by its own
-  change. `password-change` (`AppServiceProvider`) throttles attempts by
-  user id, not IP (it is already authenticated).
+  change (`session()->regenerate()` right after also changes the session
+  id itself, so one exposed before the change — fixation, a leaked
+  cookie, a shared device — stops being valid too, 2026-10-06). Throttling
+  by user id (not IP, already authenticated) lives entirely in
+  `UpdatePasswordRequest` (`prepareForValidation()`/`after()`/`passedValidation()`),
+  not the generic `throttle:` route middleware: that middleware hashes
+  its own cache key together with the limiter's name
+  (`ThrottleRequests::$shouldHashKeys`), so a plain `RateLimiter::clear()`
+  from the controller could never actually reach what it incremented —
+  only a wrong current password counts, cleared the moment it is
+  entered correctly, the same rule `LoginController` already applies to
+  its own login limiter.
 - **Adding a module:** add one entry to the `$modules` array at the top of
   `resources/views/layouts/admin.blade.php` plus its routes inside the
   `auth` group in `routes/web.php`. Admin UI strings are written directly

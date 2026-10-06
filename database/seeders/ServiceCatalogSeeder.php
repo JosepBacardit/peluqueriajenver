@@ -21,17 +21,23 @@ use Illuminate\Database\Seeder;
  * the panel, never from a silent guess here.
  *
  * Runs in every environment (local, testing and production): it is the
- * real catalogue, not test data, and `updateOrCreate()` by name makes it
- * safe to run again after an edit here (DatabaseSeeder calls it always).
+ * real catalogue, not test data, so `DatabaseSeeder` calls it always.
  *
- * `price_cents` is left `null` everywhere: the salon sets real prices from
- * the panel; `Service::$fillable` and its migration both already allow
- * that (`price_cents` is nullable). `deploy.sh` never calls `db:seed`
- * (only `migrate --force`), so this only runs when someone deliberately
- * types it; still, running it again *after* the salon has set real
- * prices from the panel would reset every catalogue row's price back to
- * `null` (name, duration and the other flags here are meant to be the
- * long-term source of truth and safe to reapply, but a price is not).
+ * Review finding M1 (.ai/reviews/seeders-account.md, 2026-10-06): the
+ * CATALOG loop below seeds each row only once, with `firstOrCreate()` by
+ * name, not `updateOrCreate()`. The salon is expected to edit this
+ * catalogue from the panel right after it is seeded — activate a service
+ * marked "a confirmar", correct a duration, reorder — and a later
+ * `db:seed`/`ServiceCatalogSeeder` run (e.g. after a 25th service is
+ * added to CATALOG below) must never silently revert any of that back to
+ * these fixed values. `price_cents` is always `null` on a *new* row (the
+ * salon sets real prices from the panel; `Service::$fillable` and its
+ * migration both allow that, it is nullable) and is never touched again
+ * once the row exists, for the same reason. Correcting a mistake in
+ * CATALOG itself (a wrong duration, a typo) now needs its own deliberate
+ * step — e.g. a one-off `Service::where('name', ...)->update([...])`,
+ * the same shape as RENAMED_ON_FIRST_RUN below — not just editing this
+ * array and re-running the seeder.
  */
 class ServiceCatalogSeeder extends Seeder
 {
@@ -116,13 +122,32 @@ class ServiceCatalogSeeder extends Seeder
     public function run(): void
     {
         foreach (self::RENAMED_ON_FIRST_RUN as $oldName => $newName) {
-            Service::query()->where('name', $oldName)->update(['name' => $newName]);
+            // The main loop below only ever *creates* now (review finding
+            // M1), so it can no longer be relied on to also fix up these
+            // two rows' duration/order/flags the way it used to — this
+            // applies the matching CATALOG entry's full values itself,
+            // in the same update, reusing CATALOG instead of repeating
+            // the numbers here (and risking the two drifting apart).
+            $catalogEntry = collect(self::CATALOG)->firstWhere('name', $newName);
+
+            Service::query()->where('name', $oldName)->update([
+                'name' => $newName,
+                'duration_minutes' => $catalogEntry['duration_minutes'],
+                'price_cents' => null,
+                'is_bookable_online' => $catalogEntry['is_bookable_online'],
+                'is_active' => $catalogEntry['is_active'],
+                'sort_order' => $catalogEntry['sort_order'],
+            ]);
         }
 
         Service::query()->whereIn('name', self::DEACTIVATED_TEST_LEFTOVERS)->update(['is_active' => false]);
 
         foreach (self::CATALOG as $entry) {
-            Service::updateOrCreate(
+            // firstOrCreate(), not updateOrCreate() (review finding M1):
+            // a row the salon already edited from the panel (activated,
+            // retimed, reordered) is left exactly as the salon left it —
+            // only a name that does not exist yet gets these values.
+            Service::firstOrCreate(
                 ['name' => $entry['name']],
                 [
                     'duration_minutes' => $entry['duration_minutes'],

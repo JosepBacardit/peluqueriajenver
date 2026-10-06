@@ -29,6 +29,20 @@ class AccountController extends Controller
      * that session out the moment they stop matching; this request's own
      * session re-syncs itself right after the response, so the person who
      * just changed it is never logged out by their own change.
+     *
+     * `session()->regenerate()` (review finding M2, .ai/reviews/seeders-account.md):
+     * a changed password is a change of credentials, same as logging in
+     * (`LoginController::store()` already regenerates there) — without
+     * this, a session id exposed before the change (fixation, a leaked
+     * cookie, a shared device) would stay just as valid afterwards, since
+     * `logoutOtherDevices()` only acts on sessions still holding the
+     * *old* password hash, not on the id itself.
+     *
+     * The "only a wrong current password counts against the rate limit"
+     * rule (review finding L2) lives entirely in `UpdatePasswordRequest`
+     * now (`prepareForValidation()`/`after()`/`passedValidation()`), not
+     * here: by the time this method runs, validation already passed, so
+     * there is nothing left to hit or clear.
      */
     public function updatePassword(UpdatePasswordRequest $request): RedirectResponse
     {
@@ -37,6 +51,7 @@ class AccountController extends Controller
         $request->user()->update(['password' => $password]);
 
         Auth::logoutOtherDevices($password);
+        $request->session()->regenerate();
 
         return redirect()->route('admin.account.edit')->with('status', 'Contraseña actualizada.');
     }

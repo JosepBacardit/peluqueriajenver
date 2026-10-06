@@ -121,3 +121,25 @@ test('changing a service duration never alters an appointment that already booke
     expect($appointmentService->fresh()->duration_minutes)->toBe(45);
     expect($appointment->fresh()->durationMinutes())->toBe(45);
 });
+
+/**
+ * Review finding M1 (.ai/reviews/seeders-account.md, 2026-10-06):
+ * updateOrCreate() would have reverted both of these edits back to the
+ * catalogue's fixed values on every re-seed, in silence. firstOrCreate()
+ * fixes it: a name that already exists is left exactly as the salon left
+ * it, whatever CATALOG says.
+ */
+test('re-seeding never reverts a service the salon already edited from the panel', function () {
+    (new ServiceCatalogSeeder)->run();
+
+    // The salon activates a service that started "a confirmar", and
+    // corrects another one's duration — both from /admin/servicios.
+    Service::where('name', 'Manicura')->update(['is_active' => true]);
+    Service::where('name', 'Corte mujer')->update(['duration_minutes' => 50]);
+
+    (new ServiceCatalogSeeder)->run();
+
+    expect(Service::where('name', 'Manicura')->first()->is_active)->toBeTrue();
+    expect(Service::where('name', 'Corte mujer')->first()->duration_minutes)->toBe(50);
+    expect(Service::count())->toBe(24);
+});
