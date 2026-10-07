@@ -40,18 +40,20 @@
         // Review finding L6: the total also without JavaScript (and after
         // a validation error); the script below keeps it live.
         $checkedMinutes = (int) $services->whereIn('id', $checkedServiceIds)->sum('duration_minutes');
+        $waitMinutesOf = fn ($service) => \App\Booking\TimeProfile::fromServices([$service])->waitMinutes();
+        $checkedWaitMinutes = (int) $services->whereIn('id', $checkedServiceIds)->sum($waitMinutesOf);
     @endphp
     <fieldset id="service_ids" @if ($servicesError) aria-describedby="service_ids-error" @endif>
         <legend class="block text-sm mb-1">Servicios (hasta {{ \App\Models\Appointment::MAX_SERVICES }})</legend>
         <div class="space-y-2">
             @foreach ($services as $service)
                 <label class="flex items-center gap-3 min-h-11 cursor-pointer">
-                    <input type="checkbox" name="service_ids[]" value="{{ $service->id }}" class="service-checkbox w-5 h-5 shrink-0 accent-gold" data-minutes="{{ $service->duration_minutes }}" @checked(in_array($service->id, $checkedServiceIds, true)) @if ($servicesError) aria-invalid="true" @endif>
-                    <span>{{ $service->name }} ({{ $service->duration_label }})</span>
+                    <input type="checkbox" name="service_ids[]" value="{{ $service->id }}" class="service-checkbox w-5 h-5 shrink-0 accent-gold" data-minutes="{{ $service->duration_minutes }}" data-wait-minutes="{{ $waitMinutesOf($service) }}" @checked(in_array($service->id, $checkedServiceIds, true)) @if ($servicesError) aria-invalid="true" @endif>
+                    <span>{{ $service->name }} ({{ $service->duration_with_wait_label }})</span>
                 </label>
             @endforeach
         </div>
-        <p id="service-total" class="text-sm text-gold-light mt-2 {{ $checkedMinutes > 0 ? '' : 'hidden' }}" aria-live="polite">Duración total: {{ \App\Models\Service::formatDuration($checkedMinutes) }}</p>
+        <p id="service-total" class="text-sm text-gold-light mt-2 {{ $checkedMinutes > 0 ? '' : 'hidden' }}" aria-live="polite">Duración total: {{ \App\Models\Service::formatDurationWithWait($checkedMinutes, $checkedWaitMinutes) }}</p>
         @if ($servicesError) <p id="service_ids-error" class="text-red-400 text-sm mt-1">{{ $servicesError }}</p> @endif
     </fieldset>
 

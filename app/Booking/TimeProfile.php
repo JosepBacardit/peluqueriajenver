@@ -132,6 +132,14 @@ final readonly class TimeProfile
     }
 
     /**
+     * Total minutes of waiting inside the duration.
+     */
+    public function waitMinutes(): int
+    {
+        return array_sum(array_column($this->waits, 'minutes'));
+    }
+
+    /**
      * Waits as stored in a `waits` JSON column: null when there are none.
      *
      * @return list<array{start: int, minutes: int}>|null

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Booking\TimeProfile;
 use Database\Factories\ServiceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -57,6 +58,31 @@ class Service extends Model
     protected function durationLabel(): Attribute
     {
         return Attribute::get(fn (): string => self::formatDuration($this->duration_minutes));
+    }
+
+    /**
+     * formatDurationWithWait() of this service, for the panel only.
+     *
+     * @return Attribute<string, never>
+     */
+    protected function durationWithWaitLabel(): Attribute
+    {
+        return Attribute::get(fn (): string => self::formatDurationWithWait(
+            $this->duration_minutes,
+            TimeProfile::fromServices([$this])->waitMinutes(),
+        ));
+    }
+
+    /**
+     * The duration for the panel, with the waiting time it includes, e.g.
+     * "2 h, incl. 45 min de espera" (just "45 min" with no wait). Internal:
+     * never on a page or email the customer sees (PRF-149).
+     */
+    public static function formatDurationWithWait(int $minutes, int $waitMinutes): string
+    {
+        return $waitMinutes === 0
+            ? self::formatDuration($minutes)
+            : self::formatDuration($minutes).', incl. '.self::formatDuration($waitMinutes).' de espera';
     }
 
     public static function formatDuration(int $minutes): string
