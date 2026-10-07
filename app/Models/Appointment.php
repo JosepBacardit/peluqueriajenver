@@ -16,12 +16,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @property CarbonInterface $starts_at
  * @property CarbonInterface $ends_at
+ * @property list<array{start: int, minutes: int}>|null $waits measured from starts_at (App\Booking\TimeProfile)
  * @property AppointmentStatus $status
  * @property AppointmentSource $source
  * @property string $services_label
  */
 #[Fillable([
-    'services_label', 'starts_at', 'ends_at',
+    'services_label', 'starts_at', 'ends_at', 'waits',
     'customer_name', 'customer_phone', 'customer_email', 'notes',
     'status', 'source', 'token', 'cancelled_at', 'privacy_accepted_at',
     'customer_notified_at', 'salon_notified_at',
@@ -50,6 +51,7 @@ class Appointment extends Model
         return [
             'starts_at' => 'immutable_datetime',
             'ends_at' => 'immutable_datetime',
+            'waits' => 'array',
             'status' => AppointmentStatus::class,
             'source' => AppointmentSource::class,
             'cancelled_at' => 'immutable_datetime',
@@ -80,7 +82,7 @@ class Appointment extends Model
     public function services(): BelongsToMany
     {
         return $this->belongsToMany(Service::class, 'appointment_services')
-            ->withPivot(['position', 'service_name', 'duration_minutes', 'price_cents'])
+            ->withPivot(['position', 'service_name', 'duration_minutes', 'waits', 'price_cents'])
             ->withTimestamps()
             ->orderByPivot('position');
     }

@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['name', 'duration_minutes', 'price_cents', 'is_bookable_online', 'is_active', 'sort_order'])]
+#[Fillable(['name', 'duration_minutes', 'waits', 'price_cents', 'is_bookable_online', 'is_active', 'sort_order'])]
 class Service extends Model
 {
     /** @use HasFactory<ServiceFactory> */
@@ -22,6 +22,8 @@ class Service extends Model
     {
         return [
             'duration_minutes' => 'integer',
+            // Waits inside the service (App\Booking\TimeProfile), or null.
+            'waits' => 'array',
             'price_cents' => 'integer',
             'is_bookable_online' => 'boolean',
             'is_active' => 'boolean',

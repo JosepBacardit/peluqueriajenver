@@ -17,9 +17,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $position
  * @property string $service_name
  * @property int $duration_minutes
+ * @property list<array{start: int, minutes: int}>|null $waits
  * @property int|null $price_cents
  */
-#[Fillable(['appointment_id', 'service_id', 'position', 'service_name', 'duration_minutes', 'price_cents'])]
+#[Fillable(['appointment_id', 'service_id', 'position', 'service_name', 'duration_minutes', 'waits', 'price_cents'])]
 class AppointmentService extends Model
 {
     /** @use HasFactory<AppointmentServiceFactory> */
@@ -33,6 +34,7 @@ class AppointmentService extends Model
         return [
             'position' => 'integer',
             'duration_minutes' => 'integer',
+            'waits' => 'array',
             'price_cents' => 'integer',
         ];
     }
@@ -57,7 +59,7 @@ class AppointmentService extends Model
      * The frozen copy of $service at position $position, for a new or
      * changed appointment.
      *
-     * @return array{service_id: int, position: int, service_name: string, duration_minutes: int, price_cents: int|null}
+     * @return array{service_id: int, position: int, service_name: string, duration_minutes: int, waits: list<array{start: int, minutes: int}>|null, price_cents: int|null}
      */
     public static function snapshotOf(Service $service, int $position): array
     {
@@ -66,6 +68,7 @@ class AppointmentService extends Model
             'position' => $position,
             'service_name' => $service->name,
             'duration_minutes' => $service->duration_minutes,
+            'waits' => $service->waits,
             'price_cents' => $service->price_cents,
         ];
     }

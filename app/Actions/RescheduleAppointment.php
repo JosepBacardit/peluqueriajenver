@@ -9,6 +9,7 @@ use App\Booking\RescheduleOutcome;
 use App\Booking\ServiceList;
 use App\Booking\SlotUnavailableException;
 use App\Booking\StartTimeInPastException;
+use App\Booking\TimeProfile;
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\AppointmentService;
@@ -65,8 +66,8 @@ class RescheduleAppointment
      *
      * The appointment itself never counts against its new time
      * (excludeAppointmentId), so it can be moved into the time it holds
-     * now, and when neither its time nor its length changes availability
-     * is not checked at all: editing only the customer's details of an
+     * now, and when neither its time nor its TimeProfile (length and
+     * waits) changes availability is not checked at all: editing only the customer's details of an
      * appointment saved over capacity, or before the schedule changed,
      * needs no new confirmation. $ignoreHoursAndCapacity is the salon's
      * explicit "save anyway" after being warned that the new time is full
@@ -77,11 +78,12 @@ class RescheduleAppointment
      * appointment will hold, put in the salon's order
      * (ServiceList::ordered()). When the set of services does not change
      * (in whatever order), the
-     * appointment keeps its services, label and length exactly as booked;
-     * when it does, each service it already had keeps the name, duration
-     * and price frozen when it was booked (PRF-126, as when a service is
-     * edited later) and each new one brings its current ones, and the
-     * length is the sum (PRF-125, PRF-129).
+     * appointment keeps its services, label, length and waits exactly as
+     * booked; when it does, each service it already had keeps the name,
+     * duration, waits and price frozen when it was booked (PRF-126, as
+     * when a service is edited later) and each new one brings its current
+     * ones, and the length is the sum, with the waits chained (PRF-125,
+     * PRF-129).
      *
      * The services are rewritten (appointment_services) inside the same
      * transaction, after the conditional UPDATE has matched the row: a
@@ -150,14 +152,14 @@ class RescheduleAppointment
 
                 return $kept === null
                     ? AppointmentService::snapshotOf($service, $index + 1)
-                    : ['service_id' => $service->id, 'position' => $index + 1, 'service_name' => $kept->service_name, 'duration_minutes' => $kept->duration_minutes, 'price_cents' => $kept->price_cents];
+                    : ['service_id' => $service->id, 'position' => $index + 1, 'service_name' => $kept->service_name, 'duration_minutes' => $kept->duration_minutes, 'waits' => $kept->waits, 'price_cents' => $kept->price_cents];
             })->all();
-            $currentDurationMinutes = $current->durationMinutes();
-            $durationMinutes = $keepsServices ? $currentDurationMinutes : (int) array_sum(array_column($items, 'duration_minutes'));
-            $keepsSlot = $startsAt->eq($current->starts_at) && $durationMinutes === $currentDurationMinutes;
+            $currentProfile = TimeProfile::fromAppointment($current);
+            $profile = $keepsServices ? $currentProfile : TimeProfile::fromServices($items);
+            $keepsSlot = $startsAt->eq($current->starts_at) && $profile->equals($currentProfile);
 
             if (! $ignoreHoursAndCapacity && ! $keepsSlot) {
-                $reason = $this->calculator->unavailabilityReason($durationMinutes, $startsAt, $now, applyPublicRules: false, excludeAppointmentId: $current->id);
+                $reason = $this->calculator->unavailabilityReason($profile, $startsAt, $now, applyPublicRules: false, excludeAppointmentId: $current->id);
 
                 if ($reason !== null) {
                     throw new SlotUnavailableException($reason);
@@ -170,7 +172,8 @@ class RescheduleAppointment
             $attributes = [
                 'services_label' => $keepsServices ? $current->services_label : ServiceList::label(array_column($items, 'service_name')),
                 'starts_at' => $startsAt,
-                'ends_at' => $startsAt->addMinutes($durationMinutes),
+                'ends_at' => $startsAt->addMinutes($profile->durationMinutes),
+                'waits' => $profile->waitsForStorage(),
                 'customer_name' => trim($customer['customer_name']),
                 'customer_phone' => trim($customer['customer_phone']),
                 'customer_email' => $email,
