@@ -27,15 +27,15 @@
         <dl class="border border-[#2A2A2A] divide-y divide-[#2A2A2A]">
             <div class="grid grid-cols-3 gap-4 p-4">
                 <dt class="text-gray-400">{{ __('reservas.appointment.service') }}</dt>
-                {{-- PRF-130: every service with its own duration, plus the
-                     total — with just one service this still reads fine. --}}
+                {{-- PRF-130/PRF-149: every service by name — never its
+                     duration or the total, an internal number for the
+                     salon. --}}
                 <dd class="col-span-2 text-white">
                     <ul>
                         @foreach ($appointment->items as $item)
-                            <li>{{ $item->service_name }} ({{ \App\Models\Service::formatDuration($item->duration_minutes) }})</li>
+                            <li>{{ $item->service_name }}</li>
                         @endforeach
                     </ul>
-                    <p class="text-sm text-gray-400 mt-1">{{ __('reservas.total_label') }}: {{ \App\Models\Service::formatDuration($appointment->durationMinutes()) }}</p>
                 </dd>
             </div>
             <div class="grid grid-cols-3 gap-4 p-4">

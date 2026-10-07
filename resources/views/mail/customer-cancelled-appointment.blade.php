@@ -1,7 +1,7 @@
 <x-mail::message>
 # Un cliente ha cancelado su cita
 
-@include('mail.partials.appointment-services')
+@include('mail.partials.appointment-services', ['showDuration' => true])
 - **Día:** {{ ucfirst($appointment->dayLabel()) }}
 - **Hora:** {{ $appointment->starts_at->format('H:i') }}–{{ $appointment->ends_at->format('H:i') }}
 - **Nombre:** {{ $appointment->customer_name }}

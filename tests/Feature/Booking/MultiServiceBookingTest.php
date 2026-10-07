@@ -37,7 +37,7 @@ function multiBookingPayload(array $overrides = []): array
     ], $overrides);
 }
 
-test('choosing two services computes the calendar, the hours and the total with their sum', function () {
+test('choosing two services computes the calendar and the hours with their sum, without showing it', function () {
     // Corte (30) + Barba (15) = 45 minutes: a 09:00 booking ends 09:45, so
     // a new one could not start before 09:45 at full capacity.
     Appointment::factory()->count(2)->create(['starts_at' => '2030-01-08 09:00', 'ends_at' => '2030-01-08 09:45']);
@@ -46,19 +46,21 @@ test('choosing two services computes the calendar, the hours and the total with 
         ->assertOk()->getContent();
 
     expect($html)->toContain('Corte + Barba');
-    expect($html)->toContain('Duración total: 45 min');
+    // PRF-149: the sum (45 min) is used to compute the hours below, but
+    // never shown to the customer.
+    expect($html)->not->toContain('Duración total');
     expect($html)->not->toContain('value="09:00"');
     expect($html)->not->toContain('value="09:30"'); // 09:30-10:15 would still overlap the 09:00-09:45 pair
     expect($html)->toContain('value="09:45"');
     expect($html)->toContain(e(route('reservas', ['servicio' => [$this->haircut->id, $this->beard->id], 'mes' => '2030-01', 'fecha' => '2030-01-08'])).'#horas');
 });
 
-test('the legacy single-service "?servicio=" link still works', function () {
+test('the legacy single-service "?servicio=" link still works, without showing the duration', function () {
     $html = $this->get(route('reservas', ['servicio' => $this->haircut->id, 'fecha' => '2030-01-08']))
         ->assertOk()->getContent();
 
     expect($html)->toContain('Corte');
-    expect($html)->toContain('Duración total: 30 min');
+    expect($html)->not->toContain('Duración total');
 });
 
 test('more than the maximum number of services is rejected back to step 1', function () {
@@ -182,8 +184,9 @@ test('a refused list of services sends the customer back to step 1 with a visibl
 test('repeated or non-numeric services in the page address are tidied up with a discreet notice, never a broken page', function (array $servicio) {
     $html = $this->get(route('reservas', ['servicio' => $servicio, 'fecha' => '2030-01-08']))->assertOk()->getContent();
 
-    // Step 2 with the haircut alone, and the notice.
-    expect($html)->toContain('Duración total: 30 min');
+    // Step 2 with the haircut alone, and the notice (PRF-149: no duration).
+    expect($html)->toContain('Corte');
+    expect($html)->not->toContain('Duración total');
     expect($html)->toContain('Hemos quitado de tu selección los servicios repetidos o no válidos.');
     expect($html)->not->toContain('name="servicio[]"');
 })->with([
