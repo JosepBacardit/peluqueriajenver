@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Booking\TimeProfile;
 use App\Enums\AppointmentSource;
 use App\Enums\AppointmentStatus;
 use Carbon\CarbonInterface;
@@ -16,12 +17,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @property CarbonInterface $starts_at
  * @property CarbonInterface $ends_at
+ * @property list<array{start: int, minutes: int}>|null $waits measured from starts_at (App\Booking\TimeProfile)
  * @property AppointmentStatus $status
  * @property AppointmentSource $source
  * @property string $services_label
  */
 #[Fillable([
-    'services_label', 'starts_at', 'ends_at',
+    'services_label', 'starts_at', 'ends_at', 'waits',
     'customer_name', 'customer_phone', 'customer_email', 'notes',
     'status', 'source', 'token', 'cancelled_at', 'privacy_accepted_at',
     'customer_notified_at', 'salon_notified_at',
@@ -50,6 +52,7 @@ class Appointment extends Model
         return [
             'starts_at' => 'immutable_datetime',
             'ends_at' => 'immutable_datetime',
+            'waits' => 'array',
             'status' => AppointmentStatus::class,
             'source' => AppointmentSource::class,
             'cancelled_at' => 'immutable_datetime',
@@ -80,7 +83,7 @@ class Appointment extends Model
     public function services(): BelongsToMany
     {
         return $this->belongsToMany(Service::class, 'appointment_services')
-            ->withPivot(['position', 'service_name', 'duration_minutes', 'price_cents'])
+            ->withPivot(['position', 'service_name', 'duration_minutes', 'waits', 'price_cents'])
             ->withTimestamps()
             ->orderByPivot('position');
     }
@@ -92,6 +95,29 @@ class Appointment extends Model
     public function durationMinutes(): int
     {
         return (int) $this->starts_at->diffInMinutes($this->ends_at);
+    }
+
+    /**
+     * Minutes of waiting inside the appointment (PRF-151), from the waits
+     * frozen on it.
+     */
+    public function waitMinutes(): int
+    {
+        return TimeProfile::fromAppointment($this)->waitMinutes();
+    }
+
+    /**
+     * Its waits as times, e.g. "10:30–11:15" or "10:20–10:50 y 11:20–11:40",
+     * or null without any. Internal: for the panel and the salon's emails
+     * only, never the customer (PRF-158).
+     */
+    public function waitsLabel(): ?string
+    {
+        $intervals = TimeProfile::fromAppointment($this)->waitIntervals($this->starts_at);
+
+        return $intervals === [] ? null : collect($intervals)
+            ->map(fn (array $interval) => $interval[0]->format('H:i').'–'.$interval[1]->format('H:i'))
+            ->implode(' y ');
     }
 
     /**

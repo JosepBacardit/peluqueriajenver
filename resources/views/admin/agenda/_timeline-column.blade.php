@@ -64,6 +64,15 @@
                     @if ($segment['type'] === 'appointment')
                         @php
                             $appointment = $segment['appointment'];
+                            // PRF-159: an appointment with waits is drawn as
+                            // one block per active stretch, "(1/2)", "(2/2)".
+                            $isSplit = $segment['parts'] > 1;
+                            $atMinute = fn (int $minute) => sprintf('%02d:%02d', intdiv($minute, 60), $minute % 60);
+                            $blockTime = $atMinute($segment['stretchStart']);
+                            $durationLabel = \App\Models\Service::formatDuration($appointment->durationMinutes());
+                            $stretchLabel = $isSplit
+                                ? 'tramo '.$segment['part'].' de '.$segment['parts'].', de '.$blockTime.' a '.$atMinute($segment['stretchEnd']).($segment['waitUntil'] !== null ? ', espera hasta '.$atMinute($segment['waitUntil']) : '')
+                                : null;
                         @endphp
                         {{-- A single truncated line, "HH:MM Clienta" (and the
                              service, if room): review finding N3. A short
@@ -81,11 +90,16 @@
                                 starts_at/ends_at, no items() — no N+1),
                                 for whoever can't read the truncated text
                                 below or the grid at all. --}}
-                           title="{{ $appointment->starts_at->format('H:i') }}–{{ $appointment->ends_at->format('H:i') }} ({{ \App\Models\Service::formatDuration($appointment->durationMinutes()) }}) {{ $appointment->services_label }}, {{ $appointment->customer_name }}"
-                           aria-label="{{ $datePrefix }}{{ $appointment->starts_at->format('H:i') }} {{ $appointment->services_label }}, duración {{ \App\Models\Service::formatDuration($appointment->durationMinutes()) }}, {{ $appointment->customer_name }}{{ $segment['overCapacity'] ? ', sobre capacidad' : '' }}, plaza {{ $segment['lane'] + 1 }}">
+                           title="{{ $appointment->starts_at->format('H:i') }}–{{ $appointment->ends_at->format('H:i') }} ({{ \App\Models\Service::formatDurationWithWait($appointment->durationMinutes(), $appointment->waitMinutes()) }}) {{ $appointment->services_label }}, {{ $appointment->customer_name }}{{ $isSplit ? ' · tramo '.$segment['part'].' de '.$segment['parts'].': '.$blockTime.'–'.$atMinute($segment['stretchEnd']).($segment['waitUntil'] !== null ? ', espera hasta '.$atMinute($segment['waitUntil']) : '') : '' }}"
+                           @if ($isSplit)
+                               aria-label="{{ $datePrefix }}{{ $blockTime }} {{ $appointment->services_label }}, {{ $appointment->customer_name }}, {{ $stretchLabel }}{{ $segment['overCapacity'] ? ', sobre capacidad' : '' }}, plaza {{ $segment['lane'] + 1 }}"
+                           @else
+                               aria-label="{{ $datePrefix }}{{ $blockTime }} {{ $appointment->services_label }}, duración {{ $durationLabel }}, {{ $appointment->customer_name }}{{ $segment['overCapacity'] ? ', sobre capacidad' : '' }}, plaza {{ $segment['lane'] + 1 }}"
+                           @endif>
                             <span class="block truncate w-full">
-                                <span class="font-semibold text-gold">{{ $appointment->starts_at->format('H:i') }}</span>
-                                {{ $appointment->customer_name }}@unless ($compact) · {{ $appointment->services_label }}@endunless
+                                <span class="font-semibold text-gold">{{ $blockTime }}</span>
+                                {{-- Review L2: "(1/2)" before the name, the part a narrow lane never cuts. --}}
+                                {{ $isSplit ? '('.$segment['part'].'/'.$segment['parts'].') ' : '' }}{{ $appointment->customer_name }}@unless ($compact) · {{ $appointment->services_label }}@endunless
                             </span>
                         </a>
                     @elseif ($segment['type'] === 'cierre-parcial')
@@ -105,6 +119,9 @@
                         @php
                             $slotTime = sprintf('%02d:%02d', intdiv($segment['start'], 60), $segment['start'] % 60);
                             $fits = $segment['fits'] ?? false;
+                            // PRF-159: free because someone else's
+                            // appointment is waiting here.
+                            $waitLabel = isset($segment['wait']) ? 'Espera · '.$segment['wait']['customer'].' hasta '.$segment['wait']['until'] : null;
                         @endphp
                         {{-- One link per free half hour of this lane (review
                              finding N1), each with its own exact time —
@@ -124,13 +141,26 @@
                              whole grid gold, with nothing standing out; the
                              stripe is deliberately a smaller, quieter cue. --}}
                         <a href="{{ route('admin.appointments.create', ['fecha' => $day->toDateString(), 'hora' => $slotTime, 'volver' => $volver, ...$servicioQuery]) }}"
-                           class="flex items-center justify-center text-[9px] leading-none {{ $fits ? 'border-l-4 border-gold bg-gold/10 text-gold font-semibold' : 'hover:bg-gold/10' }}"
+                           class="flex items-center justify-center overflow-hidden text-[9px] leading-none {{ $fits ? 'border-l-4 border-gold bg-gold/10 text-gold font-semibold' : 'hover:bg-gold/10' }} {{ $waitLabel !== null && ! $fits ? 'border-l-2 border-dashed border-gold/40 text-gray-400' : '' }}"
                            style="{{ $gridArea }}"
-                           aria-label="{{ $datePrefix }}Hueco libre a las {{ $slotTime }}, plaza {{ $segment['lane'] + 1 }}{{ $fits ? ', cabe '.$serviciosLabel : '' }}">
+                           @if ($waitLabel !== null) title="{{ $waitLabel }}" @endif
+                           aria-label="{{ $datePrefix }}Hueco libre a las {{ $slotTime }}, plaza {{ $segment['lane'] + 1 }}{{ $waitLabel !== null ? ', espera de '.$segment['wait']['customer'].' hasta '.$segment['wait']['until'] : '' }}{{ $fits ? ', cabe '.$serviciosLabel : '' }}">
                             @if ($fits && ! $compact)
                                 Cabe
+                            @elseif ($waitLabel !== null && $segment['waitLabel'] && ! $compact)
+                                <span class="truncate px-1">{{ $waitLabel }}</span>
                             @endif
                         </a>
+                    @elseif (isset($segment['wait']))
+                        {{-- A short free stretch inside a wait (not its own
+                             tap target): the mark only, for the eye; the
+                             blocks' aria-label already says when the wait
+                             ends. --}}
+                        <div class="flex items-center overflow-hidden text-[9px] leading-none text-gray-400 border-l-2 border-dashed border-gold/40" style="{{ $gridArea }}" title="Espera · {{ $segment['wait']['customer'] }} hasta {{ $segment['wait']['until'] }}" aria-hidden="true">
+                            @if ($segment['waitLabel'] && ! $compact)
+                                <span class="truncate px-1">Espera · {{ $segment['wait']['customer'] }} hasta {{ $segment['wait']['until'] }}</span>
+                            @endif
+                        </div>
                     @else
                         <div style="{{ $gridArea }}" aria-hidden="true"></div>
                     @endif

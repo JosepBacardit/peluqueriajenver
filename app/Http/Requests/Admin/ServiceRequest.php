@@ -2,11 +2,33 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Booking\TimeProfile;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
+/**
+ * The service's times come as steps, in the order they happen (user's
+ * request, 2026-10-07: hairdressers who do not use these tools much must
+ * find it simple): Trabajo 1, Espera 1, Trabajo 2, Espera 2, Trabajo 3.
+ * Only the first is required. The duration is their sum and the waits
+ * follow from them (TimeProfile::fromSteps()); both are stored as before.
+ */
 class ServiceRequest extends FormRequest
 {
+    /**
+     * The step fields, in order: every other one is a wait. With
+     * TimeProfile::MAX_WAITS_PER_SERVICE = 2 waits, 3 works.
+     */
+    public const STEP_FIELDS = ['work_1', 'wait_1', 'work_2', 'wait_2', 'work_3'];
+
+    /**
+     * How each step is named in "Escribe los minutos …".
+     */
+    private const STEP_NAMES = ['del trabajo 1', 'de la espera 1', 'del trabajo 2', 'de la espera 2', 'del trabajo 3'];
+
+    private const MAX_TOTAL_MINUTES = 600;
+
     /**
      * Any logged-in salon user may manage services (routes are behind auth).
      */
@@ -16,36 +38,147 @@ class ServiceRequest extends FormRequest
     }
 
     /**
+     * A 0 in any step but the first means "there is none" (review M1,
+     * user's decision): it counts as empty, never as an error.
+     */
+    protected function prepareForValidation(): void
+    {
+        $empty = [];
+
+        foreach (array_slice(self::STEP_FIELDS, 1) as $field) {
+            $value = $this->input($field);
+
+            if (is_string($value) && preg_match('/^\s*0+\s*$/', $value) === 1) {
+                $empty[$field] = null;
+            }
+        }
+
+        $this->merge($empty);
+    }
+
+    /**
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'name' => ['required', 'string', 'min:2', 'max:100'],
-            'duration_minutes' => ['required', 'integer', 'between:5,600', 'multiple_of:5'],
             'price' => ['nullable', 'numeric', 'decimal:0,2', 'between:0,9999.99'],
             'is_bookable_online' => ['boolean'],
             'is_active' => ['boolean'],
             'sort_order' => ['nullable', 'integer', 'between:0,999'],
         ];
+
+        foreach (self::STEP_FIELDS as $index => $field) {
+            $rules[$field] = ['bail', $index === 0 ? 'required' : 'nullable', 'integer', 'min:5', 'max:'.self::MAX_TOTAL_MINUTES, 'multiple_of:5'];
+        }
+
+        return $rules;
+    }
+
+    /**
+     * Plain words, next to the step they are about.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        $messages = ['work_1.required' => 'Escribe cuántos minutos dura el trabajo 1.'];
+
+        foreach (self::STEP_FIELDS as $field) {
+            $messages["{$field}.integer"] = 'Escribe solo el número de minutos.';
+            $messages["{$field}.min"] = 'Como mínimo, 5 minutos.';
+            $messages["{$field}.max"] = 'Como máximo, '.self::MAX_TOTAL_MINUTES.' minutos.';
+            $messages["{$field}.multiple_of"] = 'Usa múltiplos de 5 minutos (5, 10, 15…).';
+        }
+
+        return $messages;
+    }
+
+    /**
+     * Once every step is valid on its own: no gap before a filled step,
+     * the last one a work (a wait always sits between two works), and the
+     * total within the limit. The error goes on the step to fix. Checked
+     * along with the other fields' errors (review L1), so everything to
+     * fix shows at once.
+     *
+     * A gap says what to do either way (review M1): a 0 counts as empty,
+     * so "Trabajo 1 = 30, Espera 1 = 0, Trabajo 2 = 45" gets "Escribe los
+     * minutos de la espera 1, o deja vacíos los pasos de después." on the
+     * wait — whether the hairdresser meant a real wait (write it) or none
+     * at all (clear what follows, or add it to Trabajo 1).
+     *
+     * @return array<int, callable>
+     */
+    public function after(): array
+    {
+        return [function (Validator $validator): void {
+            foreach (self::STEP_FIELDS as $field) {
+                if ($validator->errors()->has($field)) {
+                    return;
+                }
+            }
+
+            $filled = array_map(fn (string $field) => filled($this->input($field)), self::STEP_FIELDS);
+            $last = (int) array_key_last(array_filter($filled));
+
+            for ($index = 1; $index < $last; $index++) {
+                if (! $filled[$index]) {
+                    $validator->errors()->add(self::STEP_FIELDS[$index], 'Escribe los minutos '.self::STEP_NAMES[$index].', o deja vacíos los pasos de después.');
+
+                    return;
+                }
+            }
+
+            if ($last % 2 === 1) {
+                $validator->errors()->add(self::STEP_FIELDS[$last + 1], 'Después de una espera tiene que haber un tiempo de trabajo.');
+
+                return;
+            }
+
+            if (array_sum($this->steps()) > self::MAX_TOTAL_MINUTES) {
+                $validator->errors()->add('duration_minutes', 'El servicio entero no puede pasar de 10 horas ('.self::MAX_TOTAL_MINUTES.' minutos).');
+            }
+        }];
     }
 
     /**
      * Validated data mapped to the service's columns.
      *
-     * @return array{name: string, duration_minutes: int, price_cents: int|null, is_bookable_online: bool, is_active: bool, sort_order: int}
+     * @return array{name: string, duration_minutes: int, waits: list<array{start: int, minutes: int}>|null, price_cents: int|null, is_bookable_online: bool, is_active: bool, sort_order: int}
      */
     public function serviceAttributes(): array
     {
         $price = $this->validated('price');
+        $profile = TimeProfile::fromSteps($this->steps());
 
         return [
             'name' => trim($this->validated('name')),
-            'duration_minutes' => (int) $this->validated('duration_minutes'),
+            'duration_minutes' => $profile->durationMinutes,
+            'waits' => $profile->waitsForStorage(),
             'price_cents' => $price === null ? null : (int) round(((float) $price) * 100),
             'is_bookable_online' => $this->boolean('is_bookable_online'),
             'is_active' => $this->boolean('is_active'),
             'sort_order' => (int) ($this->validated('sort_order') ?? 0),
         ];
+    }
+
+    /**
+     * The filled steps' minutes, in order (after() guarantees there is no
+     * gap once validation passes).
+     *
+     * @return list<int>
+     */
+    private function steps(): array
+    {
+        $steps = [];
+
+        foreach (self::STEP_FIELDS as $field) {
+            if (filled($this->input($field))) {
+                $steps[] = (int) $this->input($field);
+            }
+        }
+
+        return $steps;
     }
 }

@@ -11,14 +11,21 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 /**
- * Decides which start times can be booked for a given duration.
+ * Decides which start times can be booked for a given length: a
+ * TimeProfile (its duration and the waits inside it), or a plain number of
+ * minutes for one with no waits.
  *
  * A start time is available when:
- *  1. the whole appointment fits inside one opening range of that day;
- *  2. at no moment of the appointment do the confirmed appointments that
- *     overlap it reach the effective capacity (the capacity setting minus
- *     the reductions of the blocks covering that moment; a full closure
- *     leaves it at 0);
+ *  1. the whole appointment, waits included, fits inside one opening range
+ *     of that day;
+ *  2. at no moment of the appointment's active stretches (outside its
+ *     waits) do the active stretches of the confirmed appointments reach
+ *     the effective capacity (the capacity setting minus the reductions of
+ *     the blocks covering that moment), and at no moment of the whole
+ *     appointment, waits included, is the effective capacity 0 (a full
+ *     closure: the customer cannot wait in a closed salon). An
+ *     appointment waiting takes no place, and hairdressers are only
+ *     counted, never named: any free one can do the next active stretch;
  *  3. public bookings only: it is on the slot-interval grid counted from
  *     the start of the range, not earlier than now + minimum notice, and
  *     its day is not later than today + maximum advance.
@@ -34,12 +41,12 @@ class AvailabilityCalculator
      *
      * @return list<CarbonImmutable>
      */
-    public function availableStartTimes(int $durationMinutes, CarbonImmutable $day, CarbonImmutable $now): array
+    public function availableStartTimes(TimeProfile|int $length, CarbonImmutable $day, CarbonImmutable $now): array
     {
         $day = $day->startOfDay();
 
         return $this->startTimesFor(
-            $durationMinutes, $day, $now,
+            TimeProfile::of($length), $day, $now,
             BookingSetting::current(),
             $this->rangesFor($day),
             $this->loadOccupation($day, $day->addDay()),
@@ -48,10 +55,10 @@ class AvailabilityCalculator
 
     /**
      * @param  Collection<int, OpeningHour>  $ranges  the day's opening ranges
-     * @param  array{appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>}  $context  occupation covering at least the day
+     * @param  array{busy: list<array{0: CarbonImmutable, 1: CarbonImmutable}>, blocks: Collection<int, ScheduleBlock>}  $context  occupation covering at least the day
      * @return list<CarbonImmutable>
      */
-    private function startTimesFor(int $durationMinutes, CarbonImmutable $day, CarbonImmutable $now, BookingSetting $settings, Collection $ranges, array $context): array
+    private function startTimesFor(TimeProfile $profile, CarbonImmutable $day, CarbonImmutable $now, BookingSetting $settings, Collection $ranges, array $context): array
     {
         if (! $this->isWithinBookingWindow($day, $now, $settings)) {
             return [];
@@ -61,14 +68,14 @@ class AvailabilityCalculator
         $times = [];
 
         foreach ($ranges as $range) {
-            for ($minute = $range->opensAtMinutes(); $minute + $durationMinutes <= $range->closesAtMinutes(); $minute += $settings->slot_interval_minutes) {
+            for ($minute = $range->opensAtMinutes(); $minute + $profile->durationMinutes <= $range->closesAtMinutes(); $minute += $settings->slot_interval_minutes) {
                 $start = $this->atMinute($day, $minute);
 
                 if ($start->lt($earliest)) {
                     continue;
                 }
 
-                if ($this->hasCapacity($start, $start->addMinutes($durationMinutes), $context, $settings->capacity)) {
+                if ($this->hasCapacity($profile, $start, $context, $settings->capacity)) {
                     $times[] = $start;
                 }
             }
@@ -87,9 +94,9 @@ class AvailabilityCalculator
      * time overlapping the one it holds now (e.g. 15 minutes earlier on a
      * full day).
      */
-    public function isAvailable(int $durationMinutes, CarbonImmutable $start, CarbonImmutable $now, bool $applyPublicRules, ?int $excludeAppointmentId = null): bool
+    public function isAvailable(TimeProfile|int $length, CarbonImmutable $start, CarbonImmutable $now, bool $applyPublicRules, ?int $excludeAppointmentId = null): bool
     {
-        return $this->unavailabilityReason($durationMinutes, $start, $now, $applyPublicRules, $excludeAppointmentId) === null;
+        return $this->unavailabilityReason($length, $start, $now, $applyPublicRules, $excludeAppointmentId) === null;
     }
 
     /**
@@ -97,8 +104,10 @@ class AvailabilityCalculator
      * parameters as isAvailable()), or null when it can. The panel uses it
      * to tell the salon what is wrong with the time it chose.
      */
-    public function unavailabilityReason(int $durationMinutes, CarbonImmutable $start, CarbonImmutable $now, bool $applyPublicRules, ?int $excludeAppointmentId = null): ?UnavailabilityReason
+    public function unavailabilityReason(TimeProfile|int $length, CarbonImmutable $start, CarbonImmutable $now, bool $applyPublicRules, ?int $excludeAppointmentId = null): ?UnavailabilityReason
     {
+        $profile = TimeProfile::of($length);
+        $durationMinutes = $profile->durationMinutes;
         $settings = BookingSetting::current();
         $day = $start->startOfDay();
         $startMinute = $start->hour * 60 + $start->minute;
@@ -129,14 +138,16 @@ class AvailabilityCalculator
             }
         }
 
-        return $this->capacityProblem($start, $end, $this->loadOccupation($start, $end, $excludeAppointmentId), $settings->capacity);
+        return $this->capacityProblem($profile, $start, $this->loadOccupation($start, $end, $excludeAppointmentId), $settings->capacity);
     }
 
     /**
-     * Which of the candidate start times a service of $durationMinutes
-     * fits into on $day, by rules 1 and 2 only (an opening range holds the
-     * whole service, and the effective capacity, after the blocks' reductions
-     * and full closures, is never reached by the confirmed appointments):
+     * Which of the candidate start times a service of $length (its
+     * TimeProfile, or minutes with no waits) fits into on $day, by rules 1
+     * and 2 only (an opening range holds the whole service, and the
+     * effective capacity, after the blocks' reductions and full closures,
+     * is never reached by the active stretches of the confirmed
+     * appointments):
      * the same rules and the same capacity check (capacityProblem()) as
      * isAvailable(..., applyPublicRules: false). Rule 3 (slot interval,
      * minimum notice, booking window) never applies, and neither does
@@ -151,7 +162,7 @@ class AvailabilityCalculator
      * day's $dayRanges, $dayAppointments and $dayBlocks):
      *
      *     $fitting = $calculator->fittingStartMinutes(
-     *         $service->duration_minutes,
+     *         TimeProfile::fromServices($services),
      *         $candidateMinutes, // e.g. the 'start' of the timeline's tappable free segments
      *         $day, $dayRanges, $appointments, $blocks, $capacity,
      *     );
@@ -166,22 +177,21 @@ class AvailabilityCalculator
      * @param  Collection<int, ScheduleBlock>  $blocks  the blocks overlapping $day
      * @return list<int> the candidates the service fits into, in the given order
      */
-    public function fittingStartMinutes(int $durationMinutes, array $candidateMinutes, CarbonImmutable $day, Collection $ranges, Collection $appointments, Collection $blocks, int $capacity): array
+    public function fittingStartMinutes(TimeProfile|int $length, array $candidateMinutes, CarbonImmutable $day, Collection $ranges, Collection $appointments, Collection $blocks, int $capacity): array
     {
+        $profile = TimeProfile::of($length);
         $day = $day->startOfDay();
         $context = [
-            'appointments' => $appointments->filter(fn (Appointment $appointment) => $appointment->isConfirmed())->values(),
+            'busy' => self::busyIntervals($appointments->filter(fn (Appointment $appointment) => $appointment->isConfirmed())),
             'blocks' => $blocks,
         ];
 
-        return array_values(array_filter($candidateMinutes, function (int $minute) use ($durationMinutes, $day, $ranges, $context, $capacity): bool {
-            if ($this->rangeContaining($ranges, $minute, $durationMinutes) === null) {
+        return array_values(array_filter($candidateMinutes, function (int $minute) use ($profile, $day, $ranges, $context, $capacity): bool {
+            if ($this->rangeContaining($ranges, $minute, $profile->durationMinutes) === null) {
                 return false;
             }
 
-            $start = $this->atMinute($day, $minute);
-
-            return $this->hasCapacity($start, $start->addMinutes($durationMinutes), $context, $capacity);
+            return $this->hasCapacity($profile, $this->atMinute($day, $minute), $context, $capacity);
         }));
     }
 
@@ -191,19 +201,20 @@ class AvailabilityCalculator
      *
      * @return list<string> dates as Y-m-d
      */
-    public function daysWithAvailability(int $durationMinutes, CarbonImmutable $from, CarbonImmutable $to, CarbonImmutable $now): array
+    public function daysWithAvailability(TimeProfile|int $length, CarbonImmutable $from, CarbonImmutable $to, CarbonImmutable $now): array
     {
         // Loaded once for the whole range (a handful of queries for a month
         // view instead of four per day).
         $settings = BookingSetting::current();
         $rangesByWeekday = OpeningHour::query()->orderBy('opens_at')->get()->groupBy('weekday');
         $context = $this->loadOccupation($from->startOfDay(), $to->startOfDay()->addDay());
+        $profile = TimeProfile::of($length);
         $days = [];
 
         for ($day = $from->startOfDay(); $day->lte($to); $day = $day->addDay()) {
             $ranges = $rangesByWeekday->get($day->isoWeekday(), collect());
 
-            if ($this->startTimesFor($durationMinutes, $day, $now, $settings, $ranges, $context) !== []) {
+            if ($this->startTimesFor($profile, $day, $now, $settings, $ranges, $context) !== []) {
                 $days[] = $day->toDateString();
             }
         }
@@ -256,54 +267,84 @@ class AvailabilityCalculator
     }
 
     /**
-     * @return array{appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>}
+     * @return array{busy: list<array{0: CarbonImmutable, 1: CarbonImmutable}>, blocks: Collection<int, ScheduleBlock>}
      */
     private function loadOccupation(CarbonImmutable $from, CarbonImmutable $to, ?int $excludeAppointmentId = null): array
     {
         return [
-            'appointments' => Appointment::query()->confirmed()->overlapping($from, $to)
+            'busy' => self::busyIntervals(Appointment::query()->confirmed()->overlapping($from, $to)
                 ->when($excludeAppointmentId !== null, fn (Builder $query) => $query->whereKeyNot($excludeAppointmentId))
-                ->get(['starts_at', 'ends_at']),
+                ->get(['starts_at', 'ends_at', 'waits'])),
             'blocks' => ScheduleBlock::query()->overlapping($from, $to)->get(['starts_at', 'ends_at', 'capacity_reduction']),
         ];
     }
 
     /**
-     * Occupancy can only rise at the appointment's own start or where
-     * another appointment or block starts inside it, so checking those
-     * moments is exact whatever the slot interval.
+     * The active stretches of these appointments (outside their waits):
+     * the only time they take a place. One appointment's stretches never
+     * overlap each other, so counting the stretches covering a moment
+     * counts the appointments being done at that moment.
      *
-     * @param  array{appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>}  $context
+     * @param  Collection<int, Appointment>  $appointments
+     * @return list<array{0: CarbonImmutable, 1: CarbonImmutable}>
      */
-    private function hasCapacity(CarbonImmutable $start, CarbonImmutable $end, array $context, int $capacity): bool
+    private static function busyIntervals(Collection $appointments): array
     {
-        return $this->capacityProblem($start, $end, $context, $capacity) === null;
+        return $appointments
+            ->flatMap(fn (Appointment $appointment) => TimeProfile::fromAppointment($appointment)->activeIntervals($appointment->starts_at))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array{busy: list<array{0: CarbonImmutable, 1: CarbonImmutable}>, blocks: Collection<int, ScheduleBlock>}  $context
+     */
+    private function hasCapacity(TimeProfile $profile, CarbonImmutable $start, array $context, int $capacity): bool
+    {
+        return $this->capacityProblem($profile, $start, $context, $capacity) === null;
     }
 
     /**
      * At the first moment without a free place: Closed when the blocks
-     * alone leave no place (a one-off closure), Full when the confirmed
-     * appointments take the places left.
+     * alone leave no place (a one-off closure) at any moment of the
+     * appointment, waits included; Full when, during one of its active
+     * stretches, the active stretches of the confirmed appointments take
+     * the places left.
      *
-     * @param  array{appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>}  $context
+     * Occupancy can only rise where one of the appointment's own active
+     * stretches starts, or where another appointment's active stretch or a
+     * block starts inside it, so checking those moments is exact whatever
+     * the slot interval.
+     *
+     * @param  array{busy: list<array{0: CarbonImmutable, 1: CarbonImmutable}>, blocks: Collection<int, ScheduleBlock>}  $context
      */
-    private function capacityProblem(CarbonImmutable $start, CarbonImmutable $end, array $context, int $capacity): ?UnavailabilityReason
+    private function capacityProblem(TimeProfile $profile, CarbonImmutable $start, array $context, int $capacity): ?UnavailabilityReason
     {
+        $end = $start->addMinutes($profile->durationMinutes);
+        $active = $profile->activeIntervals($start);
+        $covering = fn (CarbonImmutable $moment) => fn (array $interval) => $interval[0]->lte($moment) && $interval[1]->gt($moment);
+
         $moments = collect([$start])
-            ->merge($context['appointments']->pluck('starts_at'))
+            ->merge(array_column($active, 0))
+            ->merge(array_column($context['busy'], 0))
             ->merge($context['blocks']->pluck('starts_at'))
             ->filter(fn (CarbonImmutable $moment) => $moment->gte($start) && $moment->lt($end));
 
         foreach ($moments as $moment) {
-            $covers = fn ($item) => $item->starts_at->lte($moment) && $item->ends_at->gt($moment);
-
-            $occupied = $context['appointments']->filter($covers)->count();
-            $reduction = $context['blocks']->filter($covers)
+            $reduction = $context['blocks']
+                ->filter(fn (ScheduleBlock $block) => $block->starts_at->lte($moment) && $block->ends_at->gt($moment))
                 ->sum(fn (ScheduleBlock $block) => $block->capacity_reduction ?? $capacity);
 
             if ($capacity - $reduction < 1) {
                 return UnavailabilityReason::Closed;
             }
+
+            // While the appointment is waiting it takes no place.
+            if (array_filter($active, $covering($moment)) === []) {
+                continue;
+            }
+
+            $occupied = count(array_filter($context['busy'], $covering($moment)));
 
             if ($capacity - $reduction - $occupied < 1) {
                 return UnavailabilityReason::Full;

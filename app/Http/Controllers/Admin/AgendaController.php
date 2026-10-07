@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Booking\AvailabilityCalculator;
 use App\Booking\DayTimeline;
 use App\Booking\ServiceList;
+use App\Booking\TimeProfile;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\BookingSetting;
@@ -250,11 +251,11 @@ class AgendaController extends Controller
             return $timeline;
         }
 
-        $durationMinutes = (int) $servicios->sum('duration_minutes');
+        $profile = TimeProfile::fromServices($servicios);
         $candidates = DayTimeline::tappableFreeMinutes($timeline);
-        $fitting = $this->calculator->fittingStartMinutes($durationMinutes, $candidates, $day, $ranges, $appointments, $blocks, $capacity);
+        $fitting = $this->calculator->fittingStartMinutes($profile, $candidates, $day, $ranges, $appointments, $blocks, $capacity);
 
-        return DayTimeline::markServiceFit($timeline, $fitting, $durationMinutes);
+        return DayTimeline::markServiceFit($timeline, $fitting, $profile);
     }
 
     /**

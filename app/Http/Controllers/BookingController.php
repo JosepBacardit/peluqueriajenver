@@ -8,6 +8,7 @@ use App\Booking\AvailabilityCalculator;
 use App\Booking\DuplicateAppointmentException;
 use App\Booking\ServiceList;
 use App\Booking\SlotUnavailableException;
+use App\Booking\TimeProfile;
 use App\Booking\TooManyUpcomingAppointmentsException;
 use App\Enums\AppointmentSource;
 use App\Http\Requests\StoreBookingRequest;
@@ -60,7 +61,9 @@ class BookingController extends Controller
             ]);
         }
 
-        $durationMinutes = (int) $selectedServices->sum('duration_minutes');
+        // Internal only (PRF-149): it decides which times are offered,
+        // never shown.
+        $profile = TimeProfile::fromServices($selectedServices);
         $now = CarbonImmutable::now();
         $firstMonth = $now->startOfMonth();
         $lastDay = $this->calculator->lastBookableDay($now);
@@ -71,7 +74,7 @@ class BookingController extends Controller
         $month = $month->lt($firstMonth) ? $firstMonth : ($month->gt($lastMonth) ? $lastMonth : $month);
 
         $availableDays = $this->calculator->daysWithAvailability(
-            $durationMinutes,
+            $profile,
             $month->lt($now->startOfDay()) ? $now->startOfDay() : $month,
             $month->endOfMonth()->lt($lastDay) ? $month->endOfMonth()->startOfDay() : $lastDay,
             $now,
@@ -99,7 +102,7 @@ class BookingController extends Controller
             'availableDays' => $availableDays,
             'requestedDay' => $requestedDay,
             'day' => $day,
-            'times' => $day === null ? [] : $this->calculator->availableStartTimes($durationMinutes, $day, $now),
+            'times' => $day === null ? [] : $this->calculator->availableStartTimes($profile, $day, $now),
         ]);
     }
 

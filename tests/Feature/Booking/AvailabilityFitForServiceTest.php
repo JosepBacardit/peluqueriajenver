@@ -1,6 +1,7 @@
 <?php
 
 use App\Booking\AvailabilityCalculator;
+use App\Booking\TimeProfile;
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\BookingSetting;
@@ -36,12 +37,13 @@ function fitMinute(string $time): int
     return (int) $hour * 60 + (int) $minute;
 }
 
-function fitBook(string $from, string $to, string $date = '2030-01-08', AppointmentStatus $status = AppointmentStatus::Confirmed): void
+function fitBook(string $from, string $to, string $date = '2030-01-08', AppointmentStatus $status = AppointmentStatus::Confirmed, ?array $waits = null): void
 {
     Appointment::factory()->withServices(test()->service)->create([
         'starts_at' => CarbonImmutable::parse("{$date} {$from}"),
         'ends_at' => CarbonImmutable::parse("{$date} {$to}"),
         'status' => $status,
+        'waits' => $waits,
     ]);
 }
 
@@ -181,6 +183,8 @@ test('it runs no query', function () {
  * reproducible) the method agrees with isAvailable(..., applyPublicRules:
  * false) for every candidate. "Now" is the evening before, so the only
  * rule isAvailable() adds for the panel (not in the past) never applies.
+ * Some appointments and some candidates have waits inside (TimeProfile),
+ * which take no place.
  */
 test('it always agrees with isAvailable for the panel', function (int $seed) {
     mt_srand($seed);
@@ -200,7 +204,8 @@ test('it always agrees with isAvailable for the panel', function (int $seed) {
         $start = mt_rand(8 * 12, 19 * 12) * 5;
         $length = [15, 30, 45, 60, 90, 120][mt_rand(0, 5)];
         $status = mt_rand(0, 4) === 0 ? AppointmentStatus::Cancelled : AppointmentStatus::Confirmed;
-        fitBook(sprintf('%02d:%02d', intdiv($start, 60), $start % 60), sprintf('%02d:%02d', intdiv($start + $length, 60), ($start + $length) % 60), $date, $status);
+        $waits = $length >= 60 && mt_rand(0, 1) === 1 ? [['start' => 15, 'minutes' => $length - 30]] : null;
+        fitBook(sprintf('%02d:%02d', intdiv($start, 60), $start % 60), sprintf('%02d:%02d', intdiv($start + $length, 60), ($start + $length) % 60), $date, $status, $waits);
     }
 
     for ($i = mt_rand(0, 2); $i > 0; $i--) {
@@ -212,12 +217,18 @@ test('it always agrees with isAvailable for the panel', function (int $seed) {
     $context = agendaContext($date);
     $candidates = range(fitMinute('08:00'), fitMinute('19:30'), 15);
 
-    foreach ([30, 45, 60, 150] as $duration) {
+    $lengths = [
+        30, 45, 60, 150,
+        new TimeProfile(120, [['start' => 30, 'minutes' => 45]]),
+        new TimeProfile(150, [['start' => 20, 'minutes' => 30], ['start' => 80, 'minutes' => 20]]),
+    ];
+
+    foreach ($lengths as $duration) {
         $fitting = $calculator->fittingStartMinutes($duration, $candidates, $context['day'], $context['ranges'], $context['appointments'], $context['blocks'], $context['capacity']);
         $expected = array_values(array_filter($candidates, fn (int $minute) => $calculator->isAvailable(
             $duration, $context['day']->setTime(intdiv($minute, 60), $minute % 60), $now, applyPublicRules: false,
         )));
 
-        expect($fitting)->toBe($expected, "seed {$seed}, duration {$duration}");
+        expect($fitting)->toBe($expected, "seed {$seed}, length ".json_encode($duration));
     }
 })->with(range(1, 25));

@@ -18,7 +18,8 @@ function validServicePayload(array $overrides = []): array
 {
     return array_merge([
         'name' => 'Corte y peinado',
-        'duration_minutes' => 45,
+        // The duration is the sum of the steps; with no wait, just the first.
+        'work_1' => 45,
         'price' => '35.50',
         'is_bookable_online' => '1',
         'is_active' => '1',
@@ -84,9 +85,9 @@ test('invalid service values are rejected without saving anything', function (ar
     'missing name' => [['name' => ''], 'name'],
     'one-letter name' => [['name' => 'C'], 'name'],
     'name over 100 characters' => [['name' => str_repeat('a', 101)], 'name'],
-    'duration not a multiple of 5' => [['duration_minutes' => 47], 'duration_minutes'],
-    'zero duration' => [['duration_minutes' => 0], 'duration_minutes'],
-    'duration over 600' => [['duration_minutes' => 605], 'duration_minutes'],
+    'duration not a multiple of 5' => [['work_1' => 47], 'work_1'],
+    'zero duration' => [['work_1' => 0], 'work_1'],
+    'duration over 600' => [['work_1' => 605], 'work_1'],
     'negative price' => [['price' => '-1'], 'price'],
     'price with three decimals' => [['price' => '10.555'], 'price'],
     'price over 9999.99' => [['price' => '10000'], 'price'],
@@ -102,15 +103,15 @@ test('accented names are kept as typed', function () {
 test('a salon user can edit a service with the same rules', function () {
     $service = Service::factory()->create(['name' => 'Corte', 'duration_minutes' => 30]);
 
-    $this->put(route('admin.services.update', $service), validServicePayload(['name' => 'Corte caballero', 'duration_minutes' => 20]))
+    $this->put(route('admin.services.update', $service), validServicePayload(['name' => 'Corte caballero', 'work_1' => 20]))
         ->assertRedirect(route('admin.services.index'));
 
     expect($service->fresh()->name)->toBe('Corte caballero');
     expect($service->fresh()->duration_minutes)->toBe(20);
 
     $this->from(route('admin.services.edit', $service))
-        ->put(route('admin.services.update', $service), validServicePayload(['duration_minutes' => 0]))
-        ->assertSessionHasErrors('duration_minutes');
+        ->put(route('admin.services.update', $service), validServicePayload(['work_1' => 0]))
+        ->assertSessionHasErrors('work_1');
 
     expect($service->fresh()->duration_minutes)->toBe(20);
 });

@@ -94,3 +94,57 @@ test('the admin panel keeps showing the duration everywhere, unaffected', functi
     expect($html)->toContain('Balayage');
     expect($html)->toContain('2 h');
 });
+
+/*
+ * PRF-158: waits inside a service (e.g. a dye's processing time) are as
+ * internal as the duration. "Coloración" lasts 120 minutes, waiting from
+ * minute 30 for 45 (10:30-11:15 for a 10:00 appointment). Matched as the
+ * whole word "espera", since every customer email already says "Te
+ * esperamos".
+ */
+function expectNoWaitRevealed(string $html): void
+{
+    expect($html)->toContain('Coloración');
+    expect($html)->toContain('10:00');
+    expect($html)->not->toMatch('/\bespera\b/iu');
+    expect($html)
+        ->not->toContain('10:30')
+        ->not->toContain('11:15')
+        ->not->toContain('12:00')
+        ->not->toContain('45 min')
+        ->not->toContain('2 h')
+        ->not->toContain('data-wait-minutes')
+        ->not->toContain('"minutes"');
+}
+
+function appointmentWithWait(): Appointment
+{
+    $coloracion = Service::factory()->create(['name' => 'Coloración', 'duration_minutes' => 120, 'waits' => [['start' => 30, 'minutes' => 45]]]);
+
+    return Appointment::factory()->withServices($coloracion)->create(['starts_at' => '2030-01-08 10:00']);
+}
+
+test('"/cita/{token}" never shows the waits of a service', function () {
+    $appointment = appointmentWithWait();
+
+    expect($appointment->waits)->toBe([['start' => 30, 'minutes' => 45]]);
+    expectNoWaitRevealed($this->get(route('cita.show', $appointment->token))->assertOk()->getContent());
+});
+
+test('every email to the customer never shows the waits of a service', function (string $mailClass) {
+    $appointment = appointmentWithWait();
+
+    $mail = $mailClass === AppointmentCancelledMail::class ? new $mailClass($appointment, true) : new $mailClass($appointment);
+
+    expectNoWaitRevealed($mail->render());
+})->with([
+    'confirmation to the customer' => AppointmentConfirmedMail::class,
+    'cancellation to the customer' => AppointmentCancelledMail::class,
+    'change of time to the customer' => AppointmentRescheduledMail::class,
+]);
+
+test('the whole-word check would catch a wait, but not "Te esperamos"', function () {
+    expect('Te esperamos en Peluquería Jenver.')->not->toMatch('/\bespera\b/iu');
+    expect('Espera: 10:30–11:15')->toMatch('/\bespera\b/iu');
+    expect('2 h, incl. 45 min de espera')->toMatch('/\bespera\b/iu');
+});

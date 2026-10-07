@@ -22,7 +22,7 @@
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
                         <p class="text-white font-semibold">{{ $service->name }}</p>
-                        <p class="text-sm text-gray-400">{{ $service->duration_label }} · Orden {{ $service->sort_order }}</p>
+                        <p class="text-sm text-gray-400">{{ $service->duration_with_wait_label }} · Orden {{ $service->sort_order }}</p>
                     </div>
                     <a href="{{ route('admin.services.edit', $service) }}" class="btn-outline text-sm">Editar</a>
                 </div>

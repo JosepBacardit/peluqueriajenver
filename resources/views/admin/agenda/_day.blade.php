@@ -33,8 +33,12 @@
                              starts_at/ends_at, already loaded, so this
                              never needs items() (no N+1, same number of
                              queries as before this card existed). --}}
-                        <span class="text-sm text-gray-400">({{ \App\Models\Service::formatDuration($appointment->durationMinutes()) }})</span>
+                        <span class="text-sm text-gray-400">({{ \App\Models\Service::formatDurationWithWait($appointment->durationMinutes(), $appointment->waitMinutes()) }})</span>
                     </p>
+                    {{-- PRF-159: when the hairdresser is free during it. --}}
+                    @if ($appointment->waitsLabel() !== null)
+                        <p class="text-sm text-gray-400">Espera: {{ $appointment->waitsLabel() }}</p>
+                    @endif
                     <p>
                         {{ $appointment->customer_name }} · {{ $appointment->customer_phone }}
                         @if ($appointment->customer_email) · {{ $appointment->customer_email }}@endif

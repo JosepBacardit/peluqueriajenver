@@ -133,6 +133,9 @@ class ServiceCatalogSeeder extends Seeder
             Service::query()->where('name', $oldName)->update([
                 'name' => $newName,
                 'duration_minutes' => $catalogEntry['duration_minutes'],
+                // A new length: any waits set for the old one may no
+                // longer fit (review L5).
+                'waits' => null,
                 'price_cents' => null,
                 'is_bookable_online' => $catalogEntry['is_bookable_online'],
                 'is_active' => $catalogEntry['is_active'],

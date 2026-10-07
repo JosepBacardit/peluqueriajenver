@@ -6,6 +6,7 @@ use App\Booking\AvailabilityCalculator;
 use App\Booking\DuplicateAppointmentException;
 use App\Booking\ServiceList;
 use App\Booking\SlotUnavailableException;
+use App\Booking\TimeProfile;
 use App\Booking\TooManyUpcomingAppointmentsException;
 use App\Enums\AppointmentSource;
 use App\Enums\AppointmentStatus;
@@ -48,8 +49,11 @@ class CreateAppointment
      * $services are the 1 to Appointment::MAX_SERVICES services booked
      * together (PRF-125): they are done one after another in the salon's
      * order (ServiceList::ordered()), so availability is checked for the
-     * sum of their durations and the appointment takes one place for all
-     * of it. The appointment and its frozen copies of the services
+     * sum of their durations, with their waits chained (TimeProfile): the
+     * appointment takes one place during every active stretch and none
+     * while it waits. The appointment's waits are frozen on it, next to
+     * ends_at, like each service's own. The appointment and its frozen
+     * copies of the services
      * (appointment_services, PRF-126) are written in this same transaction,
      * after the lock, so a booking never exists without its services.
      *
@@ -72,9 +76,9 @@ class CreateAppointment
         $now ??= CarbonImmutable::now();
         $email = $customer['customer_email'] === null ? null : Str::lower(trim($customer['customer_email']));
         $services = ServiceList::ordered($services);
-        $durationMinutes = (int) $services->sum('duration_minutes');
+        $profile = TimeProfile::fromServices($services);
 
-        return DB::transaction(function () use ($services, $durationMinutes, $startsAt, $customer, $source, $applyPublicRules, $now, $email): Appointment {
+        return DB::transaction(function () use ($services, $profile, $startsAt, $customer, $source, $applyPublicRules, $now, $email): Appointment {
             BookingSetting::query()->lockForUpdate()->orderBy('id')->firstOrFail();
 
             if ($email !== null && Appointment::query()->confirmed()
@@ -88,14 +92,15 @@ class CreateAppointment
                 throw new TooManyUpcomingAppointmentsException;
             }
 
-            if (! $this->calculator->isAvailable($durationMinutes, $startsAt, $now, $applyPublicRules)) {
+            if (! $this->calculator->isAvailable($profile, $startsAt, $now, $applyPublicRules)) {
                 throw new SlotUnavailableException;
             }
 
             $appointment = Appointment::create([
                 'services_label' => ServiceList::label($services->pluck('name')),
                 'starts_at' => $startsAt,
-                'ends_at' => $startsAt->addMinutes($durationMinutes),
+                'ends_at' => $startsAt->addMinutes($profile->durationMinutes),
+                'waits' => $profile->waitsForStorage(),
                 'customer_name' => trim($customer['customer_name']),
                 'customer_phone' => trim($customer['customer_phone']),
                 'customer_email' => $email,

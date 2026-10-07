@@ -1,6 +1,7 @@
 <?php
 
 use App\Booking\AppointmentLaneAssigner;
+use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -11,10 +12,10 @@ function laneAppointment(string $starts, string $ends, bool $cancelled = false):
     $appointment = Appointment::factory()->make(['starts_at' => $starts, 'ends_at' => $ends]);
 
     if ($cancelled) {
-        $appointment->status = \App\Enums\AppointmentStatus::Cancelled;
+        $appointment->status = AppointmentStatus::Cancelled;
     }
 
-    // An id is needed to key the lane map; factory ->make() leaves it null.
+    // An id is needed to key the lane map ("{id}:{stretch}"); factory ->make() leaves it null.
     static $nextId = 1;
     $appointment->id = $nextId++;
 
@@ -30,7 +31,7 @@ test('a single appointment on an otherwise empty day gets lane 0, with the full 
 
     $result = AppointmentLaneAssigner::assign(collect([$a]), capacity: 2);
 
-    expect($result['lanes'][$a->id])->toBe(0);
+    expect($result['lanes'][$a->id.':0'])->toBe(0);
     expect($result['maxLanes'])->toBe(2);
 });
 
@@ -40,8 +41,8 @@ test('two overlapping appointments get different lanes', function () {
 
     $result = AppointmentLaneAssigner::assign(collect([$a, $b]), capacity: 2);
 
-    expect($result['lanes'][$a->id])->toBe(0);
-    expect($result['lanes'][$b->id])->toBe(1);
+    expect($result['lanes'][$a->id.':0'])->toBe(0);
+    expect($result['lanes'][$b->id.':0'])->toBe(1);
     expect($result['maxLanes'])->toBe(2);
 });
 
@@ -55,8 +56,8 @@ test('back-to-back appointments (one ends when the other starts) share a lane', 
 
     $result = AppointmentLaneAssigner::assign(collect([$a, $b]), capacity: 2);
 
-    expect($result['lanes'][$a->id])->toBe(0);
-    expect($result['lanes'][$b->id])->toBe(0);
+    expect($result['lanes'][$a->id.':0'])->toBe(0);
+    expect($result['lanes'][$b->id.':0'])->toBe(0);
     expect($result['maxLanes'])->toBe(2);
 });
 
@@ -67,10 +68,10 @@ test('a third appointment overlapping the first two reuses a lane once one frees
 
     $result = AppointmentLaneAssigner::assign(collect([$a, $b, $c]), capacity: 2);
 
-    expect($result['lanes'][$a->id])->toBe(0);
-    expect($result['lanes'][$b->id])->toBe(1);
+    expect($result['lanes'][$a->id.':0'])->toBe(0);
+    expect($result['lanes'][$b->id.':0'])->toBe(1);
     // $a ended at 10:30, freeing lane 0, so $c (10:30-11:00) reuses it.
-    expect($result['lanes'][$c->id])->toBe(0);
+    expect($result['lanes'][$c->id.':0'])->toBe(0);
     expect($result['maxLanes'])->toBe(2);
 });
 
@@ -86,13 +87,13 @@ test('more overlapping appointments than capacity get extra lanes beyond it', fu
 
     $result = AppointmentLaneAssigner::assign(collect([$a, $b, $c]), capacity: 2);
 
-    $lanes = [$result['lanes'][$a->id], $result['lanes'][$b->id], $result['lanes'][$c->id]];
+    $lanes = [$result['lanes'][$a->id.':0'], $result['lanes'][$b->id.':0'], $result['lanes'][$c->id.':0']];
     sort($lanes);
     expect($lanes)->toBe([0, 1, 2]);
     expect($result['maxLanes'])->toBe(3);
-    expect($result['overCapacity'][$a->id])->toBeFalse();
-    expect($result['overCapacity'][$b->id])->toBeFalse();
-    expect($result['overCapacity'][$c->id])->toBeTrue();
+    expect($result['overCapacity'][$a->id.':0'])->toBeFalse();
+    expect($result['overCapacity'][$b->id.':0'])->toBeFalse();
+    expect($result['overCapacity'][$c->id.':0'])->toBeTrue();
 });
 
 /**
@@ -104,8 +105,8 @@ test('a cancelled appointment is left out of the lane assignment entirely', func
 
     $result = AppointmentLaneAssigner::assign(collect([$a, $b]), capacity: 2);
 
-    expect($result['lanes'])->not->toHaveKey($a->id);
-    expect($result['lanes'][$b->id])->toBe(0);
+    expect($result['lanes'])->not->toHaveKey($a->id.':0');
+    expect($result['lanes'][$b->id.':0'])->toBe(0);
     expect($result['maxLanes'])->toBe(2);
 });
 

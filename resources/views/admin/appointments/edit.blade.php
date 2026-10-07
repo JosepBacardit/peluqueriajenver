@@ -53,18 +53,24 @@
         $frozenMinutes = $appointment->items->pluck('duration_minutes', 'service_id');
         $minutesOf = fn ($service) => (int) ($frozenMinutes[$service->id] ?? $service->duration_minutes);
         $checkedMinutes = (int) $services->whereIn('id', $checkedServiceIds)->sum($minutesOf);
+        // Same for the waits: a kept service keeps the ones it was booked with.
+        $frozenItems = $appointment->items->keyBy('service_id');
+        $waitMinutesOf = fn ($service) => \App\Booking\TimeProfile::fromServices([$frozenItems[$service->id] ?? $service])->waitMinutes();
+        $checkedWaitMinutes = (int) $services->whereIn('id', $checkedServiceIds)->sum($waitMinutesOf);
     @endphp
     <fieldset id="service_ids" @if ($servicesDescribedBy !== '') aria-describedby="{{ $servicesDescribedBy }}" @endif>
         <legend class="block text-sm mb-1">Servicios (hasta {{ \App\Models\Appointment::MAX_SERVICES }})</legend>
         <div class="space-y-2">
             @foreach ($services as $service)
                 <label class="flex items-center gap-3 min-h-11 cursor-pointer">
-                    <input type="checkbox" name="service_ids[]" value="{{ $service->id }}" class="service-checkbox w-5 h-5 shrink-0 accent-gold" data-minutes="{{ $minutesOf($service) }}" @checked(in_array($service->id, $checkedServiceIds, true)) @if ($servicesError) aria-invalid="true" @endif>
-                    <span>{{ $service->name }} ({{ $service->duration_label }}){{ $service->is_active ? '' : ' · inactivo' }}</span>
+                    <input type="checkbox" name="service_ids[]" value="{{ $service->id }}" class="service-checkbox w-5 h-5 shrink-0 accent-gold" data-minutes="{{ $minutesOf($service) }}" data-wait-minutes="{{ $waitMinutesOf($service) }}" @checked(in_array($service->id, $checkedServiceIds, true)) @if ($servicesError) aria-invalid="true" @endif>
+                    {{-- Review L3: a service the appointment already has shows
+                         its frozen length and wait, the same the total counts. --}}
+                    <span>{{ $service->name }} ({{ \App\Models\Service::formatDurationWithWait($minutesOf($service), $waitMinutesOf($service)) }}){{ $service->is_active ? '' : ' · inactivo' }}</span>
                 </label>
             @endforeach
         </div>
-        <p id="service-total" class="text-sm text-gold-light mt-2 {{ $checkedMinutes > 0 ? '' : 'hidden' }}" aria-live="polite">Duración total: {{ \App\Models\Service::formatDuration($checkedMinutes) }}</p>
+        <p id="service-total" class="text-sm text-gold-light mt-2 {{ $checkedMinutes > 0 ? '' : 'hidden' }}" aria-live="polite">Duración total: {{ \App\Models\Service::formatDurationWithWait($checkedMinutes, $checkedWaitMinutes) }}</p>
         @if ($servicesError) <p id="service_ids-error" class="text-red-400 text-sm mt-1">{{ $servicesError }}</p> @endif
     </fieldset>
 

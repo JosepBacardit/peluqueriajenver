@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Booking\TimeProfile;
 use App\Enums\AppointmentSource;
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
@@ -40,7 +41,7 @@ class AppointmentFactory extends Factory
     /**
      * Books these services, in this order (their names joined as
      * services_label). Unless ends_at is given, the appointment lasts the
-     * sum of their durations.
+     * sum of their durations, with their waits chained.
      */
     public function withServices(Service ...$services): static
     {
@@ -48,6 +49,7 @@ class AppointmentFactory extends Factory
             ->state(fn (array $attributes) => [
                 'services_label' => collect($services)->pluck('name')->implode(Appointment::SERVICES_LABEL_SEPARATOR),
                 'ends_at' => fn (array $attributes) => CarbonImmutable::parse($attributes['starts_at'])->addMinutes(collect($services)->sum('duration_minutes')),
+                'waits' => TimeProfile::fromServices($services)->waitsForStorage(),
             ])
             ->afterMaking(fn (Appointment $appointment) => $appointment->setRelation('servicesToBook', collect($services)));
     }
