@@ -34,7 +34,13 @@ Que la agenda muestre el hueco que deja una espera como libre y se pueda tocar. 
 - **`mail/partials/appointment-services`** (solo con `showDuration`, es decir, en los correos al salón): duraciones con la espera incluida y línea «Espera: …».
 - `Appointment::waitMinutes()`/`waitsLabel()` y `TimeProfile::waitIntervals()`.
 
-Tests: `tests/Feature/Booking/WaitTimesAgendaTest.php` (10) y `AppointmentLaneAssignerTest`, adaptado a las claves por tramo. Suite completa: 833 en verde. Pint pasado sobre los archivos tocados. Pendiente: comprobación en el navegador (coordinador).
+**Corrección tras la comprobación del coordinador en el navegador (2026-10-07):**
+- **Problema:** en la plaza 2 del ejemplo, el hueco de 10:45 a 11:15 mostraba «Espera · Ana Prueba hasta 11:15» dos veces, una por cada franja de 15 min.
+- **Arreglo:** `laneSegments()` marca ahora `waitLabel` solo en la primera franja de cada hueco continuo con la misma espera, y la vista solo pinta el texto visible ahí. El `aria-label` de cada franja tocable y el `title` siguen en todas.
+- **Tests:** «the wait mark is labelled once per continuous free run…» y «the agenda shows the visible wait mark once per run…».
+- Comprobado de solo lectura con los datos locales del coordinador (14/10/2026): 10:45 con `waitLabel` y 11:00 sin él.
+
+Tests: `tests/Feature/Booking/WaitTimesAgendaTest.php` (12) y `AppointmentLaneAssignerTest`, adaptado a las claves por tramo. Suite completa: 833 en verde. Pint pasado sobre los archivos tocados. Pendiente: comprobación en el navegador (coordinador).
 
 ## Plan original
 

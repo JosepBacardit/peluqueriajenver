@@ -665,7 +665,8 @@ class DayTimeline
      * An appointment segment is one active stretch: 'part' of 'parts'
      * (1 of 1 without waits), 'stretchStart'/'stretchEnd' unclipped, and
      * 'waitUntil' when a wait follows it. A free segment overlapping a wait
-     * in one of that wait's lanes carries 'wait' (customer and until).
+     * in one of that wait's lanes carries 'wait' (customer and until), and
+     * 'waitLabel' true only on the first segment of each continuous run.
      *
      * @param  list<array>  $stretches  stretchesAndWaits()
      * @param  list<array>  $waits  stretchesAndWaits()
@@ -712,18 +713,30 @@ class DayTimeline
         }
 
         $laneWaits = array_filter($waits, fn (array $wait) => in_array($lane, $wait['lanes'], true));
+        $previousWait = null; // the wait marked on the previous segment of this lane, if any
 
         foreach ($segments as &$segment) {
-            if ($segment['type'] !== 'free') {
-                continue;
-            }
+            $wait = null;
 
-            foreach ($laneWaits as $wait) {
-                if ($segment['start'] < $wait['end'] && $segment['end'] > $wait['start']) {
-                    $segment['wait'] = ['customer' => $wait['customer'], 'until' => $wait['until']];
-                    break;
+            if ($segment['type'] === 'free') {
+                foreach ($laneWaits as $candidate) {
+                    if ($segment['start'] < $candidate['end'] && $segment['end'] > $candidate['start']) {
+                        $wait = ['customer' => $candidate['customer'], 'until' => $candidate['until']];
+                        break;
+                    }
                 }
             }
+
+            if ($wait !== null) {
+                $segment['wait'] = $wait;
+                // A free run is split every half hour: the visible mark
+                // goes once, on its first segment (the coordinator's
+                // browser check); every segment keeps 'wait' for its own
+                // aria-label and title.
+                $segment['waitLabel'] = $wait !== $previousWait;
+            }
+
+            $previousWait = $wait;
         }
         unset($segment);
 

@@ -197,3 +197,35 @@ test('the two emails to the salon show the wait; the customer ones never do', fu
         ->not->toContain('Espera:')
         ->not->toContain('11:15');
 });
+
+/*
+ * Found in the browser (coordinator, 2026-10-07): a free run during a wait
+ * is split into several segments (every half hour, and around a short
+ * leading filler), and each one showed the visible mark. It must show
+ * once per continuous run, on its first segment; every tappable segment
+ * keeps saying it in its aria-label.
+ */
+test('the wait mark is labelled once per continuous free run, on its first segment', function () {
+    $marked = collect(waitSegments(waitTimeline(specExample())))->filter(fn (array $s) => isset($s['wait']))->values();
+
+    expect($marked->map(fn (array $s) => [$s['lane'], $s['start'], $s['waitLabel']])->all())->toBe([
+        [1, 645, true],
+        [1, 660, false],
+    ]);
+});
+
+test('the agenda shows the visible wait mark once per run, and every tappable slot still says it', function () {
+    $this->actingAs(User::factory()->create());
+    $this->travelTo(CarbonImmutable::parse('2030-01-08 08:00'));
+    specExample();
+    // A wait with its lane free the whole hour: two tappable half hours.
+    waitAgendaAppointment('Dora', '15:00', '17:00', [['start' => 30, 'minutes' => 60]], 'Mechas');
+
+    $html = $this->get(route('admin.agenda', ['fecha' => '2030-01-08']))->assertOk()->getContent();
+
+    expect(substr_count($html, '>Espera · Ana hasta 11:15</span>'))->toBe(1);
+    expect(substr_count($html, '>Espera · Dora hasta 16:30</span>'))->toBe(1);
+    expect($html)
+        ->toContain('aria-label="Hueco libre a las 15:30, plaza 1, espera de Dora hasta 16:30"')
+        ->toContain('aria-label="Hueco libre a las 16:00, plaza 1, espera de Dora hasta 16:30"');
+});

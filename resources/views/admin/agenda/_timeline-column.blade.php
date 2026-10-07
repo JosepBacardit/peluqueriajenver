@@ -146,7 +146,7 @@
                            aria-label="{{ $datePrefix }}Hueco libre a las {{ $slotTime }}, plaza {{ $segment['lane'] + 1 }}{{ $waitLabel !== null ? ', espera de '.$segment['wait']['customer'].' hasta '.$segment['wait']['until'] : '' }}{{ $fits ? ', cabe '.$serviciosLabel : '' }}">
                             @if ($fits && ! $compact)
                                 Cabe
-                            @elseif ($waitLabel !== null && ! $compact)
+                            @elseif ($waitLabel !== null && $segment['waitLabel'] && ! $compact)
                                 <span class="truncate px-1">{{ $waitLabel }}</span>
                             @endif
                         </a>
@@ -156,9 +156,9 @@
                              blocks' aria-label already says when the wait
                              ends. --}}
                         <div class="flex items-center overflow-hidden text-[9px] leading-none text-gray-400 border-l-2 border-dashed border-gold/40" style="{{ $gridArea }}" title="Espera · {{ $segment['wait']['customer'] }} hasta {{ $segment['wait']['until'] }}" aria-hidden="true">
-                            @unless ($compact)
+                            @if ($segment['waitLabel'] && ! $compact)
                                 <span class="truncate px-1">Espera · {{ $segment['wait']['customer'] }} hasta {{ $segment['wait']['until'] }}</span>
-                            @endunless
+                            @endif
                         </div>
                     @else
                         <div style="{{ $gridArea }}" aria-hidden="true"></div>
