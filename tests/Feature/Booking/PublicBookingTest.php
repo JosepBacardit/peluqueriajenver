@@ -38,18 +38,22 @@ function bookingPayload(array $overrides = []): array
     ], $overrides);
 }
 
-test('the booking page lists the online services in order with their duration and no price', function () {
+test('the booking page lists the online services in order, without their duration or a price', function () {
     Service::factory()->create(['name' => 'Balayage', 'duration_minutes' => 180, 'sort_order' => 0, 'price_cents' => 9900]);
     Service::factory()->notBookableOnline()->create(['name' => 'Alisado con diagnóstico']);
     Service::factory()->inactive()->create(['name' => 'Servicio retirado']);
 
     $response = $this->get(route('reservas'))->assertOk();
 
-    $response->assertSeeInOrder(['Balayage', '3 h', 'Corte y peinado', '1 h 30 min'])
+    $response->assertSeeInOrder(['Balayage', 'Corte y peinado'])
         ->assertDontSee('Alisado con diagnóstico')
         ->assertDontSee('Servicio retirado');
 
-    expect($response->getContent())->not->toContain('€')->not->toContain('35,50')->not->toContain('99,00');
+    $html = $response->getContent();
+    // PRF-149: the duration is an internal number now, not even in the
+    // page source (no "data-minutes" on the checkboxes any more).
+    expect($html)->not->toContain('3 h')->not->toContain('1 h 30 min')->not->toContain('data-minutes');
+    expect($html)->not->toContain('€')->not->toContain('35,50')->not->toContain('99,00');
 });
 
 test('the calendar and the booking form never show the internal price', function () {

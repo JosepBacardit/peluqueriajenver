@@ -26,7 +26,6 @@ return [
     'max_services' => 'Hasta :max servicios por cita.',
     'view_days' => 'Ver días y horas',
     'change_service' => 'Cambiar',
-    'total_label' => 'Duración total',
     'calendar' => [
         'previous' => '← Mes anterior',
         'next' => 'Mes siguiente →',

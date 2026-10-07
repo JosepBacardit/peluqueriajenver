@@ -15,8 +15,10 @@ uses(RefreshDatabase::class);
 
 /*
  * PRF-130: every email, the customer's own appointment page, and the
- * agenda show every service of an appointment with the total duration,
- * never a price.
+ * agenda show every service of an appointment, never a price. PRF-149
+ * (2026-10-07): the duration (per service and the total) is an internal
+ * number for the salon — the 3 customer-facing emails and "/cita/{token}"
+ * never show it; the 2 salon-facing emails and the agenda still do.
  */
 beforeEach(function () {
     $this->haircut = Service::factory()->create(['name' => 'Corte', 'duration_minutes' => 30, 'price_cents' => 2500]);
@@ -27,8 +29,21 @@ beforeEach(function () {
     ]);
 });
 
-test('every email lists both services with their own duration and the total, never a price', function (string $mailClass) {
+test('every email to the customer lists both services by name, never their duration, the total or a price', function (string $mailClass) {
     $mail = $mailClass === AppointmentCancelledMail::class ? new $mailClass($this->appointment, true) : new $mailClass($this->appointment);
+    $html = $mail->render();
+
+    expect($html)->toContain('Corte')->toContain('Barba');
+    expect($html)->not->toContain('30 min')->not->toContain('15 min')->not->toContain('45 min')->not->toContain('Duración total');
+    expect($html)->not->toContain('€')->not->toContain('25,00')->not->toContain('10,00');
+})->with([
+    'confirmation to the customer' => AppointmentConfirmedMail::class,
+    'cancellation to the customer' => AppointmentCancelledMail::class,
+    'change of time to the customer' => AppointmentRescheduledMail::class,
+]);
+
+test('every email to the salon lists both services with their own duration and the total, never a price', function (string $mailClass) {
+    $mail = new $mailClass($this->appointment);
     $html = $mail->render();
 
     expect($html)->toContain('Corte (30 min)');
@@ -37,19 +52,15 @@ test('every email lists both services with their own duration and the total, nev
     expect($html)->toContain('45 min');
     expect($html)->not->toContain('€')->not->toContain('25,00')->not->toContain('10,00');
 })->with([
-    'confirmation to the customer' => AppointmentConfirmedMail::class,
     'notice to the salon' => NewAppointmentMail::class,
-    'cancellation to the customer' => AppointmentCancelledMail::class,
     'cancellation notice to the salon' => CustomerCancelledAppointmentMail::class,
-    'change of time to the customer' => AppointmentRescheduledMail::class,
 ]);
 
-test('"/cita/{token}" lists both services with their own duration and the total, never a price', function () {
+test('"/cita/{token}" lists both services by name, never their duration, the total or a price', function () {
     $html = $this->get(route('cita.show', $this->appointment->token))->assertOk()->getContent();
 
-    expect($html)->toContain('Corte (30 min)');
-    expect($html)->toContain('Barba (15 min)');
-    expect($html)->toContain('45 min');
+    expect($html)->toContain('Corte')->toContain('Barba');
+    expect($html)->not->toContain('30 min')->not->toContain('15 min')->not->toContain('45 min')->not->toContain('Duración total');
     expect($html)->not->toContain('€')->not->toContain('25,00')->not->toContain('10,00');
 });
 

@@ -57,29 +57,29 @@
                                 <label class="flex items-center justify-between gap-4 min-h-11 border border-[#2A2A2A] hover:border-gold p-5 transition-colors cursor-pointer">
                                     <span>
                                         <span class="block text-white font-semibold">{{ $item->name }}</span>
-                                        <span class="block text-sm text-gray-400 mt-1">{{ $item->duration_label }}</span>
                                     </span>
-                                    <input type="checkbox" name="servicio[]" value="{{ $item->id }}" class="service-checkbox w-5 h-5 shrink-0 accent-gold" data-minutes="{{ $item->duration_minutes }}" @checked(in_array($item->id, $checkedIds, true)) @if ($servicesInvalid) aria-invalid="true" @endif>
+                                    {{-- No "data-minutes" here on purpose (PRF-149): the
+                                         duration is an internal number for the salon to
+                                         work out free slots, never something the
+                                         customer should read, not even from the page
+                                         source. --}}
+                                    <input type="checkbox" name="servicio[]" value="{{ $item->id }}" class="service-checkbox w-5 h-5 shrink-0 accent-gold" @checked(in_array($item->id, $checkedIds, true)) @if ($servicesInvalid) aria-invalid="true" @endif>
                                 </label>
                             </li>
                         @endforeach
                     </ul>
                     </fieldset>
 
-                    {{-- Progressive enhancement only: hidden without
-                         JavaScript, where the total is shown on step 2
-                         instead (PRF-127). --}}
-                    <p id="service-total-preview" class="text-gold-light mb-6 hidden"></p>
-
                     <button type="submit" class="btn-gold">{{ __('reservas.view_days') }}</button>
                 </form>
             </div>
-            @include('partials.service-total-script', ['targetId' => 'service-total-preview', 'label' => __('reservas.total_label')])
         @else
             <div class="flex flex-wrap items-center justify-between gap-4 border border-[#2A2A2A] p-4">
                 <p class="text-white">
+                    {{-- PRF-149: the duration (and its total) stays an
+                         internal number for the salon; only the chosen
+                         services' names are shown here. --}}
                     <span class="text-gold">{{ \App\Booking\ServiceList::label($selectedServices->pluck('name')) }}</span>
-                    · {{ __('reservas.total_label') }}: {{ \App\Models\Service::formatDuration((int) $selectedServices->sum('duration_minutes')) }}
                 </p>
                 {{-- Back to step 1 with this choice still checked (review
                      finding L6). --}}
