@@ -28,20 +28,7 @@ $schema = [
         "latitude" => 41.4897,
         "longitude" => 2.1898
     ],
-    "openingHoursSpecification" => [
-        [
-            "@type" => "OpeningHoursSpecification",
-            "dayOfWeek" => ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-            "opens" => "09:00",
-            "closes" => "19:00"
-        ],
-        [
-            "@type" => "OpeningHoursSpecification",
-            "dayOfWeek" => ["Monday", "Sunday"],
-            "opens" => "00:00",
-            "closes" => "00:00"
-        ]
-    ],
+    "openingHoursSpecification" => \App\Booking\OpeningHoursSummary::schemaSpecifications(),
     "currenciesAccepted" => "EUR",
     "paymentAccepted" => "Cash, Credit Card",
     "areaServed" => ["Montcada i Reixac", "Ripollet", "Cerdanyola del Vallès", "Santa Coloma de Gramenet"],
@@ -56,19 +43,28 @@ $schema = [
         ["@type" => "Offer", "itemOffered" => ["@type" => "Service", "name" => "Corte de pelo"]],
         ["@type" => "Offer", "itemOffered" => ["@type" => "Service", "name" => "Peinado para eventos"]]
     ],
-    "potentialAction" => [
-        "@type" => "ReserveAction",
-        "name" => "Reservar cita",
-        "target" => [
-            "@type" => "EntryPoint",
-            "urlTemplate" => "tel:+34633912050"
-        ]
-    ],
     "hasMap" => [
         "@type" => "Map",
         "url" => "https://maps.google.com/?q=Peluquería+Jenver+Carrer+Lleida+21+Montcada+i+Reixac"
     ]
 ];
+
+// The ReserveAction only makes sense while /reservas actually takes
+// bookings (the "Reserva online activa" switch on, and at least one
+// service reservable online, PRF-147). Otherwise the action is simply
+// omitted rather than pointed somewhere schema.org has no action type
+// for ("call this number"); the phone number stays in `telephone` and
+// `contactPoint` regardless.
+if (\App\Models\BookingSetting::onlineBookingAvailable()) {
+    $schema['potentialAction'] = [
+        "@type" => "ReserveAction",
+        "name" => "Reservar cita",
+        "target" => [
+            "@type" => "EntryPoint",
+            "urlTemplate" => route('reservas')
+        ]
+    ];
+}
 ?>
 <script type="application/ld+json">
 {!! json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}

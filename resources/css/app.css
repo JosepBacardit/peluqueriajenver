@@ -1,4 +1,13 @@
-@import 'tailwindcss';
+/* N3 (review `agenda-service-filter`, coordinator): "source(none)" turns
+   off Tailwind 4's automatic source detection, which otherwise walks the
+   whole project root (app/, tests/, .ai/, .claude/, database/, docker/,
+   routes/, storage/, even .git/) looking for class names, not just
+   resources/ — on the Windows bind mount (slow per-file I/O, see
+   AGENTS.md) that walk is what made the dev server's first CSS compile
+   keep getting slower as the project grew (18s -> 30s -> 91s -> 107s).
+   The two explicit @source globs below already cover every place a
+   Tailwind class can appear (Blade views, JS), so nothing is lost. */
+@import 'tailwindcss' source(none);
 
 @source '../**/*.blade.php';
 @source '../js/**/*.js';
@@ -89,12 +98,26 @@
 }
 
 @layer components {
+    /*
+     * inline-flex + min-h-11 (44px) guarantee every button and button-like
+     * link meets the minimum mobile touch target (PRF-089), even on pages
+     * that only set text size (text-sm) and no padding of their own. Pages
+     * that already override padding (home, contacto, service pages) keep
+     * their own values for horizontal and vertical padding, which are all
+     * greater than or equal to this floor.
+     */
     .btn-gold {
-        @apply bg-gold hover:bg-gold-light text-black font-semibold px-5 py-2 transition-colors duration-200;
+        @apply inline-flex items-center justify-center min-h-11 bg-gold hover:bg-gold-light text-black font-semibold px-5 py-3 transition-colors duration-200;
     }
 
     .btn-outline {
-        @apply border border-gold text-gold hover:bg-gold/10 px-5 py-2 transition-all duration-200;
+        @apply inline-flex items-center justify-center min-h-11 border border-gold text-gold hover:bg-gold/10 px-5 py-3 transition-all duration-200;
+    }
+
+    /* Destructive actions (cancel, delete): same touch target, visually
+       distinct from .btn-outline so it is never confused with it. */
+    .btn-danger-outline {
+        @apply inline-flex items-center justify-center min-h-11 border border-red-500/60 text-red-300 hover:bg-red-500/10 px-4 py-2 transition-all duration-200;
     }
 
     .section-title {

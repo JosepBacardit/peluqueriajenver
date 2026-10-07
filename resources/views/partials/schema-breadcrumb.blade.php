@@ -19,6 +19,7 @@ $routeTitles = [
     'peinados-eventos' => 'Peinados para Eventos',
     'belleza-estetica' => 'Belleza y Estética',
     'contacto' => 'Contacto',
+    'reservas' => 'Reservar cita',
     'privacidad' => 'Política de Privacidad',
     'avisos-legales' => 'Avisos Legales',
     'cookies' => 'Política de Cookies',

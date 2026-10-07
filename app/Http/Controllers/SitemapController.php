@@ -12,6 +12,7 @@ class SitemapController extends Controller
             ['url' => route('corte-tratamientos'), 'priority' => 0.9, 'changefreq' => 'monthly'],
             ['url' => route('peinados-eventos'), 'priority' => 0.9, 'changefreq' => 'monthly'],
             ['url' => route('belleza-estetica'), 'priority' => 0.8, 'changefreq' => 'monthly'],
+            ['url' => route('reservas'), 'priority' => 0.8, 'changefreq' => 'weekly'],
             ['url' => route('contacto'), 'priority' => 0.7, 'changefreq' => 'monthly'],
         ];
 

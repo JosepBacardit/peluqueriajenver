@@ -33,9 +33,15 @@
         </p>
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <a href="tel:+34633912050" class="btn-gold text-sm md:text-base">
-                Reservar cita →
-            </a>
+            @if (\App\Models\BookingSetting::onlineBookingAvailable())
+                <a href="{{ route('reservas') }}" class="btn-gold text-sm md:text-base">
+                    Reservar cita →
+                </a>
+            @else
+                <a href="tel:+34633912050" class="btn-gold text-sm md:text-base">
+                    Llamar ahora →
+                </a>
+            @endif
             <a href="https://wa.me/34633912050?text=Hola!%20Me%20gustaría%20agendar%20cita%20para%20un%20servicio%20de%20belleza%20en%20Peluquería%20Jenver" target="_blank" rel="noopener noreferrer" class="btn-outline text-sm md:text-base">
                 WhatsApp
             </a>
@@ -129,7 +135,7 @@
         <h2 class="section-title text-center mb-12">Preguntas Frecuentes</h2>
         @include('partials.faq', ['preguntas' => [
             ['q' => '¿Hacéis manicura semipermanente?', 'a' => 'Sí, ofrecemos manicura con esmalte semipermanente de larga duración.'],
-            ['q' => '¿Es necesario pedir cita para los servicios de estética?', 'a' => 'Sí, recomendamos reservar cita para garantizar tu atención. Puedes llamar o escribirnos por WhatsApp.'],
+            ['q' => __('servicios.belleza_estetica.faq.cita_question'), 'a' => __('servicios.belleza_estetica.faq.cita_answer')],
             ['q' => '¿Qué técnica usáis para el diseño de cejas?', 'a' => 'Usamos la técnica de hilo y pinzas para un acabado preciso y natural adaptado a tu rostro.'],
         ]])
     </div>

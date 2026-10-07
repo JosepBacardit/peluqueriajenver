@@ -99,7 +99,7 @@
                 Si tienes preguntas sobre nuestra política de cookies, ponte en contacto con nosotros:
             </p>
             <p class="text-gray-300">
-                <strong>Email:</strong> peluqueriajenver@email.com<br>
+                <strong>Email:</strong> peluqueriajenver@gmail.com<br>
                 <strong>Teléfono:</strong> +34 633 912 050
             </p>
         </section>

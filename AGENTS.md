@@ -18,11 +18,14 @@ Before changing this project, read the relevant guidance in Developer Brain:
 
 Project-specific facts and decisions belong here. There is no `.ai/` folder
 yet — create `.ai/specs/` and `.ai/reviews/` the first time a task needs one.
+The online booking system is specified in `.ai/specs/reservas.md`, with its
+tasks and coverage matrix in `.ai/tasks/reservas/index.md`.
 
 ## Project
 
-Peluquería Jenver is a marketing/SEO website — not a booking or management
-app — for a unisex hair salon in Montcada i Reixac (Barcelona), specialized
+Peluquería Jenver is a marketing/SEO website, now growing an online booking
+system and a hand-made admin panel (see "Booking system and admin panel"
+below), for a unisex hair salon in Montcada i Reixac (Barcelona), specialized
 in balayage, afro hair and curls. It is a client of COBA PROJECTS. Production:
 https://www.peluqueriajenver.com/ (nginx). There is no CI/CD; deploys are
 manual — ask the user how before assuming a process.
@@ -38,14 +41,146 @@ machine. Local development now runs in Docker (`docker-compose.yml`) — see
 that no longer exists, and there was no `sessions` migration to create the
 table even if it did (see "Production database" below).
 
-Routes are plain closures in `routes/web.php` (home, 4 service pages,
-`/contacto`, 3 legal pages with `noindex`, plus `/sitemap.xml`). Content
-strings live in `lang/es/*.php`; `lang/en/` only has Laravel's own default
-files — the site itself is Spanish-only.
+Public marketing routes are plain closures in `routes/web.php` (home, 4
+service pages, `/contacto`, 3 legal pages with `noindex`, plus
+`/sitemap.xml`); the booking pages and the admin panel use controllers.
+Content strings live in `lang/es/*.php`; `lang/en/` only has Laravel's own
+default files — the site itself is Spanish-only. Because of that,
+`config/app.php` pins `locale` to `es` (not read from `APP_LOCALE`, so a
+stale production `.env` cannot switch validation messages to English) and
+`timezone` to `Europe/Madrid` (every booking time is salon-local).
+`lang/es/validation.php` holds the Spanish validation messages.
 
-The only way to book an appointment is by phone (`tel:+34633912050`) or
-WhatsApp (`wa.me/34633912050` links, with a pre-filled message per page).
-There is no booking system.
+Besides the booking system, customers still book by phone
+(`tel:+34633912050`) or WhatsApp (`wa.me/34633912050` links, with a
+pre-filled message per page); the salon records those in the admin agenda.
+
+## Booking system and admin panel
+
+- **Admin panel** at `/admin`, hand-made Blade (no Filament/Livewire, user
+  decision 2026-10-03), behind Laravel's session `auth` (plus
+  `auth.session`, 2026-10-06: see "Mi cuenta" below) with a hand-made
+  login (`Admin\LoginController`, 5 failed attempts per minute per
+  email+IP). There is no public registration. Every account has the same
+  permissions, and a panel account can never change another's password
+  (see "Mi cuenta").
+- **Accounts:** created (or their password changed by someone with server
+  access) only with `php artisan admin:create-user`, which asks for the
+  password interactively — this is also the way to recover an account
+  whose own user forgot their password, since the panel itself (`Mi
+  cuenta`) refuses to touch anyone else's. The repository is public:
+  `DatabaseSeeder` never seeds accounts. A separate `AdminUsersSeeder`
+  exists only because the user explicitly asked for two named accounts
+  with a known password (2026-10-06, their own call, against this
+  project's own instinct) — it is **not** called from `DatabaseSeeder`
+  and only ever runs by hand: `php artisan db:seed --class=AdminUsersSeeder`
+  (as `deploy`/`www-data`, like every other `artisan` call). Never run it
+  without being asked to by name.
+- **Mi cuenta** (`/admin/cuenta`, 2026-10-06): the only way to change a
+  password from the panel, and only your own. `User::MIN_PASSWORD_LENGTH`
+  (12) is shared with `admin:create-user`'s own check, so the two can
+  never drift apart. The `admin.` route group carries `auth.session`
+  (`Illuminate\Session\Middleware\AuthenticateSession`, a framework
+  default alias — nothing to register) specifically so
+  `Auth::logoutOtherDevices()` in `AccountController::updatePassword()`
+  has something to act on: that middleware compares, on every request,
+  the password hash a session has cached against the user's current one,
+  and signs out whichever session still holds the old one on its next
+  request — the session that just made the change re-syncs itself right
+  after its own response, so it is never the one logged out by its own
+  change (`session()->regenerate()` right after also changes the session
+  id itself, so one exposed before the change — fixation, a leaked
+  cookie, a shared device — stops being valid too, 2026-10-06). Throttling
+  by user id (not IP, already authenticated) lives entirely in
+  `UpdatePasswordRequest` (`prepareForValidation()`/`after()`/`passedValidation()`),
+  not the generic `throttle:` route middleware: that middleware hashes
+  its own cache key together with the limiter's name
+  (`ThrottleRequests::$shouldHashKeys`), so a plain `RateLimiter::clear()`
+  from the controller could never actually reach what it incremented —
+  only a wrong current password counts, cleared the moment it is
+  entered correctly, the same rule `LoginController` already applies to
+  its own login limiter.
+- **Adding a module:** add one entry to the `$modules` array at the top of
+  `resources/views/layouts/admin.blade.php` plus its routes inside the
+  `auth` group in `routes/web.php`. Admin UI strings are written directly
+  in Spanish in the admin views (internal tool, not SEO content), unlike
+  public copy, which lives in `lang/es/`.
+- **Booking rules** (capacity, slot interval, min/max notice, cancellation
+  limit, and the "Reserva online activa" switch) live in the single-row
+  `booking_settings` table and the weekly schedule in `opening_hours`; both
+  are created with their default values by their migrations. Services are
+  not entered by hand: `ServiceCatalogSeeder` (2026-10-06, wired into
+  `DatabaseSeeder` so it runs in every environment `db:seed` is called in,
+  including production) seeds the salon's real 24-service catalogue,
+  grouped by family in `sort_order`, with no price (the salon sets those
+  from the panel) — the few the site advertises but the hairdresser never
+  confirmed start `is_active = false`, for the salon to turn on once she
+  does. `./deploy.sh` never calls `db:seed` itself, so in production this
+  only runs once someone does it by hand — the documented first-deploy
+  step under "Production deploys" > "First deploy order" below, not
+  something that happens automatically on every `./deploy.sh` (2026-10-07,
+  review `pr-8-final.md` M1 — `.ai/specs/reservas.md` said the opposite).
+  Editing a service afterwards
+  (from the panel, or by re-running this seeder) never changes an
+  appointment that already booked it: its name, duration and price are
+  copied once into `appointment_services` at booking time (PRF-126), never
+  read back from the service. Online booking is actually available only
+  when the switch is on **and** at least one service is bookable online
+  (`BookingSetting::onlineBookingAvailable()`, PRF-147/PRF-148,
+  2026-10-07, review `pr-8-final.md` M1 recommendation 4 — an empty or
+  fully `is_active`/`is_bookable_online`-false catalogue behaves exactly
+  like the switch being off, instead of the public site still announcing
+  an online booking that cannot actually be made). Whenever it is not
+  available — for either reason — `/reservas` keeps its URL and answers
+  200 with a phone/WhatsApp page instead of the form
+  (`BookingController::index()`), a POST is rejected before any validation
+  (`StoreBookingRequest::authorize()`), every "Reservar cita"/"Reservar
+  online" link on the public site calls or opens WhatsApp instead, and the
+  JSON-LD drops `potentialAction`. The admin panel shows a banner — worded
+  differently for "switch off" and for "switch on, no bookable service" —
+  on the agenda (reusing its own existing `BookingSetting`/`Service` reads,
+  so this never adds a query there — PRF-109/PRF-118's fixed query counts
+  would otherwise break) and on Ajustes (one extra `Service::bookableOnline()->exists()`
+  read, an admin-only page with no fixed query budget).
+- **Public booking** at `/reservas` (server-rendered Blade, no JS; a
+  vanilla-JS calendar is a possible later step) and the customer's page
+  `/cita/{token}` (random 48-character token, `noindex`). Both are excluded
+  from the public HTML cache in `App\Http\Middleware\CacheHeaders` (free
+  times change constantly and the forms carry a CSRF token) and keep a
+  `no-store` policy with no ETag. Availability
+  lives in `App\Booking\AvailabilityCalculator`; every booking (web or
+  admin) goes through `App\Actions\CreateAppointment`, which re-checks
+  availability under a row lock on `booking_settings` so concurrent
+  bookings cannot overbook. An appointment holds 1 to
+  `Appointment::MAX_SERVICES` (5) services, done back to back in the
+  salon's order and taking one place for the sum of their durations;
+  each is a frozen copy (name, duration, internal price) in
+  `appointment_services`, and `appointments.services_label` is their
+  names joined, written together with them for the agenda and emails.
+  The salon moves an appointment (same row and
+  id; the token only changes, invalidating the old link, when the email
+  changes) from the agenda's "Editar" link through
+  `App\Actions\RescheduleAppointment`, which takes the same lock first,
+  refuses a form opened before another change (hidden `updated_at`) and
+  updates only while the row is still confirmed; a full or closed time is
+  saved only after the panel's explicit "Guardar igualmente" (so the
+  capacity can be exceeded on purpose, only from there), never a past
+  one. Creating an appointment can never exceed it. Prices are internal: never render
+  `price_cents` on a public page or a customer email
+  (`PublicPagesHaveNoPublicPricingTest` and the booking tests guard this).
+- **Email** is sent synchronously (no queue worker) by
+  `App\Booking\AppointmentNotifier`: confirmation with the personal link to
+  the customer, notice of web bookings and customer cancellations to
+  `BOOKING_NOTIFICATION_EMAIL`, cancellation emails, and the customer's
+  notice when the salon changes the time or service of their appointment
+  (or, when only the email changes, the confirmation with the new link).
+  A failed send is logged and never undoes the booking, the cancellation
+  or the move (the panel warns the salon when the move notice fails;
+  cancellation and move notices are never retried, but a changed email
+  leaves the confirmation pending so the new link is retried); failed creation notices stay with a
+  null `customer_notified_at`/`salon_notified_at` and are retried by
+  `php artisan appointments:notify-pending` (cron, see "Production
+  deploys").
 
 ## Note on README.md
 
@@ -65,10 +200,12 @@ Ports were chosen so this stack can run alongside the sibling projects at
 the same time: cobaprojects uses `8081`/`5174`/`3308`/`3309`, obranur uses
 `8080`/`5173`/`3306`/`3307`/`6381`.
 
-There is no queue worker or scheduler: routes are plain closures that
-return views, with no contact form or other background work, even though
-`QUEUE_CONNECTION=database` matches production — there is simply nothing to
-consume.
+There is no queue worker or scheduler: booking emails are sent
+synchronously (locally `MAIL_MAILER=log` writes them to
+`storage/logs/laravel.log`), even though `QUEUE_CONNECTION=database`
+matches production — there is nothing to consume. Locally, run
+`docker compose exec app php artisan appointments:notify-pending` by hand
+if you need to exercise the retry.
 
 `vendor/` and `node_modules/` live in the named volumes `vendor-data` and
 `node-modules-data`, not in the bind mount: autoloading their ~10k/~3.2k
@@ -92,6 +229,13 @@ restart to be picked up, just that delay. `docker compose exec app php -r
 "opcache_reset();"` does **not** speed this up — it resets a separate
 OPcache instance private to that one-off CLI process, not php-fpm's. To see
 a change immediately instead of waiting: `docker compose restart app`.
+This also applies to compiled Blade views (`storage/framework/views/*.php`):
+`php artisan view:clear` deletes and regenerates them on disk, but php-fpm's
+OPcache can keep serving the bytecode it already had cached for that same
+path for up to the 60s window, so a Blade fix can appear not to have taken
+effect (or a stale error can keep reappearing) right after `view:clear`
+alone — `docker compose restart app` is the reliable fix, same as for any
+other `.php` file.
 
 **First start:** the `mysql` service starts empty. Run
 `docker compose exec app php artisan migrate` once after the first
@@ -137,9 +281,14 @@ php artisan tinker --execute 'echo config("database.connections.".config("databa
 mysql -u<user> -p -e "SHOW TABLES;" <database>
 ```
 
-Never run `migrate:fresh`, `migrate:refresh`, `migrate:reset`, `db:wipe`, or
-a manual `DROP`/`TRUNCATE` against production. If `migrate:status` shows
-anything unexpected, stop and ask the user before proceeding.
+Never run `migrate:fresh`, `migrate:refresh`, `migrate:reset`,
+`migrate:rollback`, `db:wipe`, or a manual `DROP`/`TRUNCATE` against
+production. If `migrate:status` shows anything unexpected, stop and ask the
+user before proceeding. `migrate:rollback` is on the list because the
+booking migrations' `down()` drops `appointments` and the other booking
+tables, which hold customers' personal data: rolling back a release means
+reverting its commits (`git revert`, push, `./deploy.sh`) and leaving the
+new tables in place unused, never undoing migrations.
 
 ## Production deploys
 
@@ -187,7 +336,7 @@ project actually has — see "What this project does not need" below.
      (non-interactively, with `sudo -n`, so an expired credential fails
      fast instead of hanging the site in maintenance mode), runs
      `php artisan deploy:check` **as `www-data`** before leaving
-     maintenance mode, and finally checks `/`, `/contacto`,
+     maintenance mode, and finally checks `/`, `/contacto`, `/reservas`,
      `/avisos-legales`, `/sitemap.xml` and `/up` on the live site (each
      request capped at 20s). `/sitemap.xml` is included because it
      already broke once in this project (see "Known traps"). `/up` is
@@ -219,21 +368,152 @@ project actually has — see "What this project does not need" below.
 - `php artisan deploy:check` — the check `deploy.sh` runs as `www-data`
   before leaving maintenance mode. Fails (exit 1) if `APP_ENV` is not
   `production`, `APP_DEBUG` is not `false`, `APP_URL` does not start with
-  `https://`, or if `storage/framework/views`, `storage/logs`,
+  `https://`, if `APP_NAME` is still the skeleton default (`Laravel`) —
+  every booking email carries this name as its sender and in its branded
+  theme — if `storage/framework/views`, `storage/logs`,
   `storage/framework/cache` or `bootstrap/cache` is not writable by
-  whoever runs it.
+  whoever runs it, or if booking email cannot really be sent:
+  `MAIL_MAILER` is `log`/`array`/empty, the SMTP `MAIL_HOST` is empty or
+  local, `MAIL_FROM_ADDRESS` is missing or `hello@example.com`,
+  `MAIL_FROM_NAME` is empty, `Laravel` or `Example`, or
+  `BOOKING_NOTIFICATION_EMAIL` is missing or invalid; and if
+  `SESSION_SECURE_COOKIE` is not `true` (the admin session cookie must be
+  https-only). `deploy.sh` runs the same mail-shape checks against `.env`
+  in its preflight (`check_env_mail`), before maintenance mode, so a
+  missing setting no longer causes an outage. `php artisan deploy:check
+  --smtp` additionally connects and logs in to the SMTP server without
+  sending anything: run it by hand (as `deploy`) after setting the mail
+  credentials, since wrong credentials otherwise only show up as failed
+  sends in the log. SMTP calls time out after `MAIL_TIMEOUT` seconds
+  (default 10), so a dead mail server cannot hang a booking.
 
-### What this project does not need
+### Cron (booking email retry)
 
-- **No `contact:notify-pending`-style retry command.** cobaprojects has
-  one because its `/contacto` page has a real form that saves a row and
-  sends an email synchronously; this project's `/contacto` is a static
-  page (phone and WhatsApp links only, see "Project" above), with no form,
-  no `ContactSubmission`-like model and no outgoing mail of its own. If
-  that changes — for instance if the unmerged `claude/email-discount-code`
-  branch, which adds a hero email form for a discount code, is ever
-  merged — revisit this and consider the same pattern.
-- **No cron entry.** Nothing above needs one without the retry command.
+`appointments:notify-pending` resends the booking confirmations and salon
+notices that failed when the appointment was made (only for upcoming
+confirmed appointments created more than 5 minutes ago; each notice is
+sent once). It needs one entry in the **`deploy` user's** crontab
+(`crontab -e` as `deploy`, never root), with `flock` so two runs never
+overlap:
+
+```
+*/10 * * * * cd /var/www/peluqueriajenver && flock -n /tmp/peluqueriajenver-notify-pending.lock php artisan appointments:notify-pending >> /dev/null 2>&1
+```
+
+There is no Laravel scheduler (`schedule:run`) entry: nothing else needs
+one yet. A day-before reminder would add it (planned as a later PR).
+
+### Booking abuse limits and cleanup
+
+Online bookings are capped at 5 submissions per minute and 10 per day per
+IP (`booking-submissions` limiter in `AppServiceProvider`) and at 2
+upcoming confirmed online appointments per email or per phone (compared by
+its last 9 digits; `CreateAppointment::MAX_UPCOMING_ONLINE`). Bookings made
+from the admin panel are not capped. If a flood of fake bookings still gets
+through (e.g. from many IPs), find them read-only first, for example
+`php artisan tinker --execute 'App\Models\Appointment::where("source","web")->where("created_at",">=",now()->subDay())->orderBy("created_at")->get(["id","customer_email","customer_phone","starts_at","created_at"])->each(fn($a)=>print($a->toJson().PHP_EOL));'`,
+confirm with the user which ones are fake, and cancel them (never delete:
+`status`/`cancelled_at`, through the panel or `App\Actions\CancelAppointment`).
+If it keeps happening, consider a cookie-less CAPTCHA (Turnstile, Friendly
+Captcha) on `/reservas`.
+
+### Before deploying the booking system (PRs 1-4)
+
+Blocking prerequisites, all pending as of 2026-10-03:
+
+- **Mailbox and SMTP:** the salon's sending mailbox (likely on Hostalia,
+  like obranur/cobaprojects: `smtp.servidor-correo.net:587`) is not
+  decided. Set `MAIL_MAILER=smtp`, `MAIL_HOST`, `MAIL_PORT`,
+  `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_SCHEME`, `MAIL_FROM_ADDRESS`,
+  `MAIL_FROM_NAME` and `BOOKING_NOTIFICATION_EMAIL` in the VPS `.env`
+  **before** running `./deploy.sh`, then `php artisan optimize` as
+  `deploy`; otherwise `deploy:check` fails with the site already in
+  maintenance mode (`deploy.sh` now also refuses to start, with the site
+  still live, if they are missing). Configure SPF/DKIM/DMARC for the
+  sending domain, then run `php artisan deploy:check --smtp` as `deploy`.
+- **`SESSION_SECURE_COOKIE=true`** in the VPS `.env` (required by
+  `deploy:check`).
+- **Privacy policy data:** the data controller's legal name (Isabel
+  Lechuga Valverde), NIF, contact email and the citas retention period
+  were confirmed by the client on 2026-10-06 and are filled in across
+  `/privacidad`, `/avisos-legales`, `/cookies` and the booking form's
+  basic data-protection notice. The one remaining "[Pendiente de
+  confirmar: proveedor de correo electrónico]" marker in `/privacidad`
+  (the email provider) depends on the SMTP setup above and is decided
+  together with it.
+- **Migrations:** the release adds six tables (`services`,
+  `opening_hours`, `booking_settings`, `appointments`,
+  `appointment_services`, `schedule_blocks`), additive only. The booking
+  migrations (`2026_10_03_*`) were **edited in place** in this release
+  (several services per appointment, T046), on the premise that none of
+  them has ever run in production. Before deploying, run
+  `php artisan migrate:status` on the VPS (as `deploy`) and confirm that
+  **none** of the six `2026_10_03_*` migrations shows as `Ran`. If any
+  does, **stop**: the edited version would never be applied (e.g.
+  `appointments` would lack `services_label`), so ask the user before
+  going further. See also "Production database".
+- **Admin account and service catalogue:** see "First deploy order" below
+  for the exact sequence — create at least one account with
+  `php artisan admin:create-user` (as `deploy`), turn off "Reserva online
+  activa" in `/admin/ajustes`, then seed the real catalogue with
+  `php artisan db:seed --class=ServiceCatalogSeeder --force` (as
+  `deploy`; it is idempotent by name, safe to re-run). `db:seed` never
+  seeds an account on its own; run `db:seed --class=AdminUsersSeeder` only
+  if asked to by name. The salon still reviews/edits the seeded catalogue
+  (and activates the services marked "a confirmar") in
+  `/admin/servicios` before the switch is turned back on. Until at least
+  one bookable service is active and the switch is on, `/reservas` shows
+  the "call or WhatsApp" message.
+- **Cron:** add the entry above.
+- **nginx:** confirm the server config adds no HTML caching of its own —
+  not just for `/reservas`/`/cita/` (`no-store`), but for every other
+  public page too: since 2026-10-06 those no longer get a long `max-age`
+  either, only an app-level ETag with `no-cache` (`App\Http\Middleware\CacheHeaders`,
+  `NGINX-CACHE-CONFIG.md`). Static assets (images, fonts, `/build/`) keep
+  their long cache in nginx, untouched.
+
+### First deploy order
+
+The prerequisites above, in the order they actually need to run, so
+online booking never opens with the default, unreviewed catalogue and no
+account yet to turn it off (decision 2026-10-07, review `pr-8-final.md`
+M1 — `./deploy.sh`'s migrations already set `online_booking_enabled =
+true` by default, before any service exists):
+
+1. Set the VPS `.env` (mail settings, `SESSION_SECURE_COOKIE=true`,
+   `APP_ENV`, `APP_DEBUG`, `APP_URL` — see "Mailbox and SMTP" and the
+   `SESSION_SECURE_COOKIE` bullet above) and run
+   `php artisan deploy:check --smtp` as `deploy`.
+2. `./deploy.sh`. After this, `services` is still empty, so
+   `BookingSetting::onlineBookingAvailable()` is already false and
+   `/reservas` answers with the same safe phone/WhatsApp page as the
+   switch being off, and every public CTA calls instead of linking to it
+   — even though the switch itself still defaults to on.
+3. `php artisan admin:create-user` (as `deploy`) — create at least one
+   panel account.
+4. Log into `/admin/ajustes` with that account and turn off "Reserva
+   online activa" **before** seeding the catalogue: the panel is the
+   only way to change it, there is no artisan command for it, which is
+   why the account (step 3) has to come first.
+5. `php artisan db:seed --class=ServiceCatalogSeeder --force` (as
+   `deploy`) — seeds the real 24-service catalogue. `--force` is
+   required because `db:seed` prompts for confirmation when
+   `APP_ENV=production`.
+6. The salon reviews/edits the seeded catalogue (prices, the services
+   marked "a confirmar", durations) in `/admin/servicios`, and the
+   weekly schedule in `/admin/horario`.
+7. Turn "Reserva online activa" back on in `/admin/ajustes` once the
+   salon is happy with the catalogue and schedule.
+8. Add the cron entry (see "Cron" above).
+9. Confirm nginx adds no HTML caching of its own (see "nginx" above).
+
+This order was chosen over seeding the catalogue right after `./deploy.sh`
+and before any account exists: that would either leave the switch on (so
+online booking opens instantly with the default schedule and unreviewed
+services) or require turning it off by hand with `tinker` before any
+account exists — an undocumented workaround this project avoids. Steps 3
+and 4 only use `admin:create-user` and the panel, both already documented
+elsewhere.
 
 ### Before the first real deploy
 
@@ -303,6 +583,42 @@ first time any of this gets confirmed:
   has `short_open_tag=Off` and never showed this. Fixed in `d65c8d8` by
   emitting the XML declaration so it survives either setting;
   `tests/Feature/SitemapTest.php` guards against a regression.
+- `VITE_USE_POLLING=true` (`docker-compose.yml`, `node` service) looked
+  like it already made the Vite dev server pick up edits on the Windows
+  bind mount, but nothing in `vite.config.js` ever read it: native
+  filesystem events don't cross from Windows into the container, so the
+  dev server kept serving stale CSS/JS after edits until the browser was
+  forced to rebuild some other way. Fixed by setting `usePolling: true`
+  (with `interval: 300`) directly in `vite.config.js`'s `server.watch`.
+- Tailwind 4's dev-server first CSS compile kept getting slower as this
+  project grew (measured 18s, then 30s, then 91s, then 107s just before
+  the fix below) because `resources/css/app.css`'s plain
+  `@import 'tailwindcss';` leaves Tailwind's automatic source detection
+  on: by default it walks the *whole* project root looking for class
+  names, not just `resources/` — every file under `.ai/`, `.claude/`,
+  `app/`, `tests/`, `database/`, `docker/`, `storage/`, even `.git/`, all
+  on the slow Windows bind mount (`vendor/`/`node_modules/` are spared
+  because they are named Docker volumes, see `docker-compose.yml`, but
+  nothing else is). It was also quietly generating CSS for classes no
+  Blade view or JS file ever uses — almost certainly stray text in this
+  repo's many Markdown docs that happens to look like a Tailwind class
+  (e.g. `line-through`, `dark:bg-gray-900`, `max-w-[...]` as a literal
+  placeholder) — confirmed by diffing the built CSS's selectors against
+  `grep -rF` over `resources/` before and after the fix: every selector
+  the fix drops is either one of those never-used names or a class this
+  same round of fixes stopped using on purpose (`border-2`,
+  `bg-gold/15`). Fixed by `@import 'tailwindcss' source(none);` plus the
+  project's own explicit `@source` globs (already there, covering every
+  Blade/JS file), and by widening `vite.config.js`'s `server.watch.
+  ignored` from just `storage/framework/views/**` to also skip
+  `vendor/`, `node_modules/`, the rest of `storage/`, `.git/` and
+  `public/build/` (so the 300ms polling watcher stops stat-ing them on
+  every cycle too). Measured with
+  `curl -s -o /dev/null -w "%{time_total}"` against
+  `http://127.0.0.1:5175/resources/css/app.css` right after a fresh
+  `docker compose restart node`: **107.7s before, 0.77s after** — and
+  `npm run build` itself dropped from roughly a minute and a half to
+  under a second.
 
 ## Working agreements
 

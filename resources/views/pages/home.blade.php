@@ -37,9 +37,15 @@
 
         <!-- CTA Buttons -->
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <a href="tel:+34633912050" class="btn-gold text-sm md:text-base">
-                {{ __('home.hero.cta_primary') }}
-            </a>
+            @if (\App\Models\BookingSetting::onlineBookingAvailable())
+                <a href="{{ route('reservas') }}" class="btn-gold text-sm md:text-base">
+                    {{ __('home.hero.cta_primary') }}
+                </a>
+            @else
+                <a href="tel:+34633912050" class="btn-gold text-sm md:text-base">
+                    {{ __('navigation.navbar.cta_disabled') }}
+                </a>
+            @endif
             <a href="#servicios" class="btn-outline text-sm md:text-base">
                 {{ __('home.hero.cta_secondary') }}
             </a>
@@ -340,11 +346,16 @@
             {!! __('home.reserva.title') !!}
         </h2>
         <p class="text-gray-300 text-lg mb-8">
-            {!! __('home.reserva.description') !!}
+            {!! __('home.reserva.description', ['hours' => \App\Booking\OpeningHoursSummary::text()]) !!}
         </p>
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="tel:+34633912050" class="btn-gold text-sm md:text-base font-semibold px-8 py-3">
+            @if (\App\Models\BookingSetting::onlineBookingAvailable())
+                <a href="{{ route('reservas') }}" class="btn-gold text-sm md:text-base font-semibold px-8 py-3">
+                    {{ __('home.reserva.online_cta') }}
+                </a>
+            @endif
+            <a href="tel:+34633912050" class="btn-outline text-sm md:text-base font-semibold px-8 py-3">
                 {{ __('home.reserva.phone_cta') }}
             </a>
             <a href="https://wa.me/34633912050?text=Hola!%20Quería%20pedir%20cita%20en%20Peluquería%20Jenver" target="_blank" rel="noopener noreferrer" class="btn-outline text-sm md:text-base font-semibold px-8 py-3">
@@ -382,7 +393,7 @@
                     <div>
                         <p class="text-gold font-semibold mb-2">🕐 {{ __('home.contacto.hours_label') }}</p>
                         <p class="leading-relaxed">
-                            {!! __('home.contacto.hours') !!}
+                            {{ \App\Booking\OpeningHoursSummary::text() }}
                         </p>
                     </div>
 

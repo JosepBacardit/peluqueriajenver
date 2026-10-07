@@ -65,7 +65,9 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    // The salon is in Barcelona and every booking time is local, so the
+    // whole app runs on peninsular Spanish time (see AGENTS.md).
+    'timezone' => 'Europe/Madrid',
 
     /*
     |--------------------------------------------------------------------------
@@ -78,7 +80,10 @@ return [
     |
     */
 
-    'locale' => env('APP_LOCALE', 'en'),
+    // The site only exists in Spanish: pinned here rather than read from
+    // APP_LOCALE so a stale production .env cannot switch validation
+    // messages to English (see AGENTS.md).
+    'locale' => 'es',
 
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
 

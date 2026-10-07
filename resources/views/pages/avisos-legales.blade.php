@@ -12,10 +12,12 @@
         <section>
             <h2 class="text-2xl font-serif font-semibold mt-8 mb-4 text-gold">1. Información del Titular</h2>
             <p class="text-gray-300">
-                <strong>Razón Social:</strong> Peluquería Jenver<br>
+                <strong>Titular:</strong> Isabel Lechuga Valverde<br>
+                <strong>Nombre comercial:</strong> Peluquería Jenver<br>
+                <strong>NIF:</strong> 53650299Q<br>
                 <strong>Domicilio:</strong> C/ Lleida, 21 - 08110 Montcada i Reixac (Barcelona)<br>
                 <strong>Teléfono:</strong> +34 633 912 050<br>
-                <strong>Email:</strong> peluqueriajenver@email.com
+                <strong>Email:</strong> peluqueriajenver@gmail.com
             </p>
         </section>
 

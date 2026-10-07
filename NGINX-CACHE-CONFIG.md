@@ -41,11 +41,27 @@ server {
         add_header Cache-Control "public, max-age=31536000, immutable";
     }
 
-    # Cache para HTML (1 día para homepage, 7 días para otras páginas)
-    location ~* \.html?$ {
-        expires 1d;
-        add_header Cache-Control "public, max-age=86400, must-revalidate";
-    }
+    # ============================================
+    # HTML: SIN CACHÉ PROPIA DE NGINX (decisión del usuario, 2026-10-06)
+    # ============================================
+    #
+    # El HTML de esta aplicación no son archivos .html en disco: cada
+    # página la genera PHP-FPM en cada petición, así que el bloque
+    # `location ~* \.html?$` que había aquí antes nunca llegaba a
+    # aplicarse a ellas (solo a un .html suelto que no existe en este
+    # proyecto) y, aun así, su `max-age=86400` llevaba a confusión.
+    #
+    # La caché de las páginas públicas ahora la decide la propia
+    # aplicación en App\Http\Middleware\CacheHeaders: ya no un `max-age`
+    # largo, sino `Cache-Control: no-cache` más un ETag calculado del
+    # contenido, para que un cambio de horario o del interruptor de
+    # reserva online se vea sin esperar a que caduque una copia. nginx no
+    # debe añadir, quitar ni sobrescribir esos headers para las peticiones
+    # que llegan a `index.php` (el bloque `location ~ \.php$` habitual de
+    # Laravel) — ningún `add_header Cache-Control` ni `expires` en ese
+    # bloque ni en el `server` general, para que el header que puso
+    # PHP-FPM llegue intacto al navegador. `/admin`, `/cita` y `/reservas`
+    # siguen con su propio `no-store`, puesto por la misma aplicación.
 
     # ============================================
     # WEBP AUTOMÁTICO
@@ -91,6 +107,23 @@ Deberías ver headers como:
 Cache-Control: public, max-age=31536000, immutable
 Pragma: public
 Expires: Wed, 24 Jun 2027 ...
+```
+
+Para una página HTML pública, en cambio, comprueba que nginx deja pasar el `Cache-Control` y el `ETag` de la aplicación sin añadir un `max-age` propio:
+
+```bash
+curl -I https://www.peluqueriajenver.com/
+```
+
+```
+Cache-Control: no-cache, private
+ETag: "..."
+```
+
+Y que repetir la petición con ese `ETag` responde 304 sin cuerpo:
+
+```bash
+curl -I -H 'If-None-Match: "<el-etag-de-arriba>"' https://www.peluqueriajenver.com/
 ```
 
 ## Alternativa: Usando location blocks en Laravel

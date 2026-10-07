@@ -1,5 +1,15 @@
 <?php
 
+use App\Models\Appointment;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(RefreshDatabase::class);
+
+// Merged in from main (2026-10-06, PR #8): every page using
+// layouts/app.blade.php now reads the schedule (footer.blade.php,
+// OpeningHoursSummary) and the online-booking switch from the database,
+// so even this file's unrelated tests need a migrated connection.
+
 /*
  * GTM, GA4 and Ahrefs must not run until the visitor accepts cookies in the
  * banner (AEPD/RGPD: analytics cookies need prior, explicit consent). Pages
@@ -94,4 +104,33 @@ test('every localStorage access in the consent banner and layout is guarded with
 
     expect(substr_count($html, 'try {'))->toBeGreaterThanOrEqual(4);
     expect(substr_count($html, 'catch (e)'))->toBeGreaterThanOrEqual(4);
+});
+
+/*
+ * Merging T013's H1 (.ai/reviews/reservas.md: the appointment page's URL
+ * carries its own token, so it must never reach any analytics vendor)
+ * with M4 (this file: analytics is consent-gated everywhere else).
+ * /cita/{token} sets @section('without_analytics'), which now wraps both
+ * the GTM head script and the deferred GA4/Ahrefs script in
+ * layouts/app.blade.php — neither ever registers a loader there, gated
+ * on consent or not, so there is nothing a stray "Aceptar" elsewhere
+ * could ever trigger on that page.
+ */
+test('the appointment page registers no analytics consent loader at all', function () {
+    $appointment = Appointment::factory()->create();
+
+    $html = $this->get(route('cita.show', $appointment->token))->assertOk()->getContent();
+
+    // cookie-banner.blade.php (included on every page) still mentions
+    // __analyticsConsentLoaders in its own "Aceptar" handler, reading an
+    // empty array here harmlessly; what must never happen on this page
+    // is something actually registering a loader onto it.
+    expect($html)->not->toContain('__analyticsConsentLoaders.push');
+});
+
+test('the home page registers the GTM and the deferred GA4/Ahrefs loaders, both gated on consent', function () {
+    $html = $this->get(route('home'))->assertOk()->getContent();
+
+    expect(substr_count($html, '__analyticsConsentLoaders.push'))->toBe(2);
+    expect(substr_count($html, "cookieConsent') === 'accepted'"))->toBe(2);
 });

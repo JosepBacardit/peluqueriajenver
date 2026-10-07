@@ -1,5 +1,14 @@
 <?php
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(RefreshDatabase::class);
+
+// Merged in from main (2026-10-06, PR #8): every page using
+// layouts/app.blade.php now reads the schedule (footer.blade.php,
+// OpeningHoursSummary) and the online-booking switch from the database,
+// so even this file's unrelated tests need a migrated connection.
+
 /*
  * The Google Maps iframe makes a request to Google that can set its own
  * cookies before the visitor has any say (see .ai/reviews/cookie-consent.md

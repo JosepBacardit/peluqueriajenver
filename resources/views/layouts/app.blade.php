@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    {{-- Pages that set @section('without_analytics') load no third-party trackers: the appointment page's URL carries its secret token (see .ai/reviews/reservas.md, H1). --}}
+    @unless (View::hasSection('without_analytics'))
     <!-- Google Tag Manager (required early for tracking; gated on cookie consent, see .ai/reviews/reservas.md M4) -->
     <script>
       (function () {
@@ -35,6 +37,7 @@
       })();
     </script>
     <!-- End Google Tag Manager -->
+    @endunless
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -52,7 +55,7 @@
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:url" content="@yield('og_url', url()->current())">
     <meta property="og:locale" content="es_ES">
     <meta property="og:site_name" content="Peluquería Jenver">
 
@@ -206,6 +209,7 @@
 
     @stack('scripts')
 
+    @unless (View::hasSection('without_analytics'))
     <!-- Defer analytics until after page load to avoid reflows; gated on cookie consent (see .ai/reviews/reservas.md M4) -->
     <script>
       (function () {
@@ -301,5 +305,6 @@
         }
       });
     </script>
+    @endunless
 </body>
 </html>

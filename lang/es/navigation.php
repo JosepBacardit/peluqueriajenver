@@ -17,6 +17,7 @@ return [
             'contact' => 'Contacto',
         ],
         'cta' => 'Reservar cita →',
+        'cta_disabled' => 'Llamar ahora →',
         'mobile_menu' => 'Abrir menú',
     ],
 
@@ -47,7 +48,6 @@ return [
             'phone_label' => 'Teléfono',
             'phone' => '633 912 050',
             'hours_label' => 'Horario',
-            'hours' => 'Mar-Sáb: 9:00 – 19:00 | Lun-Dom: Cerrado',
             'maps' => 'Ver en Google Maps →',
         ],
         'service_area' => [
