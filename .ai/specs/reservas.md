@@ -72,8 +72,8 @@ Reglas de los campos de un servicio (conjunto único de valores válidos, válid
 | Campo | Obligatorio | Valores válidos |
 | --- | --- | --- |
 | Nombre | Sí | De 2 a 100 caracteres, acentos incluidos. |
-| Duración | Sí | Minutos enteros, múltiplo de 5, de 5 a 600. Es la duración total, esperas incluidas. |
-| Esperas | No | De 0 a 2 tramos de espera (PRF-151): «desde el minuto X, durante Y minutos», múltiplos de 5, siempre entre dos tramos activos. Por defecto, ninguna. *Añadido el 2026-10-07.* |
+| Duración | Sí | Minutos enteros, múltiplo de 5, de 5 a 600. Es la duración total, esperas incluidas. *Desde el 2026-10-07 no se escribe: es la suma de los pasos (PRF-160).* |
+| Esperas | No | De 0 a 2 esperas (PRF-151), cada una entre dos tiempos de trabajo, en múltiplos de 5. Se indican como pasos en orden: Trabajo 1 · Espera 1 · Trabajo 2 · Espera 2 · Trabajo 3 (PRF-160). Por defecto, ninguna. *Añadido el 2026-10-07.* |
 | Precio interno | No | Euros con 2 decimales como máximo, de 0 a 9.999,99. |
 | Reservable online | Sí | Sí o no. Por defecto, sí. |
 | Activo | Sí | Sí o no. Por defecto, sí. |
@@ -357,12 +357,22 @@ Decisiones del usuario (2026-10-07):
   - **Tarjetas:** la tarjeta de la cita muestra «(2 h, incl. 45 min de espera)» y «Espera: 10:30–11:15».
   - **Correos al salón:** los 2 correos al salón (PRF-051 y el de cancelación por la clienta) muestran la duración de cada servicio y la total con su espera, y la línea «Espera: 10:30–11:15». Los correos a la clienta, nunca (PRF-158).
   - «Sobre capacidad» se calcula por tramo, y «Cabe» marca solo las plazas libres durante los tramos activos del servicio elegido.
-- **PRF-160.** El formulario de servicios del panel **debe** permitir indicar hasta 2 esperas («Espera N: desde el minuto» y «durante (minutos)», sin JavaScript). Aplica la validación de PRF-151 y muestra el error junto al campo afectado:
-  - si solo se rellena uno de los dos campos de una espera, se marca el que falta;
-  - una espera que no termina antes del final del servicio da «La espera N tiene que terminar antes del final del servicio.»;
-  - una segunda espera que no empieza después de la primera da «La espera 2 tiene que empezar después de que termine la espera 1, con tiempo de trabajo entre las dos.».
+- **PRF-160.** *Reescrito el 2026-10-07 a petición del usuario:* «Hay que pensar que las peluqueras no tienen mucho conocimiento de estas herramientas y les tiene que ser muy simple y fácil de entender para no liarse y hacerlo complicado y que al final no lo usen».
+  - **Formato:** el formulario de servicios **debe** pedir los tiempos como pasos, en el orden en que se hacen, uno por fila, con campos grandes y la unidad «min» al lado: «Trabajo 1», «Espera 1 (si la hay)», «Trabajo 2», «Espera 2 (si la hay)» y «Trabajo 3». Cada espera lleva debajo «La peluquera queda libre».
+  - **Ayuda,** bajo el título «Tiempos del servicio»: «Escribe los minutos de cada paso, en el orden en que se hacen. Si el servicio no tiene esperas, rellena solo «Trabajo 1».», «Ejemplo, un tinte: Trabajo 30 · Espera 45 · Trabajo 45.» y «Durante la espera, la peluquera queda libre para atender a otra clienta. Pon la espera más corta que suela tener.».
+  - **Duración total:** ya **no debe** escribirse aparte; se muestra como «Duración total: 2 h», calculada como la suma de los pasos. Se actualiza en vivo con JavaScript si está disponible; sin él, se calcula al cargar la página y al volver tras un error.
+  - **Datos guardados:** se guardan igual que antes (`duration_minutes` y `waits`). Al editar un servicio, los pasos se calculan a partir de lo guardado.
+  - **Errores,** junto al paso afectado y en lenguaje sencillo:
+    - sin «Trabajo 1»: «Escribe cuántos minutos dura el trabajo 1.»;
+    - texto que no es un número: «Escribe solo el número de minutos.»;
+    - menos de 5: «Como mínimo, 5 minutos.»;
+    - más de 600: «Como máximo, 600 minutos.»;
+    - no múltiplo de 5: «Usa múltiplos de 5 minutos (5, 10, 15…).»;
+    - un paso rellenado con uno anterior vacío: «Rellena primero la espera 1.», «Rellena primero el trabajo 2.» o «Rellena primero la espera 2.», en el paso vacío;
+    - una espera sin trabajo después: «Después de una espera tiene que haber un tiempo de trabajo.», en el trabajo siguiente;
+    - un total de más de 600 minutos: «El servicio entero no puede pasar de 10 horas (600 minutos).», junto al total.
 
-  Una fila vacía no es una espera, y vaciar las dos las quita. La lista de servicios y el alta y la edición de citas (cada servicio y la duración total, en vivo y sin JavaScript) **deben** indicar la espera incluida, con el formato «2 h, incl. 45 min de espera». En la edición, los servicios que la cita ya tenía cuentan las esperas con que se reservaron (PRF-155). Nada de esto llega a lo público (PRF-158).
+  Además, la lista de servicios y el alta y la edición de citas (cada servicio y la duración total, en vivo y sin JavaScript) **deben** indicar la espera incluida, con el formato «2 h, incl. 45 min de espera». En la edición, los servicios que la cita ya tenía cuentan las esperas con que se reservaron (PRF-155). Nada de esto llega a lo público (PRF-158).
 
 Ejemplos resueltos (capacidad 2, tramo de 09:00 a 19:00; «Coloración» de 120 min con espera desde el minuto 30 durante 45, es decir, activa 0–30 y 75–120):
 

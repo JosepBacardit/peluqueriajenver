@@ -12,6 +12,8 @@
 
 Que el salón configure hasta 2 esperas por servicio y vea cuánta espera incluye cada duración.
 
+> **Sustituido en el formulario por T067 (2026-10-07):** la peluquera se liaba con «desde el minuto X, durante Y». El formulario pasa a pasos en orden (Trabajo · Espera · Trabajo…). El resto de esta tarea sigue igual: la lista, el alta y la edición de citas con «incl. N min de espera», la no revelación pública y los datos guardados.
+
 ## Resolución
 
 - `ServiceRequest`:

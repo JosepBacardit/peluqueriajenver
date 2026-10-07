@@ -89,6 +89,49 @@ final readonly class TimeProfile
     }
 
     /**
+     * From the steps the salon types in the service form, in the order
+     * they happen: work, wait, work, wait, work (every other one a wait).
+     *
+     * @param  list<int>  $steps
+     */
+    public static function fromSteps(array $steps): self
+    {
+        $offset = 0;
+        $waits = [];
+
+        foreach (array_values($steps) as $index => $minutes) {
+            if ($index % 2 === 1) {
+                $waits[] = ['start' => $offset, 'minutes' => $minutes];
+            }
+
+            $offset += $minutes;
+        }
+
+        return new self($offset, $waits);
+    }
+
+    /**
+     * The reverse of fromSteps(): the minutes of each work and wait, in
+     * order, e.g. [30, 45, 45].
+     *
+     * @return list<int>
+     */
+    public function steps(): array
+    {
+        $steps = [];
+
+        foreach ($this->activeOffsets() as $index => [$from, $to]) {
+            if ($index > 0) {
+                $steps[] = $this->waits[$index - 1]['minutes'];
+            }
+
+            $steps[] = $to - $from;
+        }
+
+        return $steps;
+    }
+
+    /**
      * The profile an appointment was booked with: its length and the waits
      * frozen on it (none for an appointment booked before waits existed).
      */

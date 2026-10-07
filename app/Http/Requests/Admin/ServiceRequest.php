@@ -7,8 +7,28 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
+/**
+ * The service's times come as steps, in the order they happen (user's
+ * request, 2026-10-07: hairdressers who do not use these tools much must
+ * find it simple): Trabajo 1, Espera 1, Trabajo 2, Espera 2, Trabajo 3.
+ * Only the first is required. The duration is their sum and the waits
+ * follow from them (TimeProfile::fromSteps()); both are stored as before.
+ */
 class ServiceRequest extends FormRequest
 {
+    /**
+     * The step fields, in order: every other one is a wait. With
+     * TimeProfile::MAX_WAITS_PER_SERVICE = 2 waits, 3 works.
+     */
+    public const STEP_FIELDS = ['work_1', 'wait_1', 'work_2', 'wait_2', 'work_3'];
+
+    /**
+     * How each step is named in "Rellena primero …".
+     */
+    private const STEP_NAMES = ['el trabajo 1', 'la espera 1', 'el trabajo 2', 'la espera 2', 'el trabajo 3'];
+
+    private const MAX_TOTAL_MINUTES = 600;
+
     /**
      * Any logged-in salon user may manage services (routes are behind auth).
      */
@@ -18,46 +38,48 @@ class ServiceRequest extends FormRequest
     }
 
     /**
-     * Each wait row is "from minute X, for Y minutes", both or neither.
-     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'name' => ['required', 'string', 'min:2', 'max:100'],
-            'duration_minutes' => ['required', 'integer', 'between:5,600', 'multiple_of:5'],
-            'waits' => ['nullable', 'array:0,1'],
-            'waits.*' => ['array:start,minutes'],
-            'waits.*.start' => ['nullable', 'required_with:waits.*.minutes', 'integer', 'between:5,595', 'multiple_of:5'],
-            'waits.*.minutes' => ['nullable', 'required_with:waits.*.start', 'integer', 'between:5,590', 'multiple_of:5'],
             'price' => ['nullable', 'numeric', 'decimal:0,2', 'between:0,9999.99'],
             'is_bookable_online' => ['boolean'],
             'is_active' => ['boolean'],
             'sort_order' => ['nullable', 'integer', 'between:0,999'],
         ];
-    }
 
-    /**
-     * @return array<string, string>
-     */
-    public function attributes(): array
-    {
-        $attributes = [];
-
-        for ($row = 0; $row < TimeProfile::MAX_WAITS_PER_SERVICE; $row++) {
-            $attributes["waits.{$row}.start"] = 'el minuto en que empieza la espera '.($row + 1);
-            $attributes["waits.{$row}.minutes"] = 'la duración de la espera '.($row + 1);
+        foreach (self::STEP_FIELDS as $index => $field) {
+            $rules[$field] = ['bail', $index === 0 ? 'required' : 'nullable', 'integer', 'min:5', 'max:'.self::MAX_TOTAL_MINUTES, 'multiple_of:5'];
         }
 
-        return $attributes;
+        return $rules;
     }
 
     /**
-     * Once every field is valid on its own: each wait must end before the
-     * service does (so there is always an active stretch after it), and
-     * the second one must start after the first one ends (so there is an
-     * active stretch between them). The first row always comes first.
+     * Plain words, next to the step they are about.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        $messages = ['work_1.required' => 'Escribe cuántos minutos dura el trabajo 1.'];
+
+        foreach (self::STEP_FIELDS as $field) {
+            $messages["{$field}.integer"] = 'Escribe solo el número de minutos.';
+            $messages["{$field}.min"] = 'Como mínimo, 5 minutos.';
+            $messages["{$field}.max"] = 'Como máximo, '.self::MAX_TOTAL_MINUTES.' minutos.';
+            $messages["{$field}.multiple_of"] = 'Usa múltiplos de 5 minutos (5, 10, 15…).';
+        }
+
+        return $messages;
+    }
+
+    /**
+     * Once every step is valid on its own: no gap before a filled step,
+     * the last one a work (a wait always sits between two works), and the
+     * total within the limit. The error goes on the step to fix.
      *
      * @return array<int, callable>
      */
@@ -68,25 +90,25 @@ class ServiceRequest extends FormRequest
                 return;
             }
 
-            $duration = (int) $this->input('duration_minutes');
-            $previous = null; // [row, end minute] of the previous filled row
+            $filled = array_map(fn (string $field) => filled($this->input($field)), self::STEP_FIELDS);
+            $last = (int) array_key_last(array_filter($filled));
 
-            foreach ($this->filledWaitRows() as $row => $wait) {
-                $number = $row + 1;
-
-                if ($duration <= $wait['start'] + $wait['minutes']) {
-                    $validator->errors()->add("waits.{$row}.minutes", "La espera {$number} tiene que terminar antes del final del servicio.");
+            for ($index = 1; $index < $last; $index++) {
+                if (! $filled[$index]) {
+                    $validator->errors()->add(self::STEP_FIELDS[$index], 'Rellena primero '.self::STEP_NAMES[$index].'.');
 
                     return;
                 }
+            }
 
-                if ($previous !== null && $wait['start'] <= $previous[1]) {
-                    $validator->errors()->add("waits.{$row}.start", "La espera {$number} tiene que empezar después de que termine la espera ".($previous[0] + 1).', con tiempo de trabajo entre las dos.');
+            if ($last % 2 === 1) {
+                $validator->errors()->add(self::STEP_FIELDS[$last + 1], 'Después de una espera tiene que haber un tiempo de trabajo.');
 
-                    return;
-                }
+                return;
+            }
 
-                $previous = [$row, $wait['start'] + $wait['minutes']];
+            if (array_sum($this->steps()) > self::MAX_TOTAL_MINUTES) {
+                $validator->errors()->add('duration_minutes', 'El servicio entero no puede pasar de 10 horas ('.self::MAX_TOTAL_MINUTES.' minutos).');
             }
         }];
     }
@@ -99,12 +121,12 @@ class ServiceRequest extends FormRequest
     public function serviceAttributes(): array
     {
         $price = $this->validated('price');
-        $duration = (int) $this->validated('duration_minutes');
+        $profile = TimeProfile::fromSteps($this->steps());
 
         return [
             'name' => trim($this->validated('name')),
-            'duration_minutes' => $duration,
-            'waits' => (new TimeProfile($duration, array_values($this->filledWaitRows())))->waitsForStorage(),
+            'duration_minutes' => $profile->durationMinutes,
+            'waits' => $profile->waitsForStorage(),
             'price_cents' => $price === null ? null : (int) round(((float) $price) * 100),
             'is_bookable_online' => $this->boolean('is_bookable_online'),
             'is_active' => $this->boolean('is_active'),
@@ -113,23 +135,21 @@ class ServiceRequest extends FormRequest
     }
 
     /**
-     * The wait rows with both fields filled, by row index (an empty row is
-     * simply no wait).
+     * The filled steps' minutes, in order (after() guarantees there is no
+     * gap once validation passes).
      *
-     * @return array<int, array{start: int, minutes: int}>
+     * @return list<int>
      */
-    private function filledWaitRows(): array
+    private function steps(): array
     {
-        $rows = [];
+        $steps = [];
 
-        foreach ((array) $this->input('waits', []) as $row => $wait) {
-            if (is_array($wait) && filled($wait['start'] ?? null) && filled($wait['minutes'] ?? null)) {
-                $rows[(int) $row] = ['start' => (int) $wait['start'], 'minutes' => (int) $wait['minutes']];
+        foreach (self::STEP_FIELDS as $field) {
+            if (filled($this->input($field))) {
+                $steps[] = (int) $this->input($field);
             }
         }
 
-        ksort($rows);
-
-        return $rows;
+        return $steps;
     }
 }

@@ -10,95 +10,119 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 /*
- * Up to 2 waits per service, set from the panel's service form: "from
- * minute X, for Y minutes", always between two active stretches. Shown in
- * the panel only, as "incl. N min de espera".
+ * The service's times are written as steps, in the order they happen:
+ * Trabajo 1, Espera 1, Trabajo 2, Espera 2, Trabajo 3 (only Trabajo 1 is
+ * required). The total duration is their sum, never typed. Stored as
+ * before: duration_minutes and waits ({start, minutes}). Plain words for
+ * hairdressers who do not use these tools much (user's request,
+ * 2026-10-07). Shown in the panel only, as "incl. N min de espera".
  */
 beforeEach(function () {
     $this->actingAs(User::factory()->create());
 });
 
 /**
+ * @param  array<string, int|string>  $steps  work_1, wait_1, work_2, wait_2, work_3
  * @return array<string, mixed>
  */
-function waitServicePayload(array $waits = [], array $overrides = []): array
+function stepsServicePayload(array $steps = ['work_1' => '120'], array $overrides = []): array
 {
     return array_merge([
         'name' => 'Coloración',
-        'duration_minutes' => 120,
         'price' => '',
         'is_bookable_online' => '1',
         'is_active' => '1',
         'sort_order' => 1,
-        'waits' => $waits + [0 => ['start' => '', 'minutes' => ''], 1 => ['start' => '', 'minutes' => '']],
-    ], $overrides);
+    ], ['work_1' => '', 'wait_1' => '', 'work_2' => '', 'wait_2' => '', 'work_3' => ''], $steps, $overrides);
 }
 
-test('the service form offers two optional waits', function () {
+test('the form asks for the steps in order, with a short example and no separate duration', function () {
     $this->get(route('admin.services.create'))
         ->assertOk()
-        ->assertSee('name="waits[0][start]"', false)
-        ->assertSee('name="waits[0][minutes]"', false)
-        ->assertSee('name="waits[1][start]"', false)
-        ->assertSee('name="waits[1][minutes]"', false)
-        ->assertSee('Espera 1')
-        ->assertSee('Espera 2');
+        ->assertSeeInOrder(['Trabajo 1', 'Espera 1', 'Trabajo 2', 'Espera 2', 'Trabajo 3', 'Duración total'])
+        ->assertSee('Si el servicio no tiene esperas, rellena solo «Trabajo 1».')
+        ->assertSee('Ejemplo, un tinte: Trabajo 30 · Espera 45 · Trabajo 45.')
+        ->assertSee('La peluquera queda libre')
+        ->assertSee('name="work_1"', false)
+        ->assertSee('name="wait_1"', false)
+        ->assertSee('name="work_2"', false)
+        ->assertSee('name="wait_2"', false)
+        ->assertSee('name="work_3"', false)
+        ->assertDontSee('name="duration_minutes"', false)
+        ->assertDontSee('minuto 30')
+        ->assertDontSee('tramo');
 });
 
-test('a service is saved with one, two or no waits', function (array $waits, ?array $expected) {
-    $this->post(route('admin.services.store'), waitServicePayload($waits))
+test('the steps are saved as the total duration and the waits', function (array $steps, int $duration, ?array $waits) {
+    $this->post(route('admin.services.store'), stepsServicePayload($steps))
         ->assertRedirect(route('admin.services.index'));
 
-    expect(Service::sole()->waits)->toBe($expected);
+    $service = Service::sole();
+    expect($service->duration_minutes)->toBe($duration);
+    expect($service->waits)->toBe($waits);
 })->with([
-    'none' => [[], null],
-    'one' => [[0 => ['start' => '30', 'minutes' => '45']], [['start' => 30, 'minutes' => 45]]],
-    'two' => [[0 => ['start' => '20', 'minutes' => '30'], 1 => ['start' => '80', 'minutes' => '20']], [['start' => 20, 'minutes' => 30], ['start' => 80, 'minutes' => 20]]],
-    'only the second row filled' => [[1 => ['start' => '30', 'minutes' => '45']], [['start' => 30, 'minutes' => 45]]],
+    'no wait' => [['work_1' => '45'], 45, null],
+    'one wait' => [['work_1' => '30', 'wait_1' => '45', 'work_2' => '45'], 120, [['start' => 30, 'minutes' => 45]]],
+    'two waits' => [['work_1' => '20', 'wait_1' => '30', 'work_2' => '30', 'wait_2' => '20', 'work_3' => '50'], 150, [['start' => 20, 'minutes' => 30], ['start' => 80, 'minutes' => 20]]],
 ]);
 
-test('the edit form shows the waits and they can be removed', function () {
-    $service = Service::factory()->create(['duration_minutes' => 120, 'waits' => [['start' => 30, 'minutes' => 45]]]);
+test('editing a service shows its steps worked out from what is stored', function () {
+    $service = Service::factory()->create(['duration_minutes' => 150, 'waits' => [['start' => 20, 'minutes' => 30], ['start' => 80, 'minutes' => 20]]]);
 
     $this->get(route('admin.services.edit', $service))
         ->assertOk()
-        ->assertSee('name="waits[0][start]" type="number" min="5" max="595" step="5" value="30"', false)
-        ->assertSee('name="waits[0][minutes]" type="number" min="5" max="590" step="5" value="45"', false);
-
-    $this->put(route('admin.services.update', $service), waitServicePayload())
-        ->assertRedirect(route('admin.services.index'));
-
-    expect($service->fresh()->waits)->toBeNull();
+        ->assertSee('name="work_1" type="number" inputmode="numeric" min="5" max="600" step="5" value="20"', false)
+        ->assertSee('name="wait_1" type="number" inputmode="numeric" min="5" max="600" step="5" value="30"', false)
+        ->assertSee('name="work_2" type="number" inputmode="numeric" min="5" max="600" step="5" value="30"', false)
+        ->assertSee('name="wait_2" type="number" inputmode="numeric" min="5" max="600" step="5" value="20"', false)
+        ->assertSee('name="work_3" type="number" inputmode="numeric" min="5" max="600" step="5" value="50"', false)
+        ->assertSee('Duración total: <span id="steps-total">2 h 30 min</span>', false);
 });
 
-test('a wait out of place is rejected next to its field without saving anything', function (array $waits, string $field, array $overrides = []) {
+test('a service without waits shows only Trabajo 1 filled, and its waits can be removed', function () {
+    $service = Service::factory()->create(['duration_minutes' => 120, 'waits' => [['start' => 30, 'minutes' => 45]]]);
+
+    $this->put(route('admin.services.update', $service), stepsServicePayload(['work_1' => '90']))
+        ->assertRedirect(route('admin.services.index'));
+
+    expect($service->fresh()->duration_minutes)->toBe(90);
+    expect($service->fresh()->waits)->toBeNull();
+
+    $this->get(route('admin.services.edit', $service))
+        ->assertSee('name="work_1" type="number" inputmode="numeric" min="5" max="600" step="5" value="90"', false)
+        ->assertSee('name="wait_1" type="number" inputmode="numeric" min="5" max="600" step="5" value=""', false);
+});
+
+test('steps out of place are rejected next to the right field, in plain words, without saving anything', function (array $steps, string $field, string $message) {
     $this->from(route('admin.services.create'))
-        ->post(route('admin.services.store'), waitServicePayload($waits, $overrides))
+        ->post(route('admin.services.store'), stepsServicePayload($steps))
         ->assertRedirect(route('admin.services.create'))
-        ->assertSessionHasErrors($field);
+        ->assertSessionHasErrors([$field => $message]);
 
     expect(Service::count())->toBe(0);
 })->with([
-    'starting at minute 0' => [[0 => ['start' => '0', 'minutes' => '30']], 'waits.0.start'],
-    'start not a multiple of 5' => [[0 => ['start' => '32', 'minutes' => '30']], 'waits.0.start'],
-    'length not a multiple of 5' => [[0 => ['start' => '30', 'minutes' => '31']], 'waits.0.minutes'],
-    'start without a length' => [[0 => ['start' => '30', 'minutes' => '']], 'waits.0.minutes'],
-    'length without a start' => [[0 => ['start' => '', 'minutes' => '30']], 'waits.0.start'],
-    'running to the end of the service' => [[0 => ['start' => '90', 'minutes' => '30']], 'waits.0.minutes'],
-    'running past the end of the service' => [[0 => ['start' => '100', 'minutes' => '45']], 'waits.0.minutes'],
-    'a shorter duration leaves the wait at the end' => [[0 => ['start' => '30', 'minutes' => '45']], 'waits.0.minutes', ['duration_minutes' => 75]],
-    'the second one overlapping the first' => [[0 => ['start' => '20', 'minutes' => '30'], 1 => ['start' => '40', 'minutes' => '10']], 'waits.1.start'],
-    'the second one right after the first' => [[0 => ['start' => '20', 'minutes' => '30'], 1 => ['start' => '50', 'minutes' => '10']], 'waits.1.start'],
-    'the second one before the first' => [[0 => ['start' => '60', 'minutes' => '20'], 1 => ['start' => '20', 'minutes' => '10']], 'waits.1.start'],
+    'no work at all' => [[], 'work_1', 'Escribe cuántos minutos dura el trabajo 1.'],
+    'not a multiple of 5' => [['work_1' => '32'], 'work_1', 'Usa múltiplos de 5 minutos (5, 10, 15…).'],
+    'zero minutes' => [['work_1' => '0'], 'work_1', 'Como mínimo, 5 minutos.'],
+    'not a number' => [['work_1' => 'media hora'], 'work_1', 'Escribe solo el número de minutos.'],
+    'a wait with nothing after it' => [['work_1' => '30', 'wait_1' => '45'], 'work_2', 'Después de una espera tiene que haber un tiempo de trabajo.'],
+    'the second wait with nothing after it' => [['work_1' => '30', 'wait_1' => '45', 'work_2' => '30', 'wait_2' => '20'], 'work_3', 'Después de una espera tiene que haber un tiempo de trabajo.'],
+    'a second work without a wait before it' => [['work_1' => '30', 'work_2' => '45'], 'wait_1', 'Rellena primero la espera 1.'],
+    'the second wait without the first' => [['work_1' => '30', 'wait_2' => '20', 'work_3' => '30'], 'wait_1', 'Rellena primero la espera 1.'],
+    'the second wait without a second work' => [['work_1' => '30', 'wait_1' => '45', 'wait_2' => '20', 'work_3' => '30'], 'work_2', 'Rellena primero el trabajo 2.'],
+    'a third work without the second wait' => [['work_1' => '30', 'wait_1' => '45', 'work_2' => '30', 'work_3' => '30'], 'wait_2', 'Rellena primero la espera 2.'],
+    'a total over 10 hours' => [['work_1' => '300', 'wait_1' => '200', 'work_2' => '200'], 'duration_minutes', 'El servicio entero no puede pasar de 10 horas (600 minutos).'],
 ]);
 
-test('the form shows a wait error next to its field', function () {
+test('the form shows the error next to its step', function () {
     $this->from(route('admin.services.create'))
         ->followingRedirects()
-        ->post(route('admin.services.store'), waitServicePayload([0 => ['start' => '90', 'minutes' => '30']]))
-        ->assertSee('La espera 1 tiene que terminar antes del final del servicio.')
-        ->assertSee('id="waits-0-minutes-error"', false)
-        ->assertSee('aria-describedby="waits-0-minutes-error"', false);
+        ->post(route('admin.services.store'), stepsServicePayload(['work_1' => '30', 'wait_1' => '45']))
+        ->assertSee('Después de una espera tiene que haber un tiempo de trabajo.')
+        ->assertSee('id="work_2-error"', false)
+        ->assertSee('aria-describedby="work_2-error"', false)
+        // What was typed is kept.
+        ->assertSee('name="wait_1" type="number" inputmode="numeric" min="5" max="600" step="5" value="45"', false);
 });
 
 test('the service list shows the wait included in the duration', function () {
@@ -150,6 +174,6 @@ test('the public booking page never shows the waits', function () {
     foreach ([route('reservas'), route('reservas', ['servicio' => $coloracion->id, 'fecha' => '2030-01-08'])] as $url) {
         $html = $this->get($url)->assertOk()->getContent();
 
-        expect($html)->not->toContain('espera')->not->toContain('data-wait-minutes')->not->toContain('45 min');
+        expect($html)->not->toMatch('/\bespera\b/iu')->not->toContain('data-wait-minutes')->not->toContain('45 min');
     }
 });
