@@ -132,6 +132,19 @@ final readonly class TimeProfile
     }
 
     /**
+     * The waits as moments for an appointment starting at $start.
+     *
+     * @return list<array{0: CarbonImmutable, 1: CarbonImmutable}>
+     */
+    public function waitIntervals(CarbonImmutable $start): array
+    {
+        return array_map(
+            fn (array $wait) => [$start->addMinutes($wait['start']), $start->addMinutes($wait['start'] + $wait['minutes'])],
+            $this->waits,
+        );
+    }
+
+    /**
      * Total minutes of waiting inside the duration.
      */
     public function waitMinutes(): int

@@ -252,11 +252,10 @@ class AgendaController extends Controller
         }
 
         $profile = TimeProfile::fromServices($servicios);
-        $durationMinutes = $profile->durationMinutes;
         $candidates = DayTimeline::tappableFreeMinutes($timeline);
         $fitting = $this->calculator->fittingStartMinutes($profile, $candidates, $day, $ranges, $appointments, $blocks, $capacity);
 
-        return DayTimeline::markServiceFit($timeline, $fitting, $durationMinutes);
+        return DayTimeline::markServiceFit($timeline, $fitting, $profile);
     }
 
     /**

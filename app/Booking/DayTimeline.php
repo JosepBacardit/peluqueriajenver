@@ -144,7 +144,7 @@ class DayTimeline
      * free the whole time).
      *
      * So for each candidate minute, only the lanes with no appointment
-     * anywhere in [minute, minute + $durationMinutes) are highlighted. If
+     * anywhere in [minute, minute + the length) are highlighted. If
      * none of them stays free the whole time (appointments staggered
      * across different lanes, each interrupting its own lane at a
      * different moment, never simultaneously enough to break capacity),
@@ -163,12 +163,17 @@ class DayTimeline
      * to a capacity verdict decided elsewhere.
      *
      * @param  array{lanes: int, pieces: list<array>}  $timeline  a build() result
+     *                                                            With waits in the chosen services (PRF-151), "free the whole time"
+     *                                                            means free during their active stretches only: an appointment in the
+     *                                                            lane during the wait does not collide.
      * @param  list<int>  $fittingMinutes  AvailabilityCalculator::fittingStartMinutes()'s result
+     * @param  TimeProfile|int  $length  the chosen services' TimeProfile, or minutes with no waits
      * @return array{lanes: int, pieces: list<array>}
      */
-    public static function markServiceFit(array $timeline, array $fittingMinutes, int $durationMinutes): array
+    public static function markServiceFit(array $timeline, array $fittingMinutes, TimeProfile|int $length): array
     {
         $fitMinutes = array_flip($fittingMinutes);
+        $activeOffsets = TimeProfile::of($length)->activeOffsets();
 
         foreach ($timeline['pieces'] as &$piece) {
             if ($piece['kind'] !== 'open') {
@@ -202,10 +207,11 @@ class DayTimeline
                     continue;
                 }
 
-                $end = $minute + $durationMinutes;
                 $continuouslyFreeLanes = array_values(array_filter(
                     $lanes,
-                    fn (int $lane) => ! self::laneBusyDuring($busyByLane[$lane] ?? [], $minute, $end)
+                    fn (int $lane) => ! collect($activeOffsets)->contains(
+                        fn (array $offsets) => self::laneBusyDuring($busyByLane[$lane] ?? [], $minute + $offsets[0], $minute + $offsets[1])
+                    )
                 ));
                 $highlight = array_flip($continuouslyFreeLanes !== [] ? $continuouslyFreeLanes : [$lanes[0]]);
 
@@ -349,16 +355,17 @@ class DayTimeline
             'end' => self::minutesSinceDayStart($dayStart, $a->ends_at),
         ])->all();
 
-        // Lane assignment is global for the day: an appointment's lane is
-        // the same wherever it is rendered (it only ever falls in one
-        // open piece — appointments cannot be booked across a closure).
+        // Lane assignment is global for the day: each active stretch of an
+        // appointment (the whole appointment when it has no waits) has the
+        // same lane wherever it is rendered.
         $laneAssignment = AppointmentLaneAssigner::assign($confirmed, $capacity);
         $maxLanes = $laneAssignment['maxLanes'];
+        [$stretches, $waits] = self::stretchesAndWaits($laneAssignment, $dayStart);
 
         $pieces = [];
 
         if ($ranges->isEmpty()) {
-            array_push($pieces, ...self::closedGap($gridStart, $gridEnd, 'cerrado', $appointmentIntervals, $maxLanes, $capacity, $confirmed, $laneAssignment, $dayStart, $gridStart, $nowMinute));
+            array_push($pieces, ...self::closedGap($gridStart, $gridEnd, 'cerrado', $appointmentIntervals, $maxLanes, $capacity, $stretches, $waits, $gridStart, $nowMinute));
 
             return ['lanes' => $maxLanes, 'pieces' => $pieces];
         }
@@ -369,20 +376,20 @@ class DayTimeline
 
         foreach ($openRanges as $range) {
             if ($range['start'] > $cursor) {
-                array_push($pieces, ...self::closedGap($cursor, $range['start'], 'fuera-horario', $appointmentIntervals, $maxLanes, $capacity, $confirmed, $laneAssignment, $dayStart, $gridStart, $nowMinute));
+                array_push($pieces, ...self::closedGap($cursor, $range['start'], 'fuera-horario', $appointmentIntervals, $maxLanes, $capacity, $stretches, $waits, $gridStart, $nowMinute));
             }
 
             foreach (self::splitByClosure($range, $blockIntervals, $appointmentIntervals, $capacity) as $sub) {
                 $pieces[] = $sub['closed']
                     ? self::band('cierre', $sub['start'], $sub['end'], $gridStart)
-                    : self::openPiece($sub['start'], $sub['end'], $gridStart, $maxLanes, $capacity, $confirmed, $laneAssignment, $dayStart, $blockIntervals, $nowMinute);
+                    : self::openPiece($sub['start'], $sub['end'], $gridStart, $maxLanes, $capacity, $stretches, $waits, $blockIntervals, $nowMinute);
             }
 
             $cursor = $range['end'];
         }
 
         if ($cursor < $gridEnd) {
-            array_push($pieces, ...self::closedGap($cursor, $gridEnd, 'fuera-horario', $appointmentIntervals, $maxLanes, $capacity, $confirmed, $laneAssignment, $dayStart, $gridStart, $nowMinute));
+            array_push($pieces, ...self::closedGap($cursor, $gridEnd, 'fuera-horario', $appointmentIntervals, $maxLanes, $capacity, $stretches, $waits, $gridStart, $nowMinute));
         }
 
         return ['lanes' => $maxLanes, 'pieces' => $pieces];
@@ -399,10 +406,11 @@ class DayTimeline
      * the shared grid but outside this day's own tramo.
      *
      * @param  list<array{start: int, end: int}>  $appointmentIntervals
-     * @param  array{lanes: array<int, int>, maxLanes: int, overCapacity: array<int, bool>}  $laneAssignment
+     * @param  list<array>  $stretches  stretchesAndWaits()
+     * @param  list<array>  $waits  stretchesAndWaits()
      * @return list<array>
      */
-    private static function closedGap(int $start, int $end, string $bandType, array $appointmentIntervals, int $maxLanes, int $capacity, Collection $confirmed, array $laneAssignment, CarbonImmutable $dayStart, int $gridStart, int $nowMinute): array
+    private static function closedGap(int $start, int $end, string $bandType, array $appointmentIntervals, int $maxLanes, int $capacity, array $stretches, array $waits, int $gridStart, int $nowMinute): array
     {
         $range = ['start' => $start, 'end' => $end];
         $syntheticBlock = ['start' => $start, 'end' => $end, 'reduction' => null];
@@ -412,7 +420,7 @@ class DayTimeline
         foreach (self::splitByClosure($range, [$syntheticBlock], $appointmentIntervals, $capacity) as $sub) {
             $pieces[] = $sub['closed']
                 ? self::band($bandType, $sub['start'], $sub['end'], $gridStart)
-                : self::openPiece($sub['start'], $sub['end'], $gridStart, $maxLanes, $capacity, $confirmed, $laneAssignment, $dayStart, [$syntheticBlock], $nowMinute);
+                : self::openPiece($sub['start'], $sub['end'], $gridStart, $maxLanes, $capacity, $stretches, $waits, [$syntheticBlock], $nowMinute);
         }
 
         return $pieces;
@@ -538,16 +546,16 @@ class DayTimeline
      * keyboard/screen-reader user tabs through the day the way it
      * actually happened.
      *
-     * @param  Collection<int, Appointment>  $confirmed
-     * @param  array{lanes: array<int, int>, maxLanes: int, overCapacity: array<int, bool>}  $laneAssignment
+     * @param  list<array>  $stretches  stretchesAndWaits()
+     * @param  list<array>  $waits  stretchesAndWaits()
      * @param  list<array{start: int, end: int, reduction: int|null}>  $blockIntervals
      */
-    private static function openPiece(int $start, int $end, int $gridStart, int $maxLanes, int $capacity, Collection $confirmed, array $laneAssignment, CarbonImmutable $dayStart, array $blockIntervals, int $nowMinute): array
+    private static function openPiece(int $start, int $end, int $gridStart, int $maxLanes, int $capacity, array $stretches, array $waits, array $blockIntervals, int $nowMinute): array
     {
         $lanes = [];
 
         for ($lane = 0; $lane < $maxLanes; $lane++) {
-            $lanes[$lane] = self::laneSegments($start, $end, $lane, $gridStart, $capacity, $confirmed, $laneAssignment, $dayStart, $blockIntervals, $nowMinute);
+            $lanes[$lane] = self::laneSegments($start, $end, $lane, $gridStart, $capacity, $stretches, $waits, $blockIntervals, $nowMinute);
         }
 
         $boundaries = [$start, $end];
@@ -598,32 +606,84 @@ class DayTimeline
     }
 
     /**
+     * Each active stretch of the day's confirmed appointments in minutes
+     * of the day, with its lane (AppointmentLaneAssigner), and each wait
+     * between two stretches, with the lanes of the stretches on either
+     * side of it: the lanes where "Espera · {clienta} hasta {hora}" is
+     * shown on whatever is left free (PRF-159).
+     *
+     * @param  array{lanes: array<string, int>, overCapacity: array<string, bool>, stretches: list<array>}  $laneAssignment  AppointmentLaneAssigner::assign()
+     * @return array{0: list<array{appointment: Appointment, lane: int, overCapacity: bool, start: int, end: int, part: int, parts: int, waitUntil: int|null}>, 1: list<array{lanes: list<int>, start: int, end: int, customer: string, until: string}>}
+     */
+    private static function stretchesAndWaits(array $laneAssignment, CarbonImmutable $dayStart): array
+    {
+        $byKey = [];
+
+        foreach ($laneAssignment['stretches'] as $stretch) {
+            $byKey[$stretch['key']] = $stretch;
+        }
+
+        $stretches = [];
+        $waits = [];
+
+        foreach ($laneAssignment['stretches'] as $stretch) {
+            $next = $byKey[AppointmentLaneAssigner::key($stretch['appointment'], $stretch['index'] + 1)] ?? null;
+            $end = self::minutesSinceDayStart($dayStart, $stretch['end']);
+            $waitUntil = $next === null ? null : self::minutesSinceDayStart($dayStart, $next['start']);
+
+            $stretches[] = [
+                'appointment' => $stretch['appointment'],
+                'lane' => $laneAssignment['lanes'][$stretch['key']],
+                'overCapacity' => $laneAssignment['overCapacity'][$stretch['key']],
+                'start' => self::minutesSinceDayStart($dayStart, $stretch['start']),
+                'end' => $end,
+                'part' => $stretch['index'] + 1,
+                'parts' => $stretch['count'],
+                'waitUntil' => $waitUntil,
+            ];
+
+            if ($next !== null) {
+                $waits[] = [
+                    'lanes' => array_values(array_unique([$laneAssignment['lanes'][$stretch['key']], $laneAssignment['lanes'][$next['key']]])),
+                    'start' => $end,
+                    'end' => $waitUntil,
+                    'customer' => $stretch['appointment']->customer_name,
+                    'until' => $next['start']->format('H:i'),
+                ];
+            }
+        }
+
+        return [$stretches, $waits];
+    }
+
+    /**
      * One lane's independent sequence of free/appointment/cierre-parcial
      * segments across one open piece, each carrying its own 'start'/'end'
      * (minutes since midnight) besides its pixel 'top'/'height', so the
      * caller can derive shared CSS-grid row boundaries across every lane.
      *
+     * An appointment segment is one active stretch: 'part' of 'parts'
+     * (1 of 1 without waits), 'stretchStart'/'stretchEnd' unclipped, and
+     * 'waitUntil' when a wait follows it. A free segment overlapping a wait
+     * in one of that wait's lanes carries 'wait' (customer and until).
+     *
+     * @param  list<array>  $stretches  stretchesAndWaits()
+     * @param  list<array>  $waits  stretchesAndWaits()
      * @return list<array>
      */
-    private static function laneSegments(int $start, int $end, int $lane, int $gridStart, int $capacity, Collection $confirmed, array $laneAssignment, CarbonImmutable $dayStart, array $blockIntervals, int $nowMinute): array
+    private static function laneSegments(int $start, int $end, int $lane, int $gridStart, int $capacity, array $stretches, array $waits, array $blockIntervals, int $nowMinute): array
     {
-        $laneAppointments = $confirmed
-            ->filter(fn (Appointment $a) => ($laneAssignment['lanes'][$a->id] ?? null) === $lane)
-            ->filter(function (Appointment $a) use ($dayStart, $start, $end) {
-                $aStart = self::minutesSinceDayStart($dayStart, $a->starts_at);
-                $aEnd = self::minutesSinceDayStart($dayStart, $a->ends_at);
-
-                return $aStart < $end && $aEnd > $start;
-            })
-            ->sortBy('starts_at')
+        $laneStretches = collect($stretches)
+            ->filter(fn (array $stretch) => $stretch['lane'] === $lane && $stretch['start'] < $end && $stretch['end'] > $start)
+            ->sortBy('start')
             ->values();
 
         $segments = [];
         $cursor = $start;
 
-        foreach ($laneAppointments as $appointment) {
-            $aStart = max(self::minutesSinceDayStart($dayStart, $appointment->starts_at), $start);
-            $aEnd = min(self::minutesSinceDayStart($dayStart, $appointment->ends_at), $end);
+        foreach ($laneStretches as $stretch) {
+            $aStart = max($stretch['start'], $start);
+            $aEnd = min($stretch['end'], $end);
 
             if ($aStart > $cursor) {
                 array_push($segments, ...self::gapSegments($cursor, $aStart, $lane, $gridStart, $blockIntervals, $capacity, $nowMinute));
@@ -635,8 +695,13 @@ class DayTimeline
                 'end' => $aEnd,
                 'top' => self::pxFromMinutes($aStart - $gridStart),
                 'height' => self::pxFromMinutes($aEnd - $gridStart) - self::pxFromMinutes($aStart - $gridStart),
-                'appointment' => $appointment,
-                'overCapacity' => $laneAssignment['overCapacity'][$appointment->id] ?? false,
+                'appointment' => $stretch['appointment'],
+                'overCapacity' => $stretch['overCapacity'],
+                'part' => $stretch['part'],
+                'parts' => $stretch['parts'],
+                'stretchStart' => $stretch['start'],
+                'stretchEnd' => $stretch['end'],
+                'waitUntil' => $stretch['waitUntil'],
             ];
 
             $cursor = $aEnd;
@@ -645,6 +710,22 @@ class DayTimeline
         if ($cursor < $end) {
             array_push($segments, ...self::gapSegments($cursor, $end, $lane, $gridStart, $blockIntervals, $capacity, $nowMinute));
         }
+
+        $laneWaits = array_filter($waits, fn (array $wait) => in_array($lane, $wait['lanes'], true));
+
+        foreach ($segments as &$segment) {
+            if ($segment['type'] !== 'free') {
+                continue;
+            }
+
+            foreach ($laneWaits as $wait) {
+                if ($segment['start'] < $wait['end'] && $segment['end'] > $wait['start']) {
+                    $segment['wait'] = ['customer' => $wait['customer'], 'until' => $wait['until']];
+                    break;
+                }
+            }
+        }
+        unset($segment);
 
         return $segments;
     }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Booking\TimeProfile;
 use App\Enums\AppointmentSource;
 use App\Enums\AppointmentStatus;
 use Carbon\CarbonInterface;
@@ -94,6 +95,29 @@ class Appointment extends Model
     public function durationMinutes(): int
     {
         return (int) $this->starts_at->diffInMinutes($this->ends_at);
+    }
+
+    /**
+     * Minutes of waiting inside the appointment (PRF-151), from the waits
+     * frozen on it.
+     */
+    public function waitMinutes(): int
+    {
+        return TimeProfile::fromAppointment($this)->waitMinutes();
+    }
+
+    /**
+     * Its waits as times, e.g. "10:30–11:15" or "10:20–10:50 y 11:20–11:40",
+     * or null without any. Internal: for the panel and the salon's emails
+     * only, never the customer (PRF-158).
+     */
+    public function waitsLabel(): ?string
+    {
+        $intervals = TimeProfile::fromAppointment($this)->waitIntervals($this->starts_at);
+
+        return $intervals === [] ? null : collect($intervals)
+            ->map(fn (array $interval) => $interval[0]->format('H:i').'–'.$interval[1]->format('H:i'))
+            ->implode(' y ');
     }
 
     /**
