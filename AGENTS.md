@@ -124,16 +124,24 @@ pre-filled message per page); the salon records those in the admin agenda.
   (from the panel, or by re-running this seeder) never changes an
   appointment that already booked it: its name, duration and price are
   copied once into `appointment_services` at booking time (PRF-126), never
-  read back from the service. While the switch is off
-  (`BookingSetting::onlineBookingEnabled()`), `/reservas` keeps its URL and
-  answers 200 with a phone/WhatsApp page instead of the form
+  read back from the service. Online booking is actually available only
+  when the switch is on **and** at least one service is bookable online
+  (`BookingSetting::onlineBookingAvailable()`, PRF-147/PRF-148,
+  2026-10-07, review `pr-8-final.md` M1 recommendation 4 — an empty or
+  fully `is_active`/`is_bookable_online`-false catalogue behaves exactly
+  like the switch being off, instead of the public site still announcing
+  an online booking that cannot actually be made). Whenever it is not
+  available — for either reason — `/reservas` keeps its URL and answers
+  200 with a phone/WhatsApp page instead of the form
   (`BookingController::index()`), a POST is rejected before any validation
   (`StoreBookingRequest::authorize()`), every "Reservar cita"/"Reservar
-  online" link on the public site calls or opens WhatsApp instead, the
-  JSON-LD drops `potentialAction`, and the admin panel shows a banner on
-  the agenda (reusing its own existing `BookingSetting` read, so the
-  switch never adds a second query there — PRF-109/PRF-118's fixed query
-  counts would otherwise break).
+  online" link on the public site calls or opens WhatsApp instead, and the
+  JSON-LD drops `potentialAction`. The admin panel shows a banner — worded
+  differently for "switch off" and for "switch on, no bookable service" —
+  on the agenda (reusing its own existing `BookingSetting`/`Service` reads,
+  so this never adds a query there — PRF-109/PRF-118's fixed query counts
+  would otherwise break) and on Ajustes (one extra `Service::bookableOnline()->exists()`
+  read, an admin-only page with no fixed query budget).
 - **Public booking** at `/reservas` (server-rendered Blade, no JS; a
   vanilla-JS calendar is a possible later step) and the customer's page
   `/cita/{token}` (random 48-character token, `noindex`). Both are excluded
@@ -476,10 +484,11 @@ true` by default, before any service exists):
    `APP_ENV`, `APP_DEBUG`, `APP_URL` — see "Mailbox and SMTP" and the
    `SESSION_SECURE_COOKIE` bullet above) and run
    `php artisan deploy:check --smtp` as `deploy`.
-2. `./deploy.sh`. After this, `services` is still empty, so `/reservas`
-   already answers with the safe "llámanos" message
-   (`lang/es/reservas.php`'s `no_services`) rather than opening — even
-   though the switch defaults to on.
+2. `./deploy.sh`. After this, `services` is still empty, so
+   `BookingSetting::onlineBookingAvailable()` is already false and
+   `/reservas` answers with the same safe phone/WhatsApp page as the
+   switch being off, and every public CTA calls instead of linking to it
+   — even though the switch itself still defaults to on.
 3. `php artisan admin:create-user` (as `deploy`) — create at least one
    panel account.
 4. Log into `/admin/ajustes` with that account and turn off "Reserva

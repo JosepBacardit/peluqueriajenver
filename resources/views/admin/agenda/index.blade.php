@@ -26,6 +26,14 @@
     <div role="status" class="mb-6 border border-amber-500/50 bg-amber-500/10 text-amber-200 px-4 py-3">
         ⚠️ Reserva online desactivada — <a href="{{ route('admin.settings.edit') }}" class="underline hover:text-amber-100">activarla en Ajustes</a>
     </div>
+@elseif (! $hasBookableOnlineService)
+    {{-- PRF-148: the switch is on, but the web behaves as if it were off
+         (PRF-147) because no service is reservable online. Reuses
+         $services, already loaded above for the filter — no query of
+         more here either. --}}
+    <div role="status" class="mb-6 border border-amber-500/50 bg-amber-500/10 text-amber-200 px-4 py-3">
+        ⚠️ Reserva online activa, pero no hay ningún servicio reservable online — <a href="{{ route('admin.services.index') }}" class="underline hover:text-amber-100">revisarlo en Servicios</a>
+    </div>
 @endif
 
 <div class="flex flex-wrap items-center justify-between gap-4 mb-6">

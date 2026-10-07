@@ -47,4 +47,19 @@ class BookingSetting extends Model
     {
         return self::current()->online_booking_enabled;
     }
+
+    /**
+     * Whether online booking is actually usable: the switch above is on
+     * *and* at least one service is reservable online (PRF-147, review
+     * `pr-8-final.md` M1 recommendation 4). An empty catalogue (right
+     * after a fresh deploy) or one where every service is inactive or
+     * phone-only must make the public site behave exactly as if the
+     * switch itself were off, instead of still announcing an online
+     * booking nobody can actually complete. Short-circuits on the switch
+     * first, so the extra `Service` read never happens while it is off.
+     */
+    public static function onlineBookingAvailable(): bool
+    {
+        return self::onlineBookingEnabled() && Service::query()->bookableOnline()->exists();
+    }
 }

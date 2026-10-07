@@ -37,7 +37,7 @@
 
         <!-- CTA Buttons -->
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            @if (\App\Models\BookingSetting::onlineBookingEnabled())
+            @if (\App\Models\BookingSetting::onlineBookingAvailable())
                 <a href="{{ route('reservas') }}" class="btn-gold text-sm md:text-base">
                     {{ __('home.hero.cta_primary') }}
                 </a>
@@ -350,7 +350,7 @@
         </p>
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            @if (\App\Models\BookingSetting::onlineBookingEnabled())
+            @if (\App\Models\BookingSetting::onlineBookingAvailable())
                 <a href="{{ route('reservas') }}" class="btn-gold text-sm md:text-base font-semibold px-8 py-3">
                     {{ __('home.reserva.online_cta') }}
                 </a>

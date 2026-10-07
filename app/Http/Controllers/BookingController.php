@@ -32,11 +32,12 @@ class BookingController extends Controller
 
     public function index(Request $request): View
     {
-        // The "Reserva online activa" switch (Ajustes): /reservas keeps
-        // its URL and answers 200 either way, so it never breaks a link
-        // or a bookmark — it just shows a phone/WhatsApp page instead of
-        // the form while the switch is off.
-        if (! BookingSetting::onlineBookingEnabled()) {
+        // "Reserva online activa" (Ajustes) and at least one bookable-
+        // online service (PRF-147): /reservas keeps its URL and answers
+        // 200 either way, so it never breaks a link or a bookmark — it
+        // just shows a phone/WhatsApp page instead of the form while
+        // either is missing.
+        if (! BookingSetting::onlineBookingAvailable()) {
             return view('pages.reservas-disabled');
         }
 

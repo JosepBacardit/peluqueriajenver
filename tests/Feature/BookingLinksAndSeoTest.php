@@ -1,8 +1,18 @@
 <?php
 
+use App\Models\Service;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
+
+// Online booking is only ever offered when at least one service is
+// reservable online (PRF-147) — every test in this file is about the
+// booking CTAs/JSON-LD/FAQ *offering* it, so it needs one to exist. The
+// opposite case (no bookable-online service, even with the switch on)
+// is OnlineBookingToggleTest's.
+beforeEach(function () {
+    Service::factory()->create();
+});
 
 test('the header and hero booking buttons lead to the booking page on the home page', function () {
     $html = $this->get('/')->assertOk()->getContent();

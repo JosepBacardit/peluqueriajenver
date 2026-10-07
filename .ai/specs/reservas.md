@@ -317,6 +317,11 @@ Decisión del usuario, 2026-10-06: «se tiene que poder reservar para más de un
 - **PRF-145.** El panel **debe** ofrecer una pantalla «Mi cuenta» donde cualquier usuario cambia su propia contraseña (contraseña actual, nueva y confirmación), con la misma longitud mínima que `admin:create-user`, limitada a unos pocos intentos en una ventana corta por usuario, accesible desde el nombre de usuario (escritorio) y desde el menú hamburguesa, con objetivos táctiles de 44 px. Al cambiarla, las demás sesiones abiertas con esa cuenta en otros dispositivos **deben** cerrarse en su siguiente petición, sin afectar a la sesión que hizo el cambio.
 - **PRF-146.** Un usuario **no debe** poder cambiar la contraseña de otro: no hay ningún campo para elegir la cuenta. La única forma de recuperar una contraseña olvidada es `php artisan admin:create-user` desde el servidor.
 
+### Reserva online disponible, no solo activa (2026-10-07, revisión `pr-8-final.md` M1 recomendación 4)
+
+- **PRF-147.** La reserva online **debe** considerarse disponible solo cuando la casilla «Reserva online activa» está encendida **y** existe al menos un servicio reservable online (activo y marcado como reservable online). Con la casilla encendida pero sin ningún servicio así (catálogo vacío tras desplegar, o todos desactivados o solo por teléfono), la web pública **debe** comportarse exactamente igual que con la casilla apagada (PRF-138, PRF-139): `/reservas` responde 200 con la página de contacto (nunca el mensaje suelto «Ahora mismo no se pueden hacer reservas online» dentro del formulario), el `POST` se rechaza igual, todos los «Reservar cita»/«Reservar online» llaman o abren WhatsApp, y el JSON-LD **no debe** incluir `potentialAction`.
+- **PRF-148.** El panel **debe** avisar, de forma distinguible del aviso de PRF-140, cuando la casilla está encendida pero no hay ningún servicio reservable online: en la agenda (reutilizando sus propias lecturas, sin consulta de más) y en Ajustes, junto a la propia casilla, con un enlace a Servicios.
+
 ## Datos existentes y transición
 
 No hay citas ni cuentas previas. Al desplegar, las migraciones crean el horario inicial (PRF-019) y los ajustes iniciales (PRF-020), con la reserva online activada por defecto. El catálogo real de servicios (PRF-143) no se siembra solo: `./deploy.sh` nunca ejecuta `db:seed`, así que es un paso manual documentado del primer despliegue (`AGENTS.md`, «Production deploys» → «First deploy order», 2026-10-07, revisión `pr-8-final.md` M1), que primero apaga la reserva online desde el panel y solo después siembra el catálogo con `db:seed --class=ServiceCatalogSeeder --force`, para no abrir la reserva con datos sin revisar. Las cuentas del panel siguen sin sembrarse en el flujo normal: se crean con `admin:create-user`, o, solo si se pide explícitamente, con `db:seed --class=AdminUsersSeeder` (PRF-144). Configurar el correo y la dirección del salón (PRF-055) y completar los datos pendientes de la política de privacidad (PRF-059) sigue pendiente antes de publicar. Las citas que lleguen por teléfono o WhatsApp deben apuntarse en el panel para que ocupen su hueco.
@@ -344,6 +349,7 @@ El remitente de correo real (PRF-070, PRF-071) sigue pendiente del buzón y el s
 - **CA-17 (PRF-133 a PRF-136).** El horario semanal del panel se elige con `<select>` de hora y minutos, nunca con un `<input type="time">` que en el móvil no siempre se puede vaciar; una casilla «Cerrado» por día desactiva sus tramos. La web pública (portada, pregunta frecuente, «Contacto» y el JSON-LD) muestra el horario tal como está configurado, agrupando los días consecutivos con el mismo horario, con una sola consulta por petición.
 - **CA-18 (PRF-137 a PRF-142).** Una casilla en Ajustes desactiva la reserva online: `/reservas` pasa a una página de contacto (sin redirigir), el `POST` se rechaza, y todos los «Reservar cita» de la web llaman o abren WhatsApp; el resto (cita del cliente, correos, cron, panel) sigue igual, con un aviso visible en el panel. Las páginas HTML públicas dejan de tener un `max-age` largo: ahora `no-cache` con `ETag`, revalidando con 304 en cada visita; `/admin`, `/cita`, `/reservas` y `/api` no cambian.
 - **CA-19 (PRF-143 a PRF-146).** El catálogo real de servicios se siembra solo (idempotente, en todos los entornos); las cuentas de administración, nunca automáticamente. Cualquier usuario cambia su propia contraseña desde «Mi cuenta», lo que cierra sus demás sesiones; nadie puede cambiar la de otro.
+- **CA-20 (PRF-147, PRF-148).** Con la casilla encendida pero sin ningún servicio reservable online, la web pública se comporta exactamente igual que con la casilla apagada (CA-18), y el panel lo avisa con un texto distinto en la agenda y en Ajustes.
 
 ## Plan de verificación
 
@@ -487,6 +493,8 @@ El remitente de correo real (PRF-070, PRF-071) sigue pendiente del buzón y el s
 | PRF-144 | `php artisan db:seed` normal no crea ninguna cuenta; `db:seed --class=AdminUsersSeeder` crea o actualiza las dos pedidas. |
 | PRF-145 | Un usuario cambia su contraseña con los datos correctos → éxito, otras sesiones con esa cuenta se cierran en su siguiente petición, la propia sigue dentro. Contraseña actual incorrecta, nueva demasiado corta o confirmación que no coincide → rechazado, sin cambios. Demasiados intentos → bloqueado unos minutos. |
 | PRF-146 | No existe ningún campo para elegir otro usuario en «Mi cuenta»; recuperar una cuenta ajena exige `admin:create-user` desde el servidor. |
+| PRF-147 | Casilla encendida, todos los servicios desactivados o no reservables online (o catálogo vacío) → `/reservas` responde 200 con la página de contacto, igual que con la casilla apagada; un `POST` se rechaza; cabecera, portada, las 4 páginas de servicio, la pregunta frecuente y el JSON-LD se comportan como desactivado. Con al menos un servicio reservable online, nada cambia respecto a PRF-137 a PRF-142. |
+| PRF-148 | En ese mismo estado → la agenda y Ajustes muestran un aviso con un texto distinto al de «Reserva online desactivada» (PRF-140), con enlace a Servicios; con la casilla apagada, o con algún servicio reservable online, no se muestra. |
 
 ## Riesgos y marcha atrás
 
@@ -508,7 +516,7 @@ El remitente de correo real (PRF-070, PRF-071) sigue pendiente del buzón y el s
 | Titular, NIF y email de contacto para la política de privacidad | Cliente | Confirmados el 2026-10-06 (Isabel Lechuga Valverde, 53650299Q, peluqueriajenver@gmail.com) | Resuelto |
 | Plazo de conservación de las citas | Cliente | Confirmado el 2026-10-06 (2 años desde la fecha de la cita) | Resuelto. La purga automática queda para el PR 5 |
 | Buzón y servidor de correo de envío y dirección del salón real | Usuario y cliente | `reservas@peluqueriajenver.com` (provisional, 2026-10-05) | El despliegue falla hasta configurar el SMTP real (PRF-055, PRF-071) |
-| Lista real de servicios y duraciones | Cliente | Ninguno sembrado | La página de reservas muestra el mensaje sin servicios |
+| Lista real de servicios y duraciones | Cliente | Ninguno sembrado | Resuelto el 2026-10-07 (PRF-147, PRF-148): mientras no haya ninguno reservable online, la web entera se comporta como con la reserva desactivada, no solo la página de reservas |
 
 ## Tareas
 

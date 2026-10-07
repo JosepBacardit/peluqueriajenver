@@ -24,9 +24,10 @@
             <p role="alert" class="border border-red-500/50 bg-red-500/10 text-red-200 px-4 py-3">{{ $message }}</p>
         @enderror
 
-        @if ($services->isEmpty())
-            <p class="text-gray-300 text-lg">{{ __('reservas.no_services') }}</p>
-        @elseif ($selectedServices->isEmpty())
+        {{-- $services is never empty here: BookingController::index()
+             already sent reservas-disabled instead whenever there is no
+             service reservable online (PRF-147). --}}
+        @if ($selectedServices->isEmpty())
             {{-- Step 1: 1 to MAX_SERVICES services with checkboxes
                  (PRF-127), works with no JavaScript at all: the whole
                  choice travels in the URL ("servicio[]") via a plain GET

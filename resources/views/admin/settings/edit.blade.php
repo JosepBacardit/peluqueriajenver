@@ -63,6 +63,15 @@
         </label>
     </div>
 
+    @if ($settings->online_booking_enabled && ! $hasBookableOnlineService)
+        {{-- PRF-148: the switch is on but no service is reservable
+             online, so the public site already behaves as if it were
+             off (PRF-147) — this is the one place that explains why. --}}
+        <div role="status" class="border border-amber-500/50 bg-amber-500/10 text-amber-200 px-4 py-3">
+            ⚠️ Reserva online activa, pero no hay ningún servicio reservable online — <a href="{{ route('admin.services.index') }}" class="underline hover:text-amber-100">revisarlo en Servicios</a>
+        </div>
+    @endif
+
     <button type="submit" class="btn-gold">Guardar ajustes</button>
 </form>
 @endsection

@@ -14,7 +14,6 @@ return [
         'day' => '2. Elige el día',
         'time' => '3. Elige la hora y déjanos tus datos',
     ],
-    'no_services' => 'Ahora mismo no se pueden hacer reservas online. Llámanos al 633 912 050 o escríbenos por WhatsApp.',
     'disabled' => [
         'title' => 'Reservar cita',
         'message' => 'La reserva online no está disponible en este momento. Pide tu cita por teléfono o WhatsApp.',

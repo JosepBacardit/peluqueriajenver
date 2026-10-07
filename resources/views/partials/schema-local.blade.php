@@ -49,12 +49,13 @@ $schema = [
     ]
 ];
 
-// "Reserva online activa" (Ajustes): the ReserveAction only makes sense
-// while /reservas actually takes bookings. When it is off, the action is
-// simply omitted rather than pointed somewhere schema.org has no action
-// type for ("call this number"); the phone number stays in `telephone`
-// and `contactPoint` regardless.
-if (\App\Models\BookingSetting::onlineBookingEnabled()) {
+// The ReserveAction only makes sense while /reservas actually takes
+// bookings (the "Reserva online activa" switch on, and at least one
+// service reservable online, PRF-147). Otherwise the action is simply
+// omitted rather than pointed somewhere schema.org has no action type
+// for ("call this number"); the phone number stays in `telephone` and
+// `contactPoint` regardless.
+if (\App\Models\BookingSetting::onlineBookingAvailable()) {
     $schema['potentialAction'] = [
         "@type" => "ReserveAction",
         "name" => "Reservar cita",

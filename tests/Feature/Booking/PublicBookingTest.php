@@ -58,12 +58,14 @@ test('the calendar and the booking form never show the internal price', function
     expect($html)->toContain('Confirmar cita')->not->toContain('€')->not->toContain('35,50')->not->toContain('35.50');
 });
 
-test('without online services the page invites to call or use whatsapp', function () {
+test('without online services the page behaves exactly as if online booking were disabled (PRF-147)', function () {
     $this->service->update(['is_bookable_online' => false]);
 
-    $this->get(route('reservas'))
-        ->assertOk()
-        ->assertSee('Ahora mismo no se pueden hacer reservas online. Llámanos al 633 912 050 o escríbenos por WhatsApp.');
+    $html = $this->get(route('reservas'))->assertOk()->getContent();
+
+    expect($html)->toContain('La reserva online no está disponible en este momento. Pide tu cita por teléfono o WhatsApp.');
+    expect($html)->toContain('href="tel:+34633912050"');
+    expect($html)->toContain('href="https://wa.me/34633912050');
 });
 
 test('choosing a service shows a month calendar where only days with free times can be picked', function () {
@@ -271,7 +273,11 @@ test('the month calendar needs a small, fixed number of queries', function () {
 
     $this->get(route('reservas', ['servicio' => $this->service->id, 'mes' => '2030-01']))->assertOk();
 
-    expect($queries)->toBeLessThan(15);
+    // 16, not 15: BookingSetting::onlineBookingAvailable() (PRF-147) adds
+    // one fixed query over onlineBookingEnabled() (a Service::bookableOnline()
+    // existence check) — still independent of how many days/times/services
+    // exist, just one more than before.
+    expect($queries)->toBeLessThan(16);
 });
 
 test('the basic data-protection notice names the confirmed data controller', function () {

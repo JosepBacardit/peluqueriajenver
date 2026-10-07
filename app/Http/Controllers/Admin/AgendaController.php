@@ -95,6 +95,10 @@ class AgendaController extends Controller
             'servicios' => $servicios,
             'servicioQuery' => $servicioQuery,
             'onlineBookingEnabled' => $settings->online_booking_enabled,
+            // PRF-148: reuses $services (already loaded for the filter
+            // above, PRF-120) instead of a second query — it already
+            // carries is_bookable_online on every active service.
+            'hasBookableOnlineService' => $services->contains('is_bookable_online', true),
             ...match ($vista) {
                 'semana' => $this->weekData($weekStart, $servicios, $settings->capacity),
                 'mes' => $this->monthData($month),

@@ -1,5 +1,5 @@
 <?php
-$onlineAnswerKey = \App\Models\BookingSetting::onlineBookingEnabled() ? 'home.faq.online_answer' : 'home.faq.online_answer_disabled';
+$onlineAnswerKey = \App\Models\BookingSetting::onlineBookingAvailable() ? 'home.faq.online_answer' : 'home.faq.online_answer_disabled';
 
 $faq = [
     "@context" => "https://schema.org",

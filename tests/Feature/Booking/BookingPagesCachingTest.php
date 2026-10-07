@@ -4,9 +4,17 @@ use App\Booking\OpeningHoursSummary;
 use App\Models\Appointment;
 use App\Models\BookingSetting;
 use App\Models\OpeningHour;
+use App\Models\Service;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
+
+// A bookable-online service, so that toggling "Reserva online activa"
+// below actually changes what the public pages render (PRF-147: with no
+// such service, the switch would have no visible effect to begin with).
+beforeEach(function () {
+    Service::factory()->create();
+});
 
 /*
  * CacheHeaders gives every public HTML page an ETag and "no-cache"
