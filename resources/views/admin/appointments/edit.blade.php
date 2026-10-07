@@ -64,7 +64,9 @@
             @foreach ($services as $service)
                 <label class="flex items-center gap-3 min-h-11 cursor-pointer">
                     <input type="checkbox" name="service_ids[]" value="{{ $service->id }}" class="service-checkbox w-5 h-5 shrink-0 accent-gold" data-minutes="{{ $minutesOf($service) }}" data-wait-minutes="{{ $waitMinutesOf($service) }}" @checked(in_array($service->id, $checkedServiceIds, true)) @if ($servicesError) aria-invalid="true" @endif>
-                    <span>{{ $service->name }} ({{ $service->duration_with_wait_label }}){{ $service->is_active ? '' : ' · inactivo' }}</span>
+                    {{-- Review L3: a service the appointment already has shows
+                         its frozen length and wait, the same the total counts. --}}
+                    <span>{{ $service->name }} ({{ \App\Models\Service::formatDurationWithWait($minutesOf($service), $waitMinutesOf($service)) }}){{ $service->is_active ? '' : ' · inactivo' }}</span>
                 </label>
             @endforeach
         </div>

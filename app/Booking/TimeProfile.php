@@ -4,7 +4,9 @@ namespace App\Booking;
 
 use App\Models\Appointment;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
+use Throwable;
 
 /**
  * How long a service (or a whole appointment) lasts and when, inside that
@@ -78,11 +80,13 @@ final readonly class TimeProfile
         $waits = [];
 
         foreach ($services as $service) {
-            foreach (data_get($service, 'waits') ?? [] as $wait) {
-                $waits[] = ['start' => $offset + (int) $wait['start'], 'minutes' => (int) $wait['minutes']];
+            $duration = (int) data_get($service, 'duration_minutes');
+
+            foreach (self::storedWaits($duration, data_get($service, 'waits'), 'service '.data_get($service, 'service_id', data_get($service, 'id'))) as $wait) {
+                $waits[] = ['start' => $offset + $wait['start'], 'minutes' => $wait['minutes']];
             }
 
-            $offset += (int) data_get($service, 'duration_minutes');
+            $offset += $duration;
         }
 
         return new self($offset, $waits);
@@ -137,7 +141,34 @@ final readonly class TimeProfile
      */
     public static function fromAppointment(Appointment $appointment): self
     {
-        return new self($appointment->durationMinutes(), $appointment->waits);
+        $duration = $appointment->durationMinutes();
+
+        return new self($duration, self::storedWaits($duration, $appointment->waits, 'appointment '.$appointment->id));
+    }
+
+    /**
+     * Stored waits, read tolerantly (review L5): what is written is always
+     * checked (ServiceRequest, fromSteps(), the constructor), but a row
+     * that no longer fits (e.g. its duration changed by hand) must not
+     * break the booking page or the agenda. It is read as having no waits
+     * — taking more room, never less, so it can never cause an
+     * overbooking — and logged so it can be fixed.
+     *
+     * @return list<array{start: int, minutes: int}>
+     */
+    private static function storedWaits(int $durationMinutes, mixed $waits, string $what): array
+    {
+        if ($waits === null || $waits === []) {
+            return [];
+        }
+
+        try {
+            return (new self($durationMinutes, $waits))->waits;
+        } catch (Throwable) {
+            Log::warning("Stored waits do not fit {$what} ({$durationMinutes} min); read as no waits.", ['waits' => $waits]);
+
+            return [];
+        }
     }
 
     /**

@@ -158,8 +158,9 @@ test('the agenda shows the numbered stretches, the wait mark and the wait in the
     $html = $this->get(route('admin.agenda', ['fecha' => '2030-01-08']))->assertOk()->getContent();
 
     expect($html)
-        ->toContain('Ana (1/2)')
-        ->toContain('Ana (2/2)')
+        // Review L2: before the name, the part a narrow lane never cuts.
+        ->toContain('(1/2) Ana')
+        ->toContain('(2/2) Ana')
         ->toContain('aria-label="10:00 Coloración, Ana, tramo 1 de 2, de 10:00 a 10:30, espera hasta 11:15, plaza 1"')
         ->toContain('aria-label="11:15 Coloración, Ana, tramo 2 de 2, de 11:15 a 12:00, plaza 2"')
         ->toContain('title="10:00–12:00 (2 h, incl. 45 min de espera) Coloración, Ana · tramo 1 de 2: 10:00–10:30, espera hasta 11:15"')

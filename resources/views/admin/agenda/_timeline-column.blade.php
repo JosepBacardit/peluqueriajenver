@@ -98,7 +98,8 @@
                            @endif>
                             <span class="block truncate w-full">
                                 <span class="font-semibold text-gold">{{ $blockTime }}</span>
-                                {{ $appointment->customer_name }}{{ $isSplit ? ' ('.$segment['part'].'/'.$segment['parts'].')' : '' }}@unless ($compact) · {{ $appointment->services_label }}@endunless
+                                {{-- Review L2: "(1/2)" before the name, the part a narrow lane never cuts. --}}
+                                {{ $isSplit ? '('.$segment['part'].'/'.$segment['parts'].') ' : '' }}{{ $appointment->customer_name }}@unless ($compact) · {{ $appointment->services_label }}@endunless
                             </span>
                         </a>
                     @elseif ($segment['type'] === 'cierre-parcial')

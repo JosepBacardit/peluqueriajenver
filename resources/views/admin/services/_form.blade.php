@@ -34,7 +34,9 @@
         'work_3' => 'Trabajo 3',
     ];
 @endphp
-<fieldset class="space-y-3">
+@php($totalError = $errors->has('duration_minutes'))
+{{-- Review L4: the total's error is tied to the group and to every step. --}}
+<fieldset class="space-y-3"@if ($totalError) aria-describedby="duration_minutes-error"@endif>
     <legend class="block text-white font-semibold mb-1">Tiempos del servicio</legend>
     <p class="text-sm text-gray-300">Escribe los minutos de cada paso, en el orden en que se hacen. Si el servicio no tiene esperas, rellena solo «Trabajo 1».</p>
     <p class="text-sm text-gray-300">Ejemplo, un tinte: Trabajo 30 · Espera 45 · Trabajo 45.</p>
@@ -50,7 +52,7 @@
                         <span class="block text-sm text-gray-400">La peluquera queda libre</span>
                     @endif
                 </label>
-                <input id="{{ $field }}" name="{{ $field }}" type="number" inputmode="numeric" min="5" max="600" step="5" value="{{ $stepValues[$field] }}" class="step-minutes w-24 min-h-11 text-lg text-center bg-black border border-[#2A2A2A] px-2 focus:border-gold focus:outline-none" @error($field) aria-invalid="true" aria-describedby="{{ $field }}-error" @enderror>
+                <input id="{{ $field }}" name="{{ $field }}" type="number" inputmode="numeric" min="5" max="600" step="5" value="{{ $stepValues[$field] }}" class="step-minutes w-24 min-h-11 text-lg text-center bg-black border border-[#2A2A2A] px-2 focus:border-gold focus:outline-none"@if ($errors->has($field)) aria-invalid="true" aria-describedby="{{ $field }}-error"@elseif ($totalError) aria-invalid="true" aria-describedby="duration_minutes-error"@endif>
                 <span class="text-gray-300 w-8">min</span>
             </div>
             @error($field) <p id="{{ $field }}-error" class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror

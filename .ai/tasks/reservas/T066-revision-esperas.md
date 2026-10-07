@@ -5,7 +5,7 @@
 - **Depende de:** T062–T065
 - **Modelo:** Claude Opus 5.5 · **Esfuerzo:** `medium`
 - **Motivo:** cambio del núcleo de disponibilidad y de la agenda.
-- **Estado:** pending
+- **Estado:** done (registro en `.ai/reviews/service-wait-times.md`; hallazgos resueltos en T068)
 - **PR / rama:** `feature/service-wait-times`.
 
 ## Plan

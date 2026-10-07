@@ -23,9 +23,9 @@ class ServiceRequest extends FormRequest
     public const STEP_FIELDS = ['work_1', 'wait_1', 'work_2', 'wait_2', 'work_3'];
 
     /**
-     * How each step is named in "Rellena primero …".
+     * How each step is named in "Escribe los minutos …".
      */
-    private const STEP_NAMES = ['el trabajo 1', 'la espera 1', 'el trabajo 2', 'la espera 2', 'el trabajo 3'];
+    private const STEP_NAMES = ['del trabajo 1', 'de la espera 1', 'del trabajo 2', 'de la espera 2', 'del trabajo 3'];
 
     private const MAX_TOTAL_MINUTES = 600;
 
@@ -35,6 +35,25 @@ class ServiceRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    /**
+     * A 0 in any step but the first means "there is none" (review M1,
+     * user's decision): it counts as empty, never as an error.
+     */
+    protected function prepareForValidation(): void
+    {
+        $empty = [];
+
+        foreach (array_slice(self::STEP_FIELDS, 1) as $field) {
+            $value = $this->input($field);
+
+            if (is_string($value) && preg_match('/^\s*0+\s*$/', $value) === 1) {
+                $empty[$field] = null;
+            }
+        }
+
+        $this->merge($empty);
     }
 
     /**
@@ -79,15 +98,25 @@ class ServiceRequest extends FormRequest
     /**
      * Once every step is valid on its own: no gap before a filled step,
      * the last one a work (a wait always sits between two works), and the
-     * total within the limit. The error goes on the step to fix.
+     * total within the limit. The error goes on the step to fix. Checked
+     * along with the other fields' errors (review L1), so everything to
+     * fix shows at once.
+     *
+     * A gap says what to do either way (review M1): a 0 counts as empty,
+     * so "Trabajo 1 = 30, Espera 1 = 0, Trabajo 2 = 45" gets "Escribe los
+     * minutos de la espera 1, o deja vacíos los pasos de después." on the
+     * wait — whether the hairdresser meant a real wait (write it) or none
+     * at all (clear what follows, or add it to Trabajo 1).
      *
      * @return array<int, callable>
      */
     public function after(): array
     {
         return [function (Validator $validator): void {
-            if ($validator->errors()->isNotEmpty()) {
-                return;
+            foreach (self::STEP_FIELDS as $field) {
+                if ($validator->errors()->has($field)) {
+                    return;
+                }
             }
 
             $filled = array_map(fn (string $field) => filled($this->input($field)), self::STEP_FIELDS);
@@ -95,7 +124,7 @@ class ServiceRequest extends FormRequest
 
             for ($index = 1; $index < $last; $index++) {
                 if (! $filled[$index]) {
-                    $validator->errors()->add(self::STEP_FIELDS[$index], 'Rellena primero '.self::STEP_NAMES[$index].'.');
+                    $validator->errors()->add(self::STEP_FIELDS[$index], 'Escribe los minutos '.self::STEP_NAMES[$index].', o deja vacíos los pasos de después.');
 
                     return;
                 }

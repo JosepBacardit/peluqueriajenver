@@ -107,10 +107,11 @@ test('steps out of place are rejected next to the right field, in plain words, w
     'not a number' => [['work_1' => 'media hora'], 'work_1', 'Escribe solo el número de minutos.'],
     'a wait with nothing after it' => [['work_1' => '30', 'wait_1' => '45'], 'work_2', 'Después de una espera tiene que haber un tiempo de trabajo.'],
     'the second wait with nothing after it' => [['work_1' => '30', 'wait_1' => '45', 'work_2' => '30', 'wait_2' => '20'], 'work_3', 'Después de una espera tiene que haber un tiempo de trabajo.'],
-    'a second work without a wait before it' => [['work_1' => '30', 'work_2' => '45'], 'wait_1', 'Rellena primero la espera 1.'],
-    'the second wait without the first' => [['work_1' => '30', 'wait_2' => '20', 'work_3' => '30'], 'wait_1', 'Rellena primero la espera 1.'],
-    'the second wait without a second work' => [['work_1' => '30', 'wait_1' => '45', 'wait_2' => '20', 'work_3' => '30'], 'work_2', 'Rellena primero el trabajo 2.'],
-    'a third work without the second wait' => [['work_1' => '30', 'wait_1' => '45', 'work_2' => '30', 'work_3' => '30'], 'wait_2', 'Rellena primero la espera 2.'],
+    'a second work without a wait before it' => [['work_1' => '30', 'work_2' => '45'], 'wait_1', 'Escribe los minutos de la espera 1, o deja vacíos los pasos de después.'],
+    'a 0 in the wait counts as empty' => [['work_1' => '30', 'wait_1' => '0', 'work_2' => '45'], 'wait_1', 'Escribe los minutos de la espera 1, o deja vacíos los pasos de después.'],
+    'the second wait without the first' => [['work_1' => '30', 'wait_2' => '20', 'work_3' => '30'], 'wait_1', 'Escribe los minutos de la espera 1, o deja vacíos los pasos de después.'],
+    'the second wait without a second work' => [['work_1' => '30', 'wait_1' => '45', 'wait_2' => '20', 'work_3' => '30'], 'work_2', 'Escribe los minutos del trabajo 2, o deja vacíos los pasos de después.'],
+    'a third work without the second wait' => [['work_1' => '30', 'wait_1' => '45', 'work_2' => '30', 'work_3' => '30'], 'wait_2', 'Escribe los minutos de la espera 2, o deja vacíos los pasos de después.'],
     'a total over 10 hours' => [['work_1' => '300', 'wait_1' => '200', 'work_2' => '200'], 'duration_minutes', 'El servicio entero no puede pasar de 10 horas (600 minutos).'],
 ]);
 
@@ -162,7 +163,10 @@ test('the edit form counts the waits the appointment was booked with', function 
 
     $this->get(route('admin.appointments.edit', $appointment))
         ->assertOk()
-        ->assertSee('Coloración (2 h, incl. 20 min de espera)')
+        // Review L3: the label of a service the appointment already has
+        // shows its frozen wait, the same as the total.
+        ->assertSee('Coloración (2 h, incl. 45 min de espera)')
+        ->assertDontSee('incl. 20 min de espera')
         ->assertSee('data-wait-minutes="45"', false)
         ->assertSee('Duración total: 2 h, incl. 45 min de espera');
 });
