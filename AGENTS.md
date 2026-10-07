@@ -109,12 +109,18 @@ pre-filled message per page); the salon records those in the admin agenda.
   limit, and the "Reserva online activa" switch) live in the single-row
   `booking_settings` table and the weekly schedule in `opening_hours`; both
   are created with their default values by their migrations. Services are
-  not entered by hand: `ServiceCatalogSeeder` (2026-10-06, called from
-  `DatabaseSeeder` in every environment, including production) seeds the
-  salon's real 24-service catalogue, grouped by family in `sort_order`,
-  with no price (the salon sets those from the panel) — the few the site
-  advertises but the hairdresser never confirmed start `is_active = false`,
-  for the salon to turn on once she does. Editing a service afterwards
+  not entered by hand: `ServiceCatalogSeeder` (2026-10-06, wired into
+  `DatabaseSeeder` so it runs in every environment `db:seed` is called in,
+  including production) seeds the salon's real 24-service catalogue,
+  grouped by family in `sort_order`, with no price (the salon sets those
+  from the panel) — the few the site advertises but the hairdresser never
+  confirmed start `is_active = false`, for the salon to turn on once she
+  does. `./deploy.sh` never calls `db:seed` itself, so in production this
+  only runs once someone does it by hand — the documented first-deploy
+  step under "Production deploys" > "First deploy order" below, not
+  something that happens automatically on every `./deploy.sh` (2026-10-07,
+  review `pr-8-final.md` M1 — `.ai/specs/reservas.md` said the opposite).
+  Editing a service afterwards
   (from the panel, or by re-running this seeder) never changes an
   appointment that already booked it: its name, duration and price are
   copied once into `appointment_services` at booking time (PRF-126), never
@@ -438,14 +444,18 @@ Blocking prerequisites, all pending as of 2026-10-03:
   does, **stop**: the edited version would never be applied (e.g.
   `appointments` would lack `services_label`), so ask the user before
   going further. See also "Production database".
-- **Admin account:** after deploying, create at least one with
-  `php artisan admin:create-user` (as `deploy`). `php artisan db:seed`
-  (if ever run) seeds the real service catalogue (`ServiceCatalogSeeder`)
-  but never an account; run `db:seed --class=AdminUsersSeeder` only if
-  asked to by name. The salon still reviews/edits the seeded catalogue
+- **Admin account and service catalogue:** see "First deploy order" below
+  for the exact sequence — create at least one account with
+  `php artisan admin:create-user` (as `deploy`), turn off "Reserva online
+  activa" in `/admin/ajustes`, then seed the real catalogue with
+  `php artisan db:seed --class=ServiceCatalogSeeder --force` (as
+  `deploy`; it is idempotent by name, safe to re-run). `db:seed` never
+  seeds an account on its own; run `db:seed --class=AdminUsersSeeder` only
+  if asked to by name. The salon still reviews/edits the seeded catalogue
   (and activates the services marked "a confirmar") in
-  `/admin/servicios`. Until at least one bookable service is active,
-  `/reservas` shows the "call or WhatsApp" message.
+  `/admin/servicios` before the switch is turned back on. Until at least
+  one bookable service is active and the switch is on, `/reservas` shows
+  the "call or WhatsApp" message.
 - **Cron:** add the entry above.
 - **nginx:** confirm the server config adds no HTML caching of its own —
   not just for `/reservas`/`/cita/` (`no-store`), but for every other
@@ -453,6 +463,48 @@ Blocking prerequisites, all pending as of 2026-10-03:
   either, only an app-level ETag with `no-cache` (`App\Http\Middleware\CacheHeaders`,
   `NGINX-CACHE-CONFIG.md`). Static assets (images, fonts, `/build/`) keep
   their long cache in nginx, untouched.
+
+### First deploy order
+
+The prerequisites above, in the order they actually need to run, so
+online booking never opens with the default, unreviewed catalogue and no
+account yet to turn it off (decision 2026-10-07, review `pr-8-final.md`
+M1 — `./deploy.sh`'s migrations already set `online_booking_enabled =
+true` by default, before any service exists):
+
+1. Set the VPS `.env` (mail settings, `SESSION_SECURE_COOKIE=true`,
+   `APP_ENV`, `APP_DEBUG`, `APP_URL` — see "Mailbox and SMTP" and the
+   `SESSION_SECURE_COOKIE` bullet above) and run
+   `php artisan deploy:check --smtp` as `deploy`.
+2. `./deploy.sh`. After this, `services` is still empty, so `/reservas`
+   already answers with the safe "llámanos" message
+   (`lang/es/reservas.php`'s `no_services`) rather than opening — even
+   though the switch defaults to on.
+3. `php artisan admin:create-user` (as `deploy`) — create at least one
+   panel account.
+4. Log into `/admin/ajustes` with that account and turn off "Reserva
+   online activa" **before** seeding the catalogue: the panel is the
+   only way to change it, there is no artisan command for it, which is
+   why the account (step 3) has to come first.
+5. `php artisan db:seed --class=ServiceCatalogSeeder --force` (as
+   `deploy`) — seeds the real 24-service catalogue. `--force` is
+   required because `db:seed` prompts for confirmation when
+   `APP_ENV=production`.
+6. The salon reviews/edits the seeded catalogue (prices, the services
+   marked "a confirmar", durations) in `/admin/servicios`, and the
+   weekly schedule in `/admin/horario`.
+7. Turn "Reserva online activa" back on in `/admin/ajustes` once the
+   salon is happy with the catalogue and schedule.
+8. Add the cron entry (see "Cron" above).
+9. Confirm nginx adds no HTML caching of its own (see "nginx" above).
+
+This order was chosen over seeding the catalogue right after `./deploy.sh`
+and before any account exists: that would either leave the switch on (so
+online booking opens instantly with the default schedule and unreviewed
+services) or require turning it off by hand with `tinker` before any
+account exists — an undocumented workaround this project avoids. Steps 3
+and 4 only use `admin:create-user` and the panel, both already documented
+elsewhere.
 
 ### Before the first real deploy
 
