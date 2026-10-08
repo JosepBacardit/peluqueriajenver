@@ -70,7 +70,7 @@ test('a logged in user can log out and the admin asks for access again', functio
 });
 
 test('the login screen is not indexable', function () {
-    $this->get(route('login'))->assertSee('noindex', false);
+    $this->get(route('login'))->assertSee('<meta name="robots" content="noindex, nofollow">', false);
 });
 
 test('login is also throttled per connection when the email keeps changing', function () {
