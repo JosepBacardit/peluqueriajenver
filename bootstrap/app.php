@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(\App\Http\Middleware\CacheHeaders::class);
         $middleware->prepend(\App\Http\Middleware\OptimizeImages::class);
+        $middleware->append(\App\Http\Middleware\NoIndexAdmin::class);
 
         // The only authenticated area is the salon's admin panel.
         $middleware->redirectGuestsTo(fn () => route('login'));
