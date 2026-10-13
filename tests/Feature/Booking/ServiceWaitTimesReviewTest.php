@@ -79,7 +79,8 @@ test('L4: the error of a total over 10 hours is tied to the steps', function () 
 
 test('L5: an appointment whose stored waits do not fit is read as one with no waits, never a 500', function () {
     Log::spy();
-    BookingSetting::current()->update(['capacity' => 1, 'min_notice_minutes' => 0]);
+    setStaffCount(1);
+    BookingSetting::current()->update(['min_notice_minutes' => 0]);
     // A wait running past the end of a 60-minute appointment.
     $broken = Appointment::factory()->create(['starts_at' => '2030-01-08 10:00', 'ends_at' => '2030-01-08 11:00', 'waits' => [['start' => 30, 'minutes' => 45]]]);
 

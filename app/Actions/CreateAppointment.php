@@ -57,6 +57,11 @@ class CreateAppointment
      * (appointment_services, PRF-126) are written in this same transaction,
      * after the lock, so a booking never exists without its services.
      *
+     * $hairdresserId is the hairdresser the customer asked for (PRF-164),
+     * or null for any hairdresser: the appointment is left unassigned and
+     * the salon assigns it whenever it can. A booking made with a
+     * hairdresser records that the customer chose her.
+     *
      * @param  Collection<int, Service>  $services
      * @param  array{customer_name: string, customer_phone: string, customer_email: string|null, notes: string|null}  $customer
      *
@@ -72,13 +77,14 @@ class CreateAppointment
         AppointmentSource $source,
         bool $applyPublicRules,
         ?CarbonImmutable $now = null,
+        ?int $hairdresserId = null,
     ): Appointment {
         $now ??= CarbonImmutable::now();
         $email = $customer['customer_email'] === null ? null : Str::lower(trim($customer['customer_email']));
         $services = ServiceList::ordered($services);
         $profile = TimeProfile::fromServices($services);
 
-        return DB::transaction(function () use ($services, $profile, $startsAt, $customer, $source, $applyPublicRules, $now, $email): Appointment {
+        return DB::transaction(function () use ($services, $profile, $startsAt, $customer, $source, $applyPublicRules, $now, $email, $hairdresserId): Appointment {
             BookingSetting::query()->lockForUpdate()->orderBy('id')->firstOrFail();
 
             if ($email !== null && Appointment::query()->confirmed()
@@ -92,7 +98,7 @@ class CreateAppointment
                 throw new TooManyUpcomingAppointmentsException;
             }
 
-            if (! $this->calculator->isAvailable($profile, $startsAt, $now, $applyPublicRules)) {
+            if (! $this->calculator->isAvailable($profile, $startsAt, $now, $applyPublicRules, hairdresserId: $hairdresserId)) {
                 throw new SlotUnavailableException;
             }
 
@@ -101,6 +107,8 @@ class CreateAppointment
                 'starts_at' => $startsAt,
                 'ends_at' => $startsAt->addMinutes($profile->durationMinutes),
                 'waits' => $profile->waitsForStorage(),
+                'hairdresser_id' => $hairdresserId,
+                'hairdresser_requested' => $hairdresserId !== null,
                 'customer_name' => trim($customer['customer_name']),
                 'customer_phone' => trim($customer['customer_phone']),
                 'customer_email' => $email,

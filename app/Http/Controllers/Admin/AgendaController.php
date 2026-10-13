@@ -101,9 +101,9 @@ class AgendaController extends Controller
             // carries is_bookable_online on every active service.
             'hasBookableOnlineService' => $services->contains('is_bookable_online', true),
             ...match ($vista) {
-                'semana' => $this->weekData($weekStart, $servicios, $settings->capacity),
+                'semana' => $this->weekData($weekStart, $servicios, AvailabilityCalculator::activeStaff()),
                 'mes' => $this->monthData($month),
-                default => $this->dayData($day, $servicios, $settings->capacity),
+                default => $this->dayData($day, $servicios, AvailabilityCalculator::activeStaff()),
             },
         ]);
     }
@@ -203,7 +203,7 @@ class AgendaController extends Controller
      *
      * @return array{appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>, gridStart: int, gridEnd: int, timeline: array, nowLineTop: int|null}
      */
-    private function dayData(CarbonImmutable $day, Collection $servicios, int $capacity): array
+    private function dayData(CarbonImmutable $day, Collection $servicios, array $staff): array
     {
         $appointments = Appointment::query()
             ->where('starts_at', '>=', $day)
@@ -221,8 +221,8 @@ class AgendaController extends Controller
         $dayRanges = $allRanges->where('weekday', $day->isoWeekday())->sortBy('opens_at')->values();
         $now = CarbonImmutable::now();
 
-        $timeline = DayTimeline::build($day, $bounds['start'], $bounds['end'], $capacity, $dayRanges, $appointments, $blocks, $now);
-        $timeline = $this->markServiceFit($timeline, $servicios, $day, $dayRanges, $appointments, $blocks, $capacity);
+        $timeline = DayTimeline::build($day, $bounds['start'], $bounds['end'], count($staff), $dayRanges, $appointments, $blocks, $now);
+        $timeline = $this->markServiceFit($timeline, $servicios, $day, $dayRanges, $appointments, $blocks, $staff);
 
         return [
             'appointments' => $appointments,
@@ -245,7 +245,7 @@ class AgendaController extends Controller
      *
      * @param  Collection<int, Service>  $servicios
      */
-    private function markServiceFit(array $timeline, Collection $servicios, CarbonImmutable $day, Collection $ranges, Collection $appointments, Collection $blocks, int $capacity): array
+    private function markServiceFit(array $timeline, Collection $servicios, CarbonImmutable $day, Collection $ranges, Collection $appointments, Collection $blocks, array $staff): array
     {
         if ($servicios->isEmpty()) {
             return $timeline;
@@ -253,7 +253,7 @@ class AgendaController extends Controller
 
         $profile = TimeProfile::fromServices($servicios);
         $candidates = DayTimeline::tappableFreeMinutes($timeline);
-        $fitting = $this->calculator->fittingStartMinutes($profile, $candidates, $day, $ranges, $appointments, $blocks, $capacity);
+        $fitting = $this->calculator->fittingStartMinutes($profile, $candidates, $day, $ranges, $appointments, $blocks, $staff);
 
         return DayTimeline::markServiceFit($timeline, $fitting, $profile);
     }
@@ -267,7 +267,7 @@ class AgendaController extends Controller
      *
      * @return array{days: list<array{date: CarbonImmutable, appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>, isClosed: bool, hasPartialClosure: bool, isToday: bool, timeline: array}>, gridStart: int, gridEnd: int}
      */
-    private function weekData(CarbonImmutable $weekStart, Collection $servicios, int $capacity): array
+    private function weekData(CarbonImmutable $weekStart, Collection $servicios, array $staff): array
     {
         $weekEnd = $weekStart->addWeek();
 
@@ -303,8 +303,8 @@ class AgendaController extends Controller
             $hasFullClosure = $dayBlocks->contains(fn (ScheduleBlock $b) => $b->capacity_reduction === null);
             $isClosed = ! in_array($date->isoWeekday(), $openWeekdays, true) || $hasFullClosure;
 
-            $timeline = DayTimeline::build($date, $bounds['start'], $bounds['end'], $capacity, $dayRanges, $dayAppointments, $dayBlocks, $now);
-            $timeline = $this->markServiceFit($timeline, $servicios, $date, $dayRanges, $dayAppointments, $dayBlocks, $capacity);
+            $timeline = DayTimeline::build($date, $bounds['start'], $bounds['end'], count($staff), $dayRanges, $dayAppointments, $dayBlocks, $now);
+            $timeline = $this->markServiceFit($timeline, $servicios, $date, $dayRanges, $dayAppointments, $dayBlocks, $staff);
 
             $days[] = [
                 'date' => $date,

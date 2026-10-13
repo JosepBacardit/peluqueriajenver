@@ -25,7 +25,8 @@ uses(RefreshDatabase::class);
  * "now" is the evening before; capacity 1 unless a test says otherwise.
  */
 beforeEach(function () {
-    BookingSetting::current()->update(['capacity' => 1, 'min_notice_minutes' => 0, 'slot_interval_minutes' => 5]);
+    setStaffCount(1);
+    BookingSetting::current()->update(['min_notice_minutes' => 0, 'slot_interval_minutes' => 5]);
     $this->now = CarbonImmutable::parse('2030-01-07 20:00');
     $this->corte = Service::factory()->create(['name' => 'Corte de Pelo Hombre', 'duration_minutes' => 15, 'price_cents' => 1200, 'sort_order' => 1]);
     $this->barba = Service::factory()->create(['name' => 'Corte/Arreglo barba', 'duration_minutes' => 10, 'price_cents' => 800, 'sort_order' => 2]);
@@ -115,7 +116,7 @@ test('availability is checked for the whole length of the services', function ()
 });
 
 test('an appointment with several services takes a single place', function () {
-    BookingSetting::current()->update(['capacity' => 2]);
+    setStaffCount(2);
 
     bookServices([$this->corte, $this->barba], customer: multiCustomer('a@example.test', '611 000 001'));
     bookServices([$this->corte], customer: multiCustomer('b@example.test', '611 000 002'));

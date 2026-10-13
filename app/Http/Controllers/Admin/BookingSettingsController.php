@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\BookingSettingsRequest;
 use App\Models\BookingSetting;
+use App\Models\Hairdresser;
 use App\Models\Service;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -19,6 +20,7 @@ class BookingSettingsController extends Controller
             // PRF-148: this admin page has no fixed query budget, unlike
             // the agenda (PRF-109/PRF-118), so one extra read here is fine.
             'hasBookableOnlineService' => Service::query()->bookableOnline()->exists(),
+            'activeHairdressers' => Hairdresser::query()->active()->count(),
         ]);
     }
 

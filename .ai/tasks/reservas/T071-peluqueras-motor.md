@@ -5,7 +5,7 @@
 - **Depende de:** T070
 - **Modelo:** Claude Opus 5.5 · **Esfuerzo:** `high`
 - **Motivo:** Cambia el cálculo que evita el *overbooking* en la web, el panel y «Cabe».
-- **Estado:** in progress
+- **Estado:** done
 - **PR / rama:** `feature/hairdresser-choice` (desde `main` `b3e879f`).
 
 ## Objetivo

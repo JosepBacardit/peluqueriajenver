@@ -15,7 +15,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    BookingSetting::current()->update(['capacity' => 2, 'min_notice_minutes' => 0]);
+    setStaffCount(2);
+    BookingSetting::current()->update(['min_notice_minutes' => 0]);
     $this->now = CarbonImmutable::parse('2030-01-07 20:00');
     $this->service = Service::factory()->create(['name' => 'Corte', 'duration_minutes' => 60]);
 });
@@ -86,7 +87,7 @@ test('the same email cannot hold two confirmed appointments at the same time', f
 
 test('cancelling frees the slot and keeps the appointment', function () {
     $start = CarbonImmutable::parse('2030-01-08 10:00');
-    BookingSetting::current()->update(['capacity' => 1]);
+    setStaffCount(1);
     $appointment = app(CreateAppointment::class)->handle(collect([$this->service]), $start, customerData(), AppointmentSource::Web, true, $this->now);
 
     app(CancelAppointment::class)->handle($appointment);

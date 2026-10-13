@@ -16,7 +16,6 @@ beforeEach(function () {
 function bookingSettingsPayload(array $overrides = []): array
 {
     return array_merge([
-        'capacity' => 3,
         'slot_interval_minutes' => 30,
         'min_notice_minutes' => 60,
         'max_advance_days' => 90,
@@ -27,13 +26,26 @@ function bookingSettingsPayload(array $overrides = []): array
 test('a fresh install has the agreed default booking settings', function () {
     $settings = BookingSetting::current();
 
-    expect($settings->capacity)->toBe(2);
     expect($settings->slot_interval_minutes)->toBe(15);
     expect($settings->min_notice_minutes)->toBe(120);
     expect($settings->max_advance_days)->toBe(60);
     expect($settings->cancellation_limit_hours)->toBe(24);
+});
 
-    $this->get(route('admin.settings.edit'))->assertOk()->assertSee('Capacidad');
+test('the capacity is no longer a setting: Ajustes shows the number of active hairdressers', function () {
+    setStaffCount(3);
+
+    $this->get(route('admin.settings.edit'))
+        ->assertOk()
+        ->assertDontSee('name="capacity"', false)
+        ->assertSee('Citas a la vez: 3, tantas como peluqueras activas.');
+});
+
+test('a capacity sent with the settings is ignored', function () {
+    $this->put(route('admin.settings.update'), bookingSettingsPayload(['capacity' => 7]))
+        ->assertSessionHasNoErrors();
+
+    expect(BookingSetting::current()->capacity)->toBe(2);
 });
 
 test('a salon user can change the booking settings', function () {
@@ -41,7 +53,6 @@ test('a salon user can change the booking settings', function () {
         ->assertRedirect(route('admin.settings.edit'));
 
     $settings = BookingSetting::current();
-    expect($settings->capacity)->toBe(3);
     expect($settings->slot_interval_minutes)->toBe(30);
     expect($settings->min_notice_minutes)->toBe(60);
     expect($settings->max_advance_days)->toBe(90);
@@ -54,10 +65,8 @@ test('settings outside their limits are rejected without changes', function (arr
         ->put(route('admin.settings.update'), bookingSettingsPayload($overrides))
         ->assertSessionHasErrors($field);
 
-    expect(BookingSetting::current()->capacity)->toBe(2);
+    expect(BookingSetting::current()->slot_interval_minutes)->toBe(15);
 })->with([
-    'zero capacity' => [['capacity' => 0], 'capacity'],
-    'capacity over 10' => [['capacity' => 11], 'capacity'],
     'interval of 25' => [['slot_interval_minutes' => 25], 'slot_interval_minutes'],
     'negative minimum notice' => [['min_notice_minutes' => -1], 'min_notice_minutes'],
     'minimum notice over 7 days' => [['min_notice_minutes' => 10081], 'min_notice_minutes'],
@@ -70,7 +79,7 @@ test('the settings module requires an authenticated user', function () {
     auth()->logout();
 
     $this->put(route('admin.settings.update'), bookingSettingsPayload())->assertRedirect(route('login'));
-    expect(BookingSetting::current()->capacity)->toBe(2);
+    expect(BookingSetting::current()->slot_interval_minutes)->toBe(15);
 });
 
 /**

@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Appointment;
-use App\Models\BookingSetting;
 use App\Models\Service;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -104,7 +103,7 @@ test('a fitting hueco gets a subtle left stripe, not a full border', function ()
  * to overlap it no longer fits there, in any lane.
  */
 test('a service that would exceed capacity does not fit, regardless of lane', function () {
-    BookingSetting::current()->update(['capacity' => 1]);
+    setStaffCount(1);
     Appointment::factory()->create(['starts_at' => '2030-01-08 10:00', 'ends_at' => '2030-01-08 10:30']);
     $service = Service::factory()->create(['name' => 'Corte', 'duration_minutes' => 60]);
 

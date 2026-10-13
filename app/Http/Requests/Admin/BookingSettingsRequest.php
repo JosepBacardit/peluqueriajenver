@@ -19,7 +19,6 @@ class BookingSettingsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'capacity' => ['required', 'integer', 'between:1,10'],
             'slot_interval_minutes' => ['required', 'integer', Rule::in(BookingSetting::SLOT_INTERVALS)],
             'min_notice_minutes' => ['required', 'integer', 'between:0,10080'],
             'max_advance_days' => ['required', 'integer', 'between:1,365'],
