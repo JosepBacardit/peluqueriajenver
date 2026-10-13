@@ -1,6 +1,7 @@
 <?php
 
 use App\Booking\AppointmentLaneAssigner;
+use App\Booking\AvailabilityCalculator;
 use App\Models\Appointment;
 use App\Models\Hairdresser;
 use App\Models\ScheduleBlock;
@@ -161,3 +162,58 @@ test('the month view with the filter counts only her appointments', function () 
     expect($all)->toContain('3 citas');
     expect($isabel)->toContain('2 citas')->not->toContain('3 citas');
 });
+
+test('the agenda finds the way to share the day out that the engine accepted, with no false "Sobre capacidad"', function () {
+    // Review M1: anybody 10:00-10:30, Isabel 10:40-11:00, anybody 10:15-11:00.
+    $first = agendaAppointment('10:00', '10:30');
+    $isabels = agendaAppointment('10:40', '11:00', $this->isabel);
+    $second = agendaAppointment('10:15', '11:00');
+    $map = [$this->jennifer->id => 0, $this->isabel->id => 1];
+
+    $result = AppointmentLaneAssigner::assign(collect([$first, $isabels, $second]), 2, $map);
+
+    expect($result['maxLanes'])->toBe(2)
+        ->and($result['lanes'][AppointmentLaneAssigner::key($first, 0)])->toBe(1)
+        ->and($result['lanes'][AppointmentLaneAssigner::key($second, 0)])->toBe(0)
+        ->and(array_filter($result['overCapacity']))->toBe([]);
+});
+
+/*
+ * Review M1/L4: on random days built only from bookings the engine
+ * accepted (for a hairdresser or for anybody, with blocks of one
+ * hairdresser), the agenda never needs "Sobre capacidad".
+ */
+test('a day built only from accepted bookings never shows "Sobre capacidad"', function (int $seed) {
+    mt_srand($seed);
+    setStaffCount(mt_rand(2, 3));
+    $staff = AvailabilityCalculator::activeStaff();
+    $calculator = app(AvailabilityCalculator::class);
+    $now = CarbonImmutable::parse('2030-01-07 20:00');
+    $time = fn (int $minute) => sprintf('%02d:%02d', intdiv($minute, 60), $minute % 60);
+
+    for ($i = mt_rand(0, 2); $i > 0; $i--) {
+        $start = mt_rand(9 * 4, 17 * 4) * 15;
+        ScheduleBlock::create(['starts_at' => "2030-01-08 {$time($start)}", 'ends_at' => "2030-01-08 {$time($start + 60)}", 'capacity_reduction' => 1, 'hairdresser_id' => $staff[mt_rand(0, count($staff) - 1)]]);
+    }
+
+    for ($attempt = 0; $attempt < 30; $attempt++) {
+        $start = mt_rand(9 * 12, 17 * 12) * 5;
+        $length = [15, 30, 45, 60, 90][mt_rand(0, 4)];
+        $hairdresser = mt_rand(0, 1) === 1 ? null : $staff[mt_rand(0, count($staff) - 1)];
+
+        if ($calculator->isAvailable($length, CarbonImmutable::parse("2030-01-08 {$time($start)}"), $now, false, hairdresserId: $hairdresser)) {
+            agendaAppointment($time($start), $time($start + $length), $hairdresser === null ? null : Hairdresser::find($hairdresser));
+        }
+    }
+
+    $map = array_flip($staff);
+    $away = [];
+    foreach (ScheduleBlock::all() as $block) {
+        $away[$map[$block->hairdresser_id]][] = [$block->starts_at, $block->ends_at];
+    }
+
+    $result = AppointmentLaneAssigner::assign(Appointment::all(), count($staff), $map, $away);
+
+    expect(array_filter($result['overCapacity']))->toBe([])
+        ->and($result['maxLanes'])->toBe(count($staff));
+})->with(range(1, 25));

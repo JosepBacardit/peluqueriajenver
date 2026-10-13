@@ -87,20 +87,49 @@ class AppointmentLaneAssigner
             }
         }
 
-        foreach ($unplaced as $stretch) {
-            $previous = $stretch['index'] > 0 ? ($lanes[self::key($stretch['appointment'], $stretch['index'] - 1)] ?? null) : null;
-            $free = array_values(array_filter(array_keys($placed), fn (int $lane) => self::isFree($placed[$lane], $stretch['start'], $stretch['end'])));
-            $preferred = array_values(array_intersect($preferredLanes[$stretch['appointment']->id] ?? [], $free));
+        // Review M1: group by group (stretches that overlap), keep the
+        // greedy placement when it fits in the hairdressers' lanes; when it
+        // does not, look for an exact one (StaffAssignment, the same search
+        // AvailabilityCalculator uses), and only if there is none send
+        // what does not fit to "Sobre capacidad".
+        $intervals = array_map(fn (array $stretch) => [$stretch['start']->getTimestamp(), $stretch['end']->getTimestamp()], $unplaced);
 
-            $lane = match (true) {
-                $previous !== null && in_array($previous, $free, true) => $previous,
-                $preferred !== [] => $preferred[0],
-                $free !== [] => $free[0],
-                default => count($placed),
-            };
+        foreach (StaffAssignment::groups($intervals) as $group) {
+            $greedyPlaced = $placed;
+            $greedyLanes = $lanes;
 
-            $placed[$lane][] = [$stretch['start'], $stretch['end']];
-            $lanes[$stretch['key']] = $lane;
+            foreach ($group as $index) {
+                $stretch = $unplaced[$index];
+                $previous = $stretch['index'] > 0 ? ($greedyLanes[self::key($stretch['appointment'], $stretch['index'] - 1)] ?? null) : null;
+                $free = array_values(array_filter(array_keys($greedyPlaced), fn (int $lane) => self::isFree($greedyPlaced[$lane], $stretch['start'], $stretch['end'])));
+                $preferred = array_values(array_intersect($preferredLanes[$stretch['appointment']->id] ?? [], $free));
+
+                $lane = match (true) {
+                    $previous !== null && in_array($previous, $free, true) => $previous,
+                    $preferred !== [] => $preferred[0],
+                    $free !== [] => $free[0],
+                    default => count($greedyPlaced),
+                };
+
+                $greedyPlaced[$lane][] = [$stretch['start'], $stretch['end']];
+                $greedyLanes[$stretch['key']] = $lane;
+            }
+
+            $overflows = array_filter($group, fn (int $index) => $greedyLanes[$unplaced[$index]['key']] >= $capacity) !== [];
+            $exact = $overflows
+                ? self::exactPlacement($group, $unplaced, $intervals, $placed, $capacity, $lanes, $preferredLanes)
+                : null;
+
+            if ($exact === null) {
+                [$placed, $lanes] = [$greedyPlaced, $greedyLanes];
+
+                continue;
+            }
+
+            foreach ($exact as $index => $lane) {
+                $placed[$lane][] = [$unplaced[$index]['start'], $unplaced[$index]['end']];
+                $lanes[$unplaced[$index]['key']] = $lane;
+            }
         }
 
         $maxLanes = max($capacity, count($placed));
@@ -111,6 +140,41 @@ class AppointmentLaneAssigner
             'overCapacity' => array_map(fn (int $lane) => $lane >= $capacity, $lanes),
             'stretches' => $stretches,
         ];
+    }
+
+    /**
+     * An exact placement of one group of unassigned stretches in the
+     * hairdressers' lanes (0 to $capacity - 1), preferring the lane of the
+     * appointment's previous stretch and then $preferredLanes, or null
+     * when there is none.
+     *
+     * @param  list<int>  $group  indexes into $unplaced
+     * @param  list<array>  $unplaced
+     * @param  list<array{0: int, 1: int}>  $intervals  $unplaced as timestamps
+     * @param  array<int, list<array{0: CarbonImmutable, 1: CarbonImmutable}>>  $placed
+     * @param  array<string, int>  $lanes
+     * @param  array<int, list<int>>  $preferredLanes
+     * @return array<int, int>|null index into $unplaced => lane
+     */
+    private static function exactPlacement(array $group, array $unplaced, array $intervals, array $placed, int $capacity, array $lanes, array $preferredLanes): ?array
+    {
+        $busy = [];
+
+        for ($lane = 0; $lane < $capacity; $lane++) {
+            $busy[$lane] = array_map(fn (array $interval) => [$interval[0]->getTimestamp(), $interval[1]->getTimestamp()], $placed[$lane] ?? []);
+        }
+
+        $jobs = array_map(fn (int $index) => $intervals[$index], $group);
+        $preference = array_map(function (int $index) use ($unplaced, $lanes, $preferredLanes) {
+            $stretch = $unplaced[$index];
+            $previous = $stretch['index'] > 0 ? ($lanes[self::key($stretch['appointment'], $stretch['index'] - 1)] ?? null) : null;
+
+            return array_values(array_unique(array_merge($previous === null ? [] : [$previous], $preferredLanes[$stretch['appointment']->id] ?? [])));
+        }, $group);
+
+        $solution = StaffAssignment::solve($capacity, $busy, $jobs, $preference);
+
+        return $solution === null ? null : array_combine(array_map(fn (int $position) => $group[$position], array_keys($solution)), array_values($solution));
     }
 
     public static function key(Appointment $appointment, int $index): string
