@@ -70,6 +70,33 @@
                     </ul>
                     </fieldset>
 
+                    {{-- PRF-166: any hairdresser (checked by default) or
+                         one by name; only her name is ever shown. --}}
+                    <fieldset class="mb-6">
+                        <legend class="font-serif text-xl text-white mb-4">{{ __('reservas.hairdresser.legend') }}</legend>
+                        <ul class="grid sm:grid-cols-2 gap-4">
+                            <li>
+                                <label class="flex items-center justify-between gap-4 min-h-11 border border-[#2A2A2A] hover:border-gold p-5 transition-colors cursor-pointer">
+                                    <span>
+                                        <span class="block text-white font-semibold">{{ __('reservas.hairdresser.any') }}</span>
+                                        <span class="block text-sm text-gray-400">{{ __('reservas.hairdresser.any_help') }}</span>
+                                    </span>
+                                    <input type="radio" name="peluquera" value="" @checked($hairdresser === null) class="w-5 h-5 shrink-0 accent-gold">
+                                </label>
+                            </li>
+                            @foreach ($hairdressers as $hairdresserOption)
+                                <li>
+                                    <label class="flex items-center justify-between gap-4 min-h-11 border border-[#2A2A2A] hover:border-gold p-5 transition-colors cursor-pointer">
+                                        <span>
+                                            <span class="block text-white font-semibold">{{ $hairdresserOption->name }}</span>
+                                        </span>
+                                        <input type="radio" name="peluquera" value="{{ $hairdresserOption->id }}" @checked($hairdresser?->id === $hairdresserOption->id) class="w-5 h-5 shrink-0 accent-gold">
+                                    </label>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </fieldset>
+
                     <button type="submit" class="btn-gold">{{ __('reservas.view_days') }}</button>
                 </form>
             </div>
@@ -80,6 +107,7 @@
                          internal number for the salon; only the chosen
                          services' names are shown here. --}}
                     <span class="text-gold">{{ \App\Booking\ServiceList::label($selectedServices->pluck('name')) }}</span>
+                    <span class="block text-sm text-gray-300">{{ $hairdresser === null ? __('reservas.hairdresser.any') : __('reservas.hairdresser.with', ['name' => $hairdresser->name]) }}</span>
                 </p>
                 {{-- Back to step 1 with this choice still checked (review
                      finding L6). --}}
