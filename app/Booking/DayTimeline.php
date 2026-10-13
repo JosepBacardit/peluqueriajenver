@@ -393,11 +393,11 @@ class DayTimeline
         // the old "plaza N" when no hairdresser is named.
         $laneNames = array_map(
             fn (int $lane) => $lane >= $capacity ? 'Sobre capacidad' : ($hairdressers[$lane]['name'] ?? 'Plaza '.($lane + 1)),
-            range(0, $maxLanes - 1),
+            $maxLanes > 0 ? range(0, $maxLanes - 1) : [],
         );
         $laneLabels = array_map(
             fn (int $lane) => $lane >= $capacity ? 'columna extra' : (isset($hairdressers[$lane]) ? 'columna de '.$hairdressers[$lane]['name'] : 'plaza '.($lane + 1)),
-            range(0, $maxLanes - 1),
+            $maxLanes > 0 ? range(0, $maxLanes - 1) : [],
         );
 
         $pieces = [];

@@ -2,6 +2,7 @@
 
 use App\Booking\AppointmentLaneAssigner;
 use App\Booking\AvailabilityCalculator;
+use App\Booking\DayTimeline;
 use App\Models\Appointment;
 use App\Models\Hairdresser;
 use App\Models\ScheduleBlock;
@@ -217,3 +218,19 @@ test('a day built only from accepted bookings never shows "Sobre capacidad"', fu
     expect(array_filter($result['overCapacity']))->toBe([])
         ->and($result['maxLanes'])->toBe(count($staff));
 })->with(range(1, 25));
+
+test('with every hairdresser deactivated the agenda still shows, with no columns or only the forced ones', function () {
+    // Review L2.
+    Hairdresser::query()->update(['is_active' => false]);
+
+    $empty = $this->get(route('admin.agenda', ['fecha' => '2030-01-08']))->assertOk()->getContent();
+    expect($empty)->not->toContain('Plaza 0')->not->toContain('Hueco libre');
+
+    $timeline = DayTimeline::build(CarbonImmutable::parse('2030-01-08'), 9 * 60, 19 * 60, 0, collect(), collect(), collect(), CarbonImmutable::parse('2030-01-07 10:00'));
+    expect($timeline['laneNames'])->toBe([])->and($timeline['laneLabels'])->toBe([]);
+
+    agendaAppointment('10:00', '11:00', null, ['customer_name' => 'Rosa Vidal']);
+    $this->get(route('admin.agenda', ['fecha' => '2030-01-08']))
+        ->assertOk()
+        ->assertSee('Rosa Vidal, cualquier peluquera, sobre capacidad, columna extra', false);
+});
