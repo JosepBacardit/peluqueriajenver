@@ -16,6 +16,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreAdminAppointmentRequest;
 use App\Http\Requests\Admin\UpdateAdminAppointmentRequest;
 use App\Models\Appointment;
+use App\Models\Hairdresser;
 use App\Models\Service;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,9 +31,14 @@ class AppointmentController extends Controller
     public function create(Request $request): View
     {
         $services = Service::query()->where('is_active', true)->ordered()->get();
+        $hairdressers = Hairdresser::query()->active()->ordered()->get();
 
         return view('admin.appointments.create', [
             'services' => $services,
+            'hairdressers' => $hairdressers,
+            // PRF-172: preselected from the agenda's hairdresser filter;
+            // anything but an active hairdresser leaves "Cualquiera".
+            'peluquera' => $hairdressers->firstWhere('id', AgendaController::peluqueraIdFromQuery($request->query('peluquera')))?->id,
             'day' => AgendaController::dayFromQuery($request->query('fecha')),
             // Review finding M1: where to return to after saving, instead
             // of always landing on vista Día.
@@ -65,9 +71,11 @@ class AppointmentController extends Controller
         $startsAt = $request->startsAt();
 
         try {
-            $appointment = $createAppointment->handle($services, $startsAt, $request->customer(), AppointmentSource::Admin, applyPublicRules: false);
+            $appointment = $createAppointment->handle($services, $startsAt, $request->customer(), AppointmentSource::Admin, applyPublicRules: false, hairdresserId: $request->hairdresserId());
         } catch (SlotUnavailableException) {
-            return back()->withInput()->withErrors(['time' => 'Esa hora no está disponible para este servicio.']);
+            return back()->withInput()->withErrors(['time' => $request->hairdresserId() === null
+                ? 'Esa hora no está disponible para este servicio.'
+                : 'Esa hora no está disponible para este servicio con esa peluquera.']);
         } catch (DuplicateAppointmentException) {
             return back()->withInput()->withErrors(['customer_email' => 'Este email ya tiene una cita confirmada a esa hora.']);
         }
@@ -97,6 +105,11 @@ class AppointmentController extends Controller
             // (the bug T046 flagged: the old single-<select> form only
             // ever sent one).
             'selectedIds' => $appointment->items->pluck('service_id')->all(),
+            // PRF-168: the active ones, plus hers even if she is not.
+            'hairdressers' => Hairdresser::query()
+                ->where(fn ($query) => $query->where('is_active', true)->when($appointment->hairdresser_id !== null, fn ($query) => $query->orWhere('id', $appointment->hairdresser_id)))
+                ->ordered()
+                ->get(),
             'volver' => self::volverParam($request->query('volver')),
         ]);
     }
@@ -118,6 +131,8 @@ class AppointmentController extends Controller
                 $appointment, $services, $request->startsAt(), $request->customer(),
                 ignoreHoursAndCapacity: $request->confirmsSlot(),
                 expectedVersion: $request->version(),
+                // The form always sends it; a request without it keeps hers.
+                hairdresserId: $request->has('hairdresser_id') ? $request->hairdresserId() : false,
             );
         } catch (AppointmentNotMovableException) {
             return self::notMovableResponse($appointment, $request);

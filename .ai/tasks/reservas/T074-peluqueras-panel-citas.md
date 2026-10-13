@@ -5,7 +5,7 @@
 - **Depende de:** T071, T073
 - **Modelo:** Claude Sonnet 5.5 · **Esfuerzo:** `medium`
 - **Motivo:** Formularios del panel sobre el motor ya hecho.
-- **Estado:** in progress
+- **Estado:** done
 - **PR / rama:** `feature/hairdresser-choice` (desde `main` `b3e879f`).
 
 ## Objetivo

@@ -4,7 +4,7 @@
 
 @section('content')
 <h1 class="font-serif text-3xl text-white mb-2">Editar cita</h1>
-<p class="text-sm text-gray-400 mb-6">Puedes cambiar el día, la hora, el servicio y los datos de la clienta. Se comprueban el horario y la capacidad; si la nueva hora está llena o fuera de horario, te avisaremos antes de guardar. Si cambias el día, la hora o el servicio y la clienta tiene email, le llegará un correo con los nuevos datos. Si cambias su email, le llegará a la dirección nueva un enlace nuevo a su cita y el anterior dejará de funcionar.</p>
+<p class="text-sm text-gray-400 mb-6">Puedes cambiar el día, la hora, el servicio, la peluquera y los datos de la clienta. Se comprueban el horario y la capacidad; si la nueva hora está llena o fuera de horario, te avisaremos antes de guardar. Si cambias el día, la hora o el servicio (o la peluquera que ella eligió) y la clienta tiene email, le llegará un correo con los nuevos datos. Si cambias su email, le llegará a la dirección nueva un enlace nuevo a su cita y el anterior dejará de funcionar.</p>
 
 @php
     // py-3 (not py-2): every field, including the date/time pickers, meets
@@ -74,6 +74,8 @@
         @if ($servicesError) <p id="service_ids-error" class="text-red-400 text-sm mt-1">{{ $servicesError }}</p> @endif
     </fieldset>
 
+    @include('admin.appointments._hairdresser-select', ['selectedHairdresserId' => $appointment->hairdresser_id])
+
     <div class="grid sm:grid-cols-2 gap-4">
         <div>
             <label for="date" class="block text-sm mb-1">Fecha</label>
@@ -129,7 +131,7 @@
     @if ($slotWarning)
         <div id="slot-warning" role="alert" tabindex="-1" aria-labelledby="slot-warning-title" aria-describedby="slot-warning-text" class="border border-amber-500/50 bg-amber-500/10 text-amber-200 px-4 py-4 space-y-3 focus:outline-none focus:ring-2 focus:ring-amber-400">
             <p id="slot-warning-title" class="font-semibold">{{ $slotReason?->adminMessage() ?? 'Esa hora no está disponible para este servicio.' }}</p>
-            <p id="slot-warning-text" class="text-sm">No se ha guardado nada. Puedes cambiar el día, la hora o el servicio y pulsar «Guardar cambios», o guardar la cita igualmente a esa hora: quedará en la agenda aunque se supere la capacidad o el horario.</p>
+            <p id="slot-warning-text" class="text-sm">No se ha guardado nada. Puedes cambiar el día, la hora, el servicio o la peluquera y pulsar «Guardar cambios», o guardar la cita igualmente a esa hora: quedará en la agenda aunque se supere la capacidad o el horario.</p>
             <button type="submit" name="force" value="{{ $slotWarning['key'] }}" class="btn-outline">Guardar igualmente</button>
         </div>
         {{-- Move the focus to the warning so keyboard and screen reader

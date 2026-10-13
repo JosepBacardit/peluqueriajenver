@@ -14,9 +14,9 @@ use Illuminate\Validation\Rule;
  *
  * `force` is the salon's explicit "save anyway" after the warning that the
  * new time is full or outside opening hours. The button carries the
- * service, date and time it was shown for (slotKey()), so it only
- * confirms that exact choice: if the salon changes any of them after the
- * warning, the new choice is checked (and warned about) again.
+ * service, date, time and hairdresser it was shown for (slotKey()), so it
+ * only confirms that exact choice: if the salon changes any of them after
+ * the warning, the new choice is checked (and warned about) again.
  *
  * `version` is the appointment's updated_at when the form was opened (see
  * RescheduleAppointment::handle()).
@@ -35,6 +35,10 @@ class UpdateAdminAppointmentRequest extends StoreAdminAppointmentRequest
             'service_ids.*' => ['distinct', 'integer', Rule::exists('services', 'id')->where(
                 fn (Builder $query) => $query->where('is_active', true)->orWhereIn('id', $appointment->items()->pluck('service_id'))
             )],
+            // Hers may stay even if she has been deactivated since.
+            'hairdresser_id' => ['nullable', 'integer', Rule::exists('hairdressers', 'id')->where(
+                fn (Builder $query) => $query->where('is_active', true)->when($appointment->hairdresser_id !== null, fn (Builder $query) => $query->orWhere('id', $appointment->hairdresser_id))
+            )],
             'force' => ['nullable', 'string', 'max:100'],
             'version' => ['required', 'integer'],
         ]);
@@ -42,14 +46,17 @@ class UpdateAdminAppointmentRequest extends StoreAdminAppointmentRequest
 
     /**
      * Identifies the service list (sorted, so the same set in any order
-     * matches), date and time a "save anyway" confirmation applies to.
+     * matches), date, time and hairdresser (PRF-168) a "save anyway"
+     * confirmation applies to.
      */
     public function slotKey(): string
     {
         $ids = $this->validated('service_ids');
         sort($ids);
 
-        return implode('|', [implode(',', $ids), $this->validated('date'), $this->validated('time')]);
+        $parts = [implode(',', $ids), $this->validated('date'), $this->validated('time')];
+
+        return implode('|', $this->hairdresserId() === null ? $parts : [...$parts, $this->hairdresserId()]);
     }
 
     public function version(): int

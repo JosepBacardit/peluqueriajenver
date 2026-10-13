@@ -57,6 +57,8 @@
         @if ($servicesError) <p id="service_ids-error" class="text-red-400 text-sm mt-1">{{ $servicesError }}</p> @endif
     </fieldset>
 
+    @include('admin.appointments._hairdresser-select', ['selectedHairdresserId' => $peluquera])
+
     <div class="grid sm:grid-cols-2 gap-4">
         <div>
             <label for="date" class="block text-sm mb-1">Fecha</label>

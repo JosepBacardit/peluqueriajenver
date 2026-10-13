@@ -136,6 +136,16 @@ class AgendaController extends Controller
     }
 
     /**
+     * The "peluquera" query value as a hairdresser id (PRF-172), or null
+     * when missing or not a positive integer. Whether she exists and is
+     * active is for the caller to check against the hairdressers it loads.
+     */
+    public static function peluqueraIdFromQuery(mixed $value): ?int
+    {
+        return is_string($value) && preg_match('/^[1-9]\d{0,9}$/', $value) === 1 ? (int) $value : null;
+    }
+
+    /**
      * The requested view (dia|semana|mes), or "dia" when missing or invalid.
      */
     public static function viewFromQuery(mixed $value): string
