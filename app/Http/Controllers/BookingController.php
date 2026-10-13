@@ -40,8 +40,9 @@ class BookingController extends Controller
         // 200 either way, so it never breaks a link or a bookmark — it
         // just shows a phone/WhatsApp page instead of the form while
         // either is missing.
-        if (! BookingSetting::onlineBookingAvailable()) {
-            return view('pages.reservas-disabled');
+        $available = BookingSetting::onlineBookingAvailable();
+        if (! $available) {
+            return view('pages.reservas-disabled', ['onlineBookingAvailable' => false]);
         }
 
         $services = Service::query()->bookableOnline()->ordered()->get();
@@ -58,6 +59,8 @@ class BookingController extends Controller
         // review finding L6): the choice comes back already checked.
         if ($selectedServices->isEmpty() || $request->boolean('cambiar')) {
             return view('pages.reservas', [
+                // Review L1: the header's links reuse it instead of asking again.
+                'onlineBookingAvailable' => true,
                 'services' => $services,
                 'hairdressers' => $hairdressers,
                 'hairdresser' => $hairdresser,
@@ -96,6 +99,7 @@ class BookingController extends Controller
             : null;
 
         return view('pages.reservas', [
+            'onlineBookingAvailable' => true,
             'services' => $services,
             'hairdressers' => $hairdressers,
             'hairdresser' => $hairdresser,

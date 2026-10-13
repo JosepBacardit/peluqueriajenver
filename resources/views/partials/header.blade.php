@@ -1,3 +1,6 @@
+{{-- Review L1: read once for the header's two links, or taken from the
+     controller when it already knows (BookingController shares it). --}}
+@php($onlineBookingAvailable ??= \App\Models\BookingSetting::onlineBookingAvailable())
 <!-- Announcement Bar -->
 <div id="announcement" class="fixed top-0 left-0 right-0 z-40 bg-black border-b border-gold/30 py-2 px-4 text-center text-[0.70rem] md:text-xs text-gray-300">
     <span class="inline-block">{{ __('navigation.announcement.location') }}</span>
@@ -43,7 +46,7 @@
 
             <!-- CTA Button (Desktop) -->
             <div class="hidden md:flex items-center">
-                @if (\App\Models\BookingSetting::onlineBookingAvailable())
+                @if ($onlineBookingAvailable)
                     <a href="{{ route('reservas') }}" class="btn-gold font-semibold text-sm">
                         {{ __('navigation.navbar.cta') }}
                     </a>
@@ -84,7 +87,7 @@
 
             <a href="{{ route('contacto') }}" class="block px-3 py-2 text-gray-300 hover:text-gold transition-colors">{{ __('navigation.navbar.menu.contact') }}</a>
             <div class="px-3 py-3 mt-2 border-t border-[#2A2A2A]">
-                @if (\App\Models\BookingSetting::onlineBookingAvailable())
+                @if ($onlineBookingAvailable)
                     <a href="{{ route('reservas') }}" class="btn-gold block text-center w-full text-sm font-semibold">
                         {{ __('navigation.navbar.cta') }}
                     </a>

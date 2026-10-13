@@ -281,13 +281,11 @@ test('the month calendar needs a small, fixed number of queries', function () {
     // one fixed query over onlineBookingEnabled() (a Service::bookableOnline()
     // existence check) — still independent of how many days/times/services
     // exist, just one more than before.
-    // 22, not 16 (PRF-162, PRF-166, PRF-173): each of the 3
-    // onlineBookingAvailable() calls of this page (the controller and the
-    // header's two links) also checks that a hairdresser is active, the
-    // page lists the hairdressers once with what they stand out in (one
-    // more) and the calendar reads the active ones once — still fixed,
-    // whatever the days or times.
-    expect($queries)->toBeLessThan(23);
+    // 16 (review L1): the page passes onlineBookingAvailable() to the
+    // header instead of asking it 3 times; the hairdressers (with what
+    // they stand out in) and the calendar's active ones add a fixed few.
+    // Still the same whatever the days or times.
+    expect($queries)->toBeLessThan(17);
 });
 
 test('the basic data-protection notice names the confirmed data controller', function () {
