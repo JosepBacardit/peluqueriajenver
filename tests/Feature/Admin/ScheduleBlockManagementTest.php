@@ -133,18 +133,21 @@ test('the warning uses the singular for a single affected appointment', function
     ])->assertSessionHas('warning', 'Hay 1 cita confirmada en ese periodo. No se ha cancelado: revísala en la agenda.');
 });
 
-test('a closure of a hairdresser only warns about her own appointments', function () {
+test('a closure of a hairdresser warns about her own appointments and the unassigned ones left without anybody', function () {
     [$jennifer, $isabel] = Hairdresser::query()->ordered()->get()->all();
     Appointment::factory()->create(['starts_at' => '2030-01-08 10:00', 'ends_at' => '2030-01-08 11:00', 'hairdresser_id' => $isabel->id]);
     Appointment::factory()->create(['starts_at' => '2030-01-08 10:00', 'ends_at' => '2030-01-08 11:00', 'hairdresser_id' => $jennifer->id]);
+    // Review M2: with Isabel away and Jennifer busy, nobody can do it.
     Appointment::factory()->create(['starts_at' => '2030-01-08 10:00', 'ends_at' => '2030-01-08 11:00']);
+    // Jennifer is free then: still fine.
+    Appointment::factory()->create(['starts_at' => '2030-01-08 11:00', 'ends_at' => '2030-01-08 11:30']);
 
     $this->post(route('admin.blocks.store'), [
         'starts_at' => '2030-01-08T09:00',
         'ends_at' => '2030-01-08T12:00',
         'scope' => 'hairdressers',
         'hairdresser_ids' => [$isabel->id],
-    ])->assertSessionHas('warning', 'Hay 1 cita confirmada en ese periodo. No se ha cancelado: revísala en la agenda.');
+    ])->assertSessionHas('warning', 'Hay 2 citas confirmadas en ese periodo. No se han cancelado: revísalas en la agenda.');
 
     $this->post(route('admin.blocks.store'), [
         'starts_at' => '2030-01-08T13:00',

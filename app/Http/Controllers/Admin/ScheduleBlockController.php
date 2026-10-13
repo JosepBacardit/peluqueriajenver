@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Booking\AvailabilityCalculator;
+use App\Booking\TimeProfile;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ScheduleBlockRequest;
 use App\Models\Appointment;
 use App\Models\Hairdresser;
 use App\Models\ScheduleBlock;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -30,10 +31,11 @@ class ScheduleBlockController extends Controller
      *
      * Existing appointments inside the new block are deliberately left
      * alone: the salon decides what to do with them. A hairdresser's
-     * closure only warns about her own appointments; the unassigned ones
-     * are counted again by the availability check like everything else.
+     * closure warns about her own appointments and, review M2, about the
+     * unassigned ones of the period that no hairdresser can do any more
+     * (each checked as if it were booked again, without itself).
      */
-    public function store(ScheduleBlockRequest $request): RedirectResponse
+    public function store(ScheduleBlockRequest $request, AvailabilityCalculator $calculator): RedirectResponse
     {
         $startsAt = CarbonImmutable::parse($request->validated('starts_at'));
         $endsAt = CarbonImmutable::parse($request->validated('ends_at'));
@@ -52,9 +54,13 @@ class ScheduleBlockController extends Controller
             }
         });
 
-        $affected = Appointment::query()->confirmed()->overlapping($startsAt, $endsAt)
-            ->when($hairdresserIds !== [], fn (Builder $query) => $query->whereIn('hairdresser_id', $hairdresserIds))
-            ->count();
+        $inPeriod = Appointment::query()->confirmed()->overlapping($startsAt, $endsAt)->get();
+        $affected = $hairdresserIds === []
+            ? $inPeriod->count()
+            : $inPeriod->filter(fn (Appointment $appointment) => in_array($appointment->hairdresser_id, $hairdresserIds, true)
+                || ($appointment->hairdresser_id === null && $appointment->starts_at->isFuture()
+                    && $calculator->unavailabilityReason(TimeProfile::fromAppointment($appointment), $appointment->starts_at, CarbonImmutable::now(), false, excludeAppointmentId: $appointment->id) !== null))
+                ->count();
         $redirect = redirect()->route('admin.blocks.index')->with('status', 'Cierre guardado.');
 
         if ($affected === 1) {
