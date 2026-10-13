@@ -5,7 +5,7 @@
 - **Depende de:** T069–T076
 - **Modelo:** Claude Opus 5.5 · **Esfuerzo:** `medium`
 - **Motivo:** Toca el motor de disponibilidad y datos de producción.
-- **Estado:** pending
+- **Estado:** done
 - **PR / rama:** `feature/hairdresser-choice` (desde `main` `b3e879f`).
 
 ## Objetivo
