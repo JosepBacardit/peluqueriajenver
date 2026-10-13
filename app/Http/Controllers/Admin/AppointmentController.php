@@ -197,14 +197,15 @@ class AppointmentController extends Controller
     }
 
     /**
-     * The validated "vista:fecha" string (review finding M1) to echo into
+     * The validated "vista:fecha[:peluquera]" string (review finding M1,
+     * PRF-172) to echo into
      * a hidden form field, or null when missing/invalid.
      */
     private static function volverParam(mixed $value): ?string
     {
         $volver = AgendaController::volverFromQuery($value);
 
-        return $volver === null ? null : "{$volver['vista']}:{$volver['fecha']}";
+        return $volver === null ? null : implode(':', $volver);
     }
 
     /**

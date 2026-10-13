@@ -80,8 +80,8 @@ test('the grid block\'s title and aria-label carry the full detail, including th
 
     $html = $this->get(route('admin.agenda'))->assertOk()->getContent();
 
-    expect($html)->toContain('title="10:00–10:45 (45 min) Corte + Barba, Rosa Vidal"');
-    expect($html)->toContain('aria-label="10:00 Corte + Barba, duración 45 min, Rosa Vidal, plaza 1"');
+    expect($html)->toContain('title="10:00–10:45 (45 min) Corte + Barba, Rosa Vidal · Cualquiera"');
+    expect($html)->toContain('aria-label="10:00 Corte + Barba, duración 45 min, Rosa Vidal, cualquier peluquera, columna de Jennifer"');
 });
 
 /**

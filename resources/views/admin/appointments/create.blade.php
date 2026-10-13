@@ -98,10 +98,9 @@
     </div>
 
     @php
-        // $volver is already validated ("vista:fecha" or null) by the
+        // $volver is already validated ("vista:fecha[:peluquera]" or null) by the
         // controller, so splitting it here is safe (review finding M1).
-        $volverParts = $volver ? explode(':', $volver, 2) : null;
-        $backRoute = $volverParts ? ['vista' => $volverParts[0], 'fecha' => $volverParts[1]] : ['fecha' => $day->toDateString()];
+        $backRoute = \App\Http\Controllers\Admin\AgendaController::volverFromQuery($volver) ?? ['fecha' => $day->toDateString()];
     @endphp
     <div class="flex gap-4 items-center">
         <button type="submit" class="btn-gold">Guardar cita</button>

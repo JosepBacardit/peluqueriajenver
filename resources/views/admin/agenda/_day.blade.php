@@ -39,6 +39,8 @@
                     @if ($appointment->waitsLabel() !== null)
                         <p class="text-sm text-gray-400">Espera: {{ $appointment->waitsLabel() }}</p>
                     @endif
+                    {{-- PRF-171: from the names index() already loaded, no query per card. --}}
+                    <p class="text-sm text-gray-300">Peluquera: {{ $appointment->hairdresser_id === null ? 'cualquiera' : ($hairdresserNames[$appointment->hairdresser_id] ?? 'cualquiera') }}@if ($appointment->hairdresser_id !== null && $appointment->hairdresser_requested) <span class="text-gray-400">(la eligió la clienta)</span>@endif</p>
                     <p>
                         {{ $appointment->customer_name }} · {{ $appointment->customer_phone }}
                         @if ($appointment->customer_email) · {{ $appointment->customer_email }}@endif

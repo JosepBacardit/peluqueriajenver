@@ -4,20 +4,23 @@ namespace App\Booking;
 
 use App\Models\Appointment;
 use Carbon\CarbonImmutable;
-use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
 /**
  * Assigns each active stretch of the day's confirmed appointments to a
- * fixed lane (one per unit of capacity, PRF-109), so the admin agenda's
- * timeline grid can place them side by side like Google Calendar, without
- * ever mixing them up with a particular hairdresser — lanes are purely
- * about capacity.
+ * fixed lane, so the admin agenda's timeline grid can place them side by
+ * side like Google Calendar. There is one lane per active hairdresser
+ * (PRF-171; one per unit of capacity, PRF-109, when the caller names
+ * none).
  *
- * An appointment with no waits is one stretch, from its start to its end.
- * One with waits (PRF-151) is one stretch per active part: the lane is
- * free while it waits, and its next stretch may land in another lane when
- * its own is taken by then — another hairdresser finishing it (PRF-153).
+ * An appointment with a hairdresser goes in her lane ($laneOfHairdresser).
+ * One with none ("Cualquiera") goes in a lane free for the whole stretch,
+ * and never in the lane of a hairdresser while she is away ($laneBusy). An
+ * appointment with no waits is one stretch, from its start to its end. One
+ * with waits (PRF-151) is one stretch per active part: the lane is free
+ * while it waits, and an unassigned appointment's next stretch may land in
+ * another lane when its own is taken by then — another hairdresser
+ * finishing it (PRF-153).
  *
  * Pure computation: no queries, only the appointments the caller already
  * loaded for that day.
@@ -25,20 +28,30 @@ use Illuminate\Support\Collection;
 class AppointmentLaneAssigner
 {
     /**
-     * Stretches are sorted by start time (then end), and each goes into a
-     * lane whose last stretch has already ended by the time it starts (the
-     * same "does not overlap" rule as everywhere else: ending exactly when
+     * First the stretches of the appointments with a hairdresser go into
+     * her lane, in start order (a second one at the same time, which only
+     * "Guardar igualmente" can save, is placed like an unassigned one).
+     * Then the rest, sorted by start time (then end), each into a lane
+     * with nothing placed during the whole stretch (ending exactly when
      * another starts is not an overlap): the lane of the appointment's
-     * previous stretch when it is free, otherwise the lowest-numbered free
-     * one. When every existing lane is still busy, a new one is added —
-     * this is how a day goes over capacity (PRF-109) without ever dropping
-     * an appointment from the grid. Taking the stretches in start order,
-     * any free lane is as good as another, so preferring the previous one
-     * never needs more lanes than the most stretches at the same time.
+     * previous stretch when it is free, otherwise the first free one of
+     * $preferredLanes (where the hairdressers who stand out in its services
+     * are, PRF-173), otherwise the lowest-numbered free one. When no
+     * existing lane is free, a new one is added — this is how a day goes
+     * over capacity (PRF-109) without ever dropping an appointment from
+     * the grid.
+     *
+     * With no hairdresser named, this is exactly the old rule: taking the
+     * stretches in start order, a lane is free for the whole stretch as
+     * soon as its last stretch has ended, so it never needs more lanes than
+     * the most stretches at the same time.
      *
      * Keys are self::key(): "{appointment id}:{stretch index}".
      *
      * @param  Collection<int, Appointment>  $appointments  this day's, any status
+     * @param  array<int, int>  $laneOfHairdresser  hairdresser id => her lane (0-based, below $capacity)
+     * @param  array<int, list<array{0: CarbonImmutable, 1: CarbonImmutable}>>  $laneBusy  lane => times its hairdresser is away
+     * @param  array<int, list<int>>  $preferredLanes  appointment id => lanes to prefer for it
      * @return array{lanes: array<string, int>, maxLanes: int, overCapacity: array<string, bool>, stretches: list<array{key: string, appointment: Appointment, index: int, count: int, start: CarbonImmutable, end: CarbonImmutable}>}
      *                                                                                                                                                                                                                                 lanes: stretch key => 0-based lane index.
      *                                                                                                                                                                                                                                 maxLanes: max($capacity, lanes actually used) — the grid always
@@ -47,25 +60,50 @@ class AppointmentLaneAssigner
      *                                                                                                                                                                                                                                 overCapacity: stretch key => whether its lane index is beyond
      *                                                                                                                                                                                                                                 the configured capacity.
      *                                                                                                                                                                                                                                 stretches: every confirmed appointment's active stretches, in
-     *                                                                                                                                                                                                                                 the order they were assigned.
+     *                                                                                                                                                                                                                                 start order.
      */
-    public static function assign(Collection $appointments, int $capacity): array
+    public static function assign(Collection $appointments, int $capacity, array $laneOfHairdresser = [], array $laneBusy = [], array $preferredLanes = []): array
     {
         $stretches = self::stretches($appointments);
 
-        $laneEndsAt = []; // lane index => end of its last stretch
+        /** @var array<int, list<array{0: CarbonImmutable, 1: CarbonImmutable}>> $placed lane => intervals placed in it */
+        $placed = [];
+
+        for ($lane = 0; $lane < $capacity; $lane++) {
+            $placed[$lane] = $laneBusy[$lane] ?? [];
+        }
+
         $lanes = [];
+        $unplaced = [];
 
         foreach ($stretches as $stretch) {
-            $previous = $stretch['index'] > 0 ? $lanes[self::key($stretch['appointment'], $stretch['index'] - 1)] : null;
-            $lane = $previous !== null && $laneEndsAt[$previous]->lte($stretch['start'])
-                ? $previous
-                : self::firstFreeLane($laneEndsAt, $stretch['start']);
-            $laneEndsAt[$lane] = $stretch['end'];
+            $lane = $laneOfHairdresser[$stretch['appointment']->hairdresser_id ?? 0] ?? null;
+
+            if ($lane !== null && $lane < $capacity && self::isFree($placed[$lane], $stretch['start'], $stretch['end'])) {
+                $placed[$lane][] = [$stretch['start'], $stretch['end']];
+                $lanes[$stretch['key']] = $lane;
+            } else {
+                $unplaced[] = $stretch;
+            }
+        }
+
+        foreach ($unplaced as $stretch) {
+            $previous = $stretch['index'] > 0 ? ($lanes[self::key($stretch['appointment'], $stretch['index'] - 1)] ?? null) : null;
+            $free = array_values(array_filter(array_keys($placed), fn (int $lane) => self::isFree($placed[$lane], $stretch['start'], $stretch['end'])));
+            $preferred = array_values(array_intersect($preferredLanes[$stretch['appointment']->id] ?? [], $free));
+
+            $lane = match (true) {
+                $previous !== null && in_array($previous, $free, true) => $previous,
+                $preferred !== [] => $preferred[0],
+                $free !== [] => $free[0],
+                default => count($placed),
+            };
+
+            $placed[$lane][] = [$stretch['start'], $stretch['end']];
             $lanes[$stretch['key']] = $lane;
         }
 
-        $maxLanes = max($capacity, count($laneEndsAt));
+        $maxLanes = max($capacity, count($placed));
 
         return [
             'lanes' => $lanes,
@@ -106,16 +144,18 @@ class AppointmentLaneAssigner
     }
 
     /**
-     * @param  array<int, CarbonInterface>  $laneEndsAt
+     * Whether nothing in $intervals overlaps [$start, $end).
+     *
+     * @param  list<array{0: CarbonImmutable, 1: CarbonImmutable}>  $intervals
      */
-    private static function firstFreeLane(array $laneEndsAt, CarbonInterface $start): int
+    private static function isFree(array $intervals, CarbonImmutable $start, CarbonImmutable $end): bool
     {
-        for ($lane = 0; $lane < count($laneEndsAt); $lane++) {
-            if ($laneEndsAt[$lane]->lte($start)) {
-                return $lane;
+        foreach ($intervals as [$busyStart, $busyEnd]) {
+            if ($busyStart->lt($end) && $busyEnd->gt($start)) {
+                return false;
             }
         }
 
-        return count($laneEndsAt);
+        return true;
     }
 }

@@ -21,8 +21,7 @@
     {{-- So the salon never forgets the switch is off (Ajustes). Shown
          here rather than in the shared layout so every other admin page
          (Servicios, Horario, Cierres) keeps its own query count exactly
-         as before — the agenda already fetches BookingSetting for its
-         capacity, so this reuses that same read. --}}
+         as before — one BookingSetting read in the agenda's controller. --}}
     <div role="status" class="mb-6 border border-amber-500/50 bg-amber-500/10 text-amber-200 px-4 py-3">
         ⚠️ Reserva online desactivada — <a href="{{ route('admin.settings.edit') }}" class="underline hover:text-amber-100">activarla en Ajustes</a>
     </div>
@@ -114,11 +113,35 @@
             @foreach ($servicios as $filterService)
                 <input type="hidden" name="servicio[]" value="{{ $filterService->id }}">
             @endforeach
+            @if ($peluquera)
+                <input type="hidden" name="peluquera" value="{{ $peluquera->id }}">
+            @endif
             <input id="fecha" type="date" name="fecha" value="{{ $day->toDateString() }}" class="bg-black border border-[#2A2A2A] px-2 py-3">
             <button type="submit" class="btn-outline">Ir</button>
         </form>
     </nav>
 </div>
+
+{{-- Hairdresser filter (PRF-172): in every view, Mes included, and kept
+     by every link like the service filter. A plain GET form with a native
+     <select> — one choice only, comfortable on a phone. --}}
+<form method="GET" action="{{ route('admin.agenda') }}" class="mb-4 flex flex-wrap items-center gap-2 text-sm">
+    <input type="hidden" name="fecha" value="{{ $day->toDateString() }}">
+    @if ($vista !== 'dia')
+        <input type="hidden" name="vista" value="{{ $vista }}">
+    @endif
+    @foreach ($servicios as $filterService)
+        <input type="hidden" name="servicio[]" value="{{ $filterService->id }}">
+    @endforeach
+    <label for="peluquera" class="text-gray-400">Peluquera:</label>
+    <select id="peluquera" name="peluquera" class="bg-black border border-[#2A2A2A] px-3 py-3 focus:border-gold focus:outline-none">
+        <option value="" @selected($peluquera === null)>Todas</option>
+        @foreach ($hairdressers as $hairdresserOption)
+            <option value="{{ $hairdresserOption->id }}" @selected($peluquera?->is($hairdresserOption))>{{ $hairdresserOption->name }}</option>
+        @endforeach
+    </select>
+    <button type="submit" class="btn-outline">Ver</button>
+</form>
 
 {{-- Service filter (PRF-120, PRF-132, T043/T048): 1 to MAX_SERVICES active
      services, with their duration. Not shown in Mes, which has no rejilla
@@ -141,6 +164,9 @@
             <input type="hidden" name="fecha" value="{{ $day->toDateString() }}">
             @if ($vista !== 'dia')
                 <input type="hidden" name="vista" value="{{ $vista }}">
+            @endif
+            @if ($peluquera)
+                <input type="hidden" name="peluquera" value="{{ $peluquera->id }}">
             @endif
             <p class="text-xs text-gray-400">Hasta {{ \App\Models\Appointment::MAX_SERVICES }} servicios a la vez; la rejilla resalta los huecos que suman su duración.</p>
             <ul class="space-y-2">

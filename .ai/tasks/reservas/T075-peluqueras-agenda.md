@@ -5,7 +5,7 @@
 - **Depende de:** T071, T072
 - **Modelo:** Claude Opus 5.5 · **Esfuerzo:** `medium`
 - **Motivo:** Cambia el reparto en columnas y la rejilla, con muchos tests de presentación.
-- **Estado:** in progress
+- **Estado:** done
 - **PR / rama:** `feature/hairdresser-choice` (desde `main` `b3e879f`).
 
 ## Objetivo
