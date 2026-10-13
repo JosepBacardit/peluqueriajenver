@@ -43,6 +43,13 @@ use Illuminate\Support\Collection;
 class AvailabilityCalculator
 {
     /**
+     * The last shareBase() worked out, by the identity of its context.
+     *
+     * @var array<int, array{blocks: Collection<int, ScheduleBlock>, base: array}>
+     */
+    private array $shareBases = [];
+
+    /**
      * Start times offered on the public booking page for one day.
      *
      * @return list<CarbonImmutable>
@@ -118,7 +125,6 @@ class AvailabilityCalculator
         $settings = BookingSetting::current();
         $day = $start->startOfDay();
         $startMinute = $start->hour * 60 + $start->minute;
-        $end = $start->addMinutes($durationMinutes);
 
         if ($start->lt($now)) {
             return UnavailabilityReason::InThePast;
@@ -145,7 +151,9 @@ class AvailabilityCalculator
             }
         }
 
-        return $this->capacityProblem($profile, $start, $this->loadOccupation($start, $end, $excludeAppointmentId), $hairdresserId);
+        // The whole day: sharing it out among the hairdressers (PRF-165)
+        // can depend on appointments that do not overlap this one.
+        return $this->capacityProblem($profile, $start, $this->loadOccupation($day, $day->addDay(), $excludeAppointmentId), $hairdresserId);
     }
 
     /**
@@ -245,7 +253,16 @@ class AvailabilityCalculator
         for ($day = $from->startOfDay(); $day->lte($to); $day = $day->addDay()) {
             $ranges = $rangesByWeekday->get($day->isoWeekday(), collect());
 
-            if ($this->startTimesFor($profile, $day, $now, $settings, $ranges, $context, $hairdresserId) !== []) {
+            // Only that day's part of the occupation: every start time of
+            // the day is checked against it, so it pays to keep it small.
+            $nextDay = $day->addDay();
+            $dayContext = [
+                'busy' => array_values(array_filter($context['busy'], fn (array $interval) => $interval[0]->lt($nextDay) && $interval[1]->gt($day))),
+                'blocks' => $context['blocks']->filter(fn (ScheduleBlock $block) => $block->starts_at->lt($nextDay) && $block->ends_at->gt($day))->values(),
+                'staff' => $context['staff'],
+            ];
+
+            if ($this->startTimesFor($profile, $day, $now, $settings, $ranges, $dayContext, $hairdresserId) !== []) {
                 $days[] = $day->toDateString();
             }
         }
@@ -359,13 +376,12 @@ class AvailabilityCalculator
      *   is not available, and the unnamed reductions) outnumber the
      *   available hairdressers not busy with one of their own.
      *
-     * An appointment for any hairdresser also needs, for each of its
-     * active stretches, one hairdresser with no block and no appointment
-     * of her own during the whole stretch (Full otherwise), so the
-     * appointments with a hairdresser never force someone to take over in
-     * the middle of its stretch. With no hairdresser named by any
-     * appointment or block, only the count can fail, and it fails exactly
-     * where the old capacity count did (capacity = active hairdressers).
+     * Then (Full otherwise) the whole day must still be shareable out
+     * without anybody taking over in the middle of an active stretch
+     * (PRF-165, review H1): see sharesOut(). With no hairdresser named by
+     * any appointment or block, that holds whenever the count does (the
+     * stretches are intervals, so counting is enough), so the result is
+     * exactly the old capacity count (capacity = active hairdressers).
      *
      * Occupancy can only rise, and availability only drop, where one of
      * the appointment's own active stretches starts, or where another
@@ -443,7 +459,7 @@ class AvailabilityCalculator
             }
         }
 
-        if ($hairdresserId === null && ! $this->eachStretchHasOneFreeHairdresser($active, $context)) {
+        if (! $this->sharesOut($active, $context, $hairdresserId)) {
             return UnavailabilityReason::Full;
         }
 
@@ -451,34 +467,162 @@ class AvailabilityCalculator
     }
 
     /**
-     * Whether, for each of these active stretches, one active hairdresser
-     * has no block and no appointment of her own during all of it.
+     * Whether the day can still be shared out among the active
+     * hairdressers with the new appointment's active stretches ($active)
+     * added, so that each active stretch of every appointment is done by
+     * one hairdresser from start to end (PRF-165, review H1): those with a
+     * hairdresser by her, those with none by anybody free during all of it
+     * (a different one after a wait is fine: each stretch stands alone).
+     * A hairdresser's own blocks keep her out; each unit of an old unnamed
+     * "Reducir N" takes somebody for the whole block.
+     *
+     * Only the groups of overlapping "anybody" stretches the new
+     * appointment touches are solved (StaffAssignment), each on its own. A
+     * group that could not be shared out even before the new appointment
+     * (after a "Guardar igualmente") does not block it: the per-moment
+     * count already passed, as it did before hairdressers existed, and the
+     * agenda keeps showing that group as "Sobre capacidad".
      *
      * @param  list<array{0: CarbonImmutable, 1: CarbonImmutable}>  $active
      * @param  array{busy: list<array{0: CarbonImmutable, 1: CarbonImmutable, 2: int|null}>, blocks: Collection<int, ScheduleBlock>, staff: list<int>}  $context
      */
-    private function eachStretchHasOneFreeHairdresser(array $active, array $context): bool
+    private function sharesOut(array $active, array $context, ?int $hairdresserId): bool
     {
-        foreach ($active as [$from, $to]) {
-            $taken = [];
+        $base = $this->shareBase($context);
+        $machines = count($context['staff']);
+        $newIntervals = array_map(fn (array $interval) => [$interval[0]->getTimestamp(), $interval[1]->getTimestamp()], $active);
 
-            foreach ($context['busy'] as [$busyStart, $busyEnd, $busyHairdresser]) {
-                if ($busyHairdresser !== null && $busyStart->lt($to) && $busyEnd->gt($from)) {
-                    $taken[$busyHairdresser] = true;
+        // Nobody named anywhere: the stretches are plain intervals, so the
+        // per-moment count already checked is enough.
+        if ($hairdresserId === null && $base['busy'] === []) {
+            return true;
+        }
+
+        $touched = array_keys(array_filter($base['groups'], fn (array $group) => self::overlapsAny($newIntervals, $group['span'])));
+
+        if ($hairdresserId === null) {
+            $jobs = array_merge(...array_map(fn (int $group) => $base['groups'][$group]['jobs'], $touched), ...[$newIntervals]);
+
+            if (StaffAssignment::solve($machines, $base['busy'], $jobs) !== null) {
+                return true;
+            }
+
+            // Refused only if the day could be shared out before it.
+            foreach ($touched as $group) {
+                if (! $this->groupSharesOut($base, $group, $machines)) {
+                    return true;
                 }
             }
 
-            foreach ($context['blocks'] as $block) {
-                if ($block->hairdresser_id !== null && $block->starts_at->lt($to) && $block->ends_at->gt($from)) {
-                    $taken[$block->hairdresser_id] = true;
-                }
-            }
+            return false;
+        }
 
-            if (array_diff_key(array_flip($context['staff']), $taken) === []) {
+        $machine = array_flip($context['staff'])[$hairdresserId];
+        $busyWithNew = $base['busy'];
+        $busyWithNew[$machine] = array_merge($busyWithNew[$machine] ?? [], $newIntervals);
+
+        foreach ($touched as $group) {
+            if (StaffAssignment::solve($machines, $busyWithNew, $base['groups'][$group]['jobs']) === null
+                && $this->groupSharesOut($base, $group, $machines)) {
                 return false;
             }
         }
 
         return true;
+    }
+
+    /**
+     * What sharesOut() needs from a context, worked out once per context
+     * (the calendar checks every start time of up to a month against the
+     * same one): each hairdresser's fixed busy times (her own stretches
+     * and blocks), the stretches anybody can do (with no hairdresser, or
+     * a second one of the same hairdresser at once, and each unit of an
+     * old unnamed reduction), and those in groups that overlap.
+     *
+     * @param  array{busy: list<array{0: CarbonImmutable, 1: CarbonImmutable, 2: int|null}>, blocks: Collection<int, ScheduleBlock>, staff: list<int>}  $context
+     * @return array{busy: array<int, list<array{0: int, 1: int}>>, groups: list<array{jobs: list<array{0: int, 1: int}>, span: array{0: int, 1: int}}>, sharesOut: array<int, bool>}
+     */
+    private function shareBase(array $context): array
+    {
+        $key = spl_object_id($context['blocks']);
+
+        if (isset($this->shareBases[$key]) && $this->shareBases[$key]['blocks'] === $context['blocks']) {
+            return $this->shareBases[$key]['base'];
+        }
+
+        $machineOf = array_flip($context['staff']);
+        $busy = [];
+        $jobs = [];
+
+        foreach ($context['blocks'] as $block) {
+            if ($block->hairdresser_id !== null && isset($machineOf[$block->hairdresser_id])) {
+                $busy[$machineOf[$block->hairdresser_id]][] = [$block->starts_at->getTimestamp(), $block->ends_at->getTimestamp()];
+            } elseif ($block->hairdresser_id === null && $block->capacity_reduction !== null) {
+                for ($unit = 0; $unit < $block->capacity_reduction; $unit++) {
+                    $jobs[] = [$block->starts_at->getTimestamp(), $block->ends_at->getTimestamp()];
+                }
+            }
+        }
+
+        $stretches = $context['busy'];
+        usort($stretches, fn (array $a, array $b) => $a[0] <=> $b[0]);
+        $ownStretches = [];
+
+        foreach ($stretches as [$start, $end, $hairdresser]) {
+            $interval = [$start->getTimestamp(), $end->getTimestamp()];
+            $machine = $hairdresser === null ? null : ($machineOf[$hairdresser] ?? null);
+
+            // A second appointment of the same hairdresser at the same time
+            // (only "Guardar igualmente" saves one) needs somebody else.
+            if ($machine !== null && ! self::overlapsAny($ownStretches[$machine] ?? [], $interval)) {
+                $ownStretches[$machine][] = $interval;
+            } else {
+                $jobs[] = $interval;
+            }
+        }
+
+        foreach ($ownStretches as $machine => $intervals) {
+            $busy[$machine] = array_merge($busy[$machine] ?? [], $intervals);
+        }
+
+        $groups = array_map(function (array $group) use ($jobs) {
+            $groupJobs = array_map(fn (int $job) => $jobs[$job], $group);
+
+            return ['jobs' => $groupJobs, 'span' => [min(array_column($groupJobs, 0)), max(array_column($groupJobs, 1))]];
+        }, StaffAssignment::groups($jobs));
+
+        $base = ['busy' => $busy, 'groups' => $groups, 'sharesOut' => []];
+        $this->shareBases = [$key => ['blocks' => $context['blocks'], 'base' => $base]];
+
+        return $base;
+    }
+
+    /**
+     * Whether a group of shareBase() could be shared out as it is,
+     * remembered with the base.
+     *
+     * @param  array{busy: array<int, list<array{0: int, 1: int}>>, groups: list<array{jobs: list<array{0: int, 1: int}>, span: array{0: int, 1: int}}>, sharesOut: array<int, bool>}  $base
+     */
+    private function groupSharesOut(array $base, int $group, int $machines): bool
+    {
+        $key = array_key_first($this->shareBases);
+
+        return $this->shareBases[$key]['base']['sharesOut'][$group]
+            ??= StaffAssignment::solve($machines, $base['busy'], $base['groups'][$group]['jobs']) !== null;
+    }
+
+    /**
+     * @param  list<array{0: int, 1: int}>  $intervals
+     * @param  array{0: int, 1: int}  $interval
+     */
+    private static function overlapsAny(array $intervals, array $interval): bool
+    {
+        foreach ($intervals as [$start, $end]) {
+            if ($start < $interval[1] && $end > $interval[0]) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -257,106 +257,150 @@ test('taking the hairdresser away leaves the appointment for anybody, and moving
         ->and($outcome->rescheduled)->toBeTrue();
 });
 
+test('an appointment for anybody is never left needing a hand-over in the middle, by later bookings with a hairdresser', function () {
+    // Review H1: anybody 10:00-11:00 first, then Isabel 09:30-10:30.
+    hdBook('10:00', '11:00');
+    hdBook('09:30', '10:30', $this->isabel);
+
+    // Jennifer 10:30-11:30 would leave the first one with Jennifer until
+    // 10:30 and Isabel after: refused.
+    expect(hdReason(60, '10:30', $this->jennifer))->toBe(UnavailabilityReason::Full)
+        ->and(hdReason(60, '11:00', $this->jennifer))->toBeNull();
+});
+
+test('an appointment for anybody is never left needing a hand-over by another one for anybody', function () {
+    // Review H1, with three hairdressers.
+    setStaffCount(3);
+    $third = Hairdresser::query()->where('name', 'Peluquera 3')->sole();
+    hdBook('10:00', '11:00');
+    hdBook('10:30', '11:00', $this->jennifer);
+    hdBook('09:00', '10:15', $third);
+
+    // Only Isabel can do 10:00-11:00 the whole way; a second one for
+    // anybody at 10:00-10:45 would need her too.
+    expect(hdReason(45, '10:00'))->toBe(UnavailabilityReason::Full)
+        ->and(hdReason(45, '11:00'))->toBeNull();
+});
+
+test('assigning an appointment from the panel is refused when it would leave another without anybody for the whole stretch', function () {
+    $service = Service::factory()->create(['duration_minutes' => 60]);
+    hdBook('10:00', '11:00');
+    $other = Appointment::factory()->withServices($service)->create(['starts_at' => hdAt('10:30')]);
+    hdBook('09:30', '10:30', $this->isabel);
+    $customer = ['customer_name' => $other->customer_name, 'customer_phone' => $other->customer_phone, 'customer_email' => $other->customer_email, 'notes' => null];
+
+    // Giving the 10:30-11:30 one to Jennifer leaves 10:00-11:00 without
+    // anybody for the whole hour.
+    expect(fn () => app(RescheduleAppointment::class)->handle($other, collect([$service]), hdAt('10:30'), $customer, false, $this->now, hairdresserId: $this->jennifer->id))
+        ->toThrow(SlotUnavailableException::class);
+});
+
+test('a day that already needed "save anyway" does not block other times of that group', function () {
+    setStaffCount(1);
+    hdBook('10:00', '11:00');
+    hdBook('10:30', '11:30');
+
+    expect(hdReason(30, '11:30'))->toBeNull()
+        ->and(hdReason(30, '10:45'))->toBe(UnavailabilityReason::Full);
+});
+
 /*
- * Brute force, minute by minute, on random days with appointments for a
- * hairdresser or for anybody, blocks of one hairdresser, old unnamed
- * reductions and full closures, and a third hairdresser half of the time:
- * the engine agrees with the rules of PRF-165 written out directly.
+ * Brute force, independent of the engine: on random days, every way of
+ * giving each stretch of an appointment for anybody (and each unit of an
+ * old unnamed reduction) to a hairdresser is tried; the new appointment
+ * fits when one of them leaves nobody with two things at once and nobody
+ * working while she is away, and no full closure covers it. Days that
+ * could not be shared out even before are generated again.
  */
-test('it agrees minute by minute with the rules written out directly', function (int $seed) {
+test('it agrees with trying every way to share the day out', function (int $seed) {
     mt_srand($seed);
     setStaffCount(mt_rand(2, 3));
     $staff = AvailabilityCalculator::activeStaff();
-    $pick = fn () => mt_rand(0, 1) === 1 ? null : $staff[mt_rand(0, count($staff) - 1)];
     $time = fn (int $minute) => sprintf('%02d:%02d', intdiv($minute, 60), $minute % 60);
+    $overlaps = fn (array $a, array $b) => $a[0] < $b[1] && $b[0] < $a[1];
 
-    $appointments = [];
-    for ($i = mt_rand(0, 7); $i > 0; $i--) {
-        $start = mt_rand(9 * 12, 17 * 12) * 5;
-        $length = [15, 30, 45, 60, 90][mt_rand(0, 4)];
-        $hairdresser = $pick();
-        Appointment::factory()->create(['starts_at' => hdAt($time($start)), 'ends_at' => hdAt($time($start + $length)), 'hairdresser_id' => $hairdresser]);
-        $appointments[] = [$start, $start + $length, $hairdresser];
-    }
-
-    $blocks = [];
-    for ($i = mt_rand(0, 2); $i > 0; $i--) {
-        $start = mt_rand(9 * 4, 17 * 4) * 15;
-        $length = [30, 60, 120][mt_rand(0, 2)];
-        $kind = mt_rand(0, 5);
-        $hairdresser = $kind <= 3 ? $staff[mt_rand(0, count($staff) - 1)] : null;
-        $reduction = $kind === 4 ? 1 : ($kind === 5 ? null : 1);
-        ScheduleBlock::create(['starts_at' => hdAt($time($start)), 'ends_at' => hdAt($time($start + $length)), 'capacity_reduction' => $reduction, 'hairdresser_id' => $hairdresser]);
-        $blocks[] = [$start, $start + $length, $hairdresser, $reduction];
-    }
-
-    $expected = function (int $start, int $length, ?int $chosen) use ($appointments, $blocks, $staff): bool {
-        $end = $start + $length;
-
-        for ($minute = $start; $minute < $end; $minute++) {
-            $covering = fn (array $interval) => $interval[0] <= $minute && $minute < $interval[1];
-            $absent = [];
-            $reduction = 0;
-
-            foreach (array_filter($blocks, $covering) as [, , $hairdresser, $blockReduction]) {
-                if ($blockReduction === null) {
-                    return false;
+    // $fixed: hairdresser => intervals she cannot take anything else in.
+    // $anybody: intervals somebody has to take.
+    $feasible = function (array $fixed, array $anybody) use ($staff, $overlaps): bool {
+        foreach ($fixed as $intervals) {
+            foreach ($intervals as $i => $a) {
+                foreach (array_slice($intervals, $i + 1) as $b) {
+                    if ($overlaps($a, $b)) {
+                        return false;
+                    }
                 }
-                if ($hairdresser === null) {
-                    $reduction += $blockReduction;
-                } else {
-                    $absent[$hairdresser] = true;
-                }
-            }
-
-            $available = array_values(array_diff($staff, array_keys($absent)));
-
-            if (count($available) - $reduction < 1) {
-                return false;
-            }
-
-            $own = [];
-            $anybody = $reduction + ($chosen === null ? 1 : 0);
-
-            foreach (array_filter($appointments, $covering) as [, , $hairdresser]) {
-                if ($hairdresser !== null && in_array($hairdresser, $available, true) && ! isset($own[$hairdresser])) {
-                    $own[$hairdresser] = true;
-                } else {
-                    $anybody++;
-                }
-            }
-
-            if ($chosen !== null) {
-                if (! in_array($chosen, $available, true) || isset($own[$chosen])) {
-                    return false;
-                }
-                $own[$chosen] = true;
-            }
-
-            if ($anybody > count($available) - count($own)) {
-                return false;
             }
         }
 
-        if ($chosen === null) {
-            $overlaps = fn (array $interval) => $interval[0] < $end && $interval[1] > $start;
-            $taken = array_merge(
-                array_column(array_filter($appointments, $overlaps), 2),
-                array_column(array_filter($blocks, $overlaps), 2),
-            );
-
-            return array_diff($staff, $taken) !== [];
+        $count = count($anybody);
+        for ($code = 0; $code < count($staff) ** $count; $code++) {
+            $load = $fixed;
+            $ok = true;
+            $rest = $code;
+            foreach ($anybody as $interval) {
+                $hairdresser = $staff[$rest % count($staff)];
+                $rest = intdiv($rest, count($staff));
+                foreach ($load[$hairdresser] ?? [] as $taken) {
+                    if ($overlaps($taken, $interval)) {
+                        $ok = false;
+                        break 2;
+                    }
+                }
+                $load[$hairdresser][] = $interval;
+            }
+            if ($ok) {
+                return true;
+            }
         }
 
-        return true;
+        return false;
     };
 
-    for ($check = 0; $check < 40; $check++) {
-        $start = mt_rand(9 * 12, 17 * 12) * 5;
-        $length = [15, 30, 60][mt_rand(0, 2)];
-        $chosen = $pick();
+    do {
+        Appointment::query()->delete();
+        ScheduleBlock::query()->delete();
+        $fixed = [];
+        $anybody = [];
+        $closures = [];
 
-        expect(test()->calculator->isAvailable($length, hdAt($time($start)), test()->now, false, hairdresserId: $chosen))
-            ->toBe($expected($start, $length, $chosen), "start {$time($start)}, {$length} min, hairdresser ".($chosen ?? 'any'));
+        for ($i = mt_rand(1, 6); $i > 0; $i--) {
+            $start = mt_rand(9 * 12, 12 * 12) * 5;
+            $interval = [$start, $start + [15, 30, 45, 60][mt_rand(0, 3)]];
+            $hairdresser = mt_rand(0, 1) === 1 ? null : $staff[mt_rand(0, count($staff) - 1)];
+            Appointment::factory()->create(['starts_at' => hdAt($time($interval[0])), 'ends_at' => hdAt($time($interval[1])), 'hairdresser_id' => $hairdresser]);
+            if ($hairdresser === null) {
+                $anybody[] = $interval;
+            } else {
+                $fixed[$hairdresser][] = $interval;
+            }
+        }
+
+        for ($i = mt_rand(0, 2); $i > 0; $i--) {
+            $start = mt_rand(9 * 4, 12 * 4) * 15;
+            $interval = [$start, $start + [30, 60][mt_rand(0, 1)]];
+            $kind = mt_rand(0, 5);
+            $hairdresser = $kind <= 3 ? $staff[mt_rand(0, count($staff) - 1)] : null;
+            ScheduleBlock::create(['starts_at' => hdAt($time($interval[0])), 'ends_at' => hdAt($time($interval[1])), 'capacity_reduction' => $kind === 5 ? null : 1, 'hairdresser_id' => $hairdresser]);
+            match (true) {
+                $kind === 5 => $closures[] = $interval,
+                $hairdresser === null => $anybody[] = $interval,
+                default => $fixed[$hairdresser][] = $interval,
+            };
+        }
+    } while (! $feasible($fixed, $anybody));
+
+    for ($check = 0; $check < 25; $check++) {
+        $start = mt_rand(9 * 12, 12 * 12) * 5;
+        $interval = [$start, $start + [15, 30, 60][mt_rand(0, 2)]];
+        $chosen = mt_rand(0, 1) === 1 ? null : $staff[mt_rand(0, count($staff) - 1)];
+        $closed = array_filter($closures, fn (array $closure) => $overlaps($closure, $interval)) !== [];
+        $withChosen = $fixed;
+        $withChosen[$chosen ?? 0][] = $interval;
+        $expected = ! $closed && ($chosen === null
+            ? $feasible($fixed, [...$anybody, $interval])
+            : $feasible($withChosen, $anybody));
+
+        expect(test()->calculator->isAvailable($interval[1] - $interval[0], hdAt($time($interval[0])), test()->now, false, hairdresserId: $chosen))
+            ->toBe($expected, "seed {$seed}: {$time($interval[0])}-{$time($interval[1])}, hairdresser ".($chosen ?? 'any'));
     }
-})->with(range(1, 30));
+})->with(range(1, 40));
