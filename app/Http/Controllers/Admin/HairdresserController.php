@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\UpdateHairdresser;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\HairdresserRequest;
 use App\Models\Hairdresser;
@@ -52,11 +53,9 @@ class HairdresserController extends Controller
         ]);
     }
 
-    public function update(HairdresserRequest $request, Hairdresser $hairdresser): RedirectResponse
+    public function update(HairdresserRequest $request, Hairdresser $hairdresser, UpdateHairdresser $updateHairdresser): RedirectResponse
     {
-        $hairdresser->update($request->hairdresserAttributes());
-        // Services deactivated since keep no mark: only active ones are offered.
-        $hairdresser->standoutServices()->sync($request->standoutServiceIds());
+        $updateHairdresser->handle($hairdresser, $request->hairdresserAttributes(), $request->standoutServiceIds());
 
         return redirect()->route('admin.hairdressers.index')->with('status', 'Peluquera actualizada.');
     }

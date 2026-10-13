@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\UpdateHairdresser;
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\Hairdresser;
@@ -114,4 +115,27 @@ test('the hairdressers list shows inactive ones dimmed and has no delete action'
         ->assertOk()
         ->assertSee('Inactiva')
         ->assertDontSee('Eliminar');
+});
+
+test('a hairdresser cannot be deactivated while unassigned appointments would be left with nobody', function () {
+    // Review M3: two unassigned appointments at once need both hairdressers.
+    Appointment::factory()->count(2)->create(['starts_at' => '2030-01-08 10:00', 'ends_at' => '2030-01-08 11:00']);
+    Appointment::factory()->create(['starts_at' => '2030-01-09 10:00', 'ends_at' => '2030-01-09 11:00']);
+    $isabel = Hairdresser::query()->where('name', 'Isabel')->sole();
+
+    $this->from(route('admin.hairdressers.edit', $isabel))
+        ->put(route('admin.hairdressers.update', $isabel), ['name' => 'Isabel', 'is_active' => '0'])
+        ->assertRedirect(route('admin.hairdressers.edit', $isabel))
+        ->assertSessionHasErrors(['is_active' => 'Sin Isabel, 2 citas sin peluquera asignada se quedarían sin nadie que las atienda a partir de hoy (la primera, el 08/01/2030 a las 10:00). Asígnalas, muévelas o cancélalas antes de desactivarla.']);
+
+    expect($isabel->fresh()->is_active)->toBeTrue();
+});
+
+test('deactivating takes the same lock as bookings, before reading anything', function () {
+    $isabel = Hairdresser::query()->where('name', 'Isabel')->sole();
+
+    $queries = sqlWithVisibleLocks(fn () => app(UpdateHairdresser::class)->handle($isabel, ['name' => 'Isabel', 'is_active' => false], []));
+
+    expect($queries[0])->toContain('booking_settings')->toContain('for update');
+    expect($isabel->fresh()->is_active)->toBeFalse();
 });
