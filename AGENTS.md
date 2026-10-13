@@ -551,12 +551,21 @@ elsewhere.
 The two migrations of `feature/hairdresser-choice` are additive (a new
 `hairdressers` table with Jennifer and Isabel, `hairdresser_service`, and
 nullable columns on `appointments` and `schedule_blocks`); existing
-appointments and closures are left unassigned. Before `./deploy.sh`, as
-`deploy`, check the capacity production uses today:
-`php artisan tinker --execute 'echo App\Models\BookingSetting::current()->capacity;'`.
-If it is 2, availability does not change at all. If it is anything else,
-it becomes 2 (the two active hairdressers) on deploy: tell the salon, and
-add or deactivate hairdressers in `/admin/peluqueras` right after. Future
+appointments and closures are left unassigned. Nothing has to be changed
+in production beforehand, but one value must be read first (review L3 —
+it has not been read yet: do it on the VPS before this deploy):
+
+1. As `deploy`, before `./deploy.sh`, read the capacity production uses
+   today:
+   `php artisan tinker --execute 'echo App\Models\BookingSetting::current()->capacity;'`
+   (read-only).
+2. If it prints **2**: deploy as usual; availability does not change.
+3. If it prints anything else: the capacity becomes 2 (Jennifer and
+   Isabel) the moment `./deploy.sh` runs. Tell the salon first; right
+   after the deploy, add hairdressers (if it was more) or deactivate one
+   (if it was 1) in `/admin/peluqueras`. Turning "Reserva online activa"
+   off in `/admin/ajustes` for those few minutes avoids offering a wrong
+   time meanwhile. Future
 "Reducir N" closures saved before this keep working; the salon can
 replace them with "No está {peluquera}" ones. Never `migrate:rollback`.
 

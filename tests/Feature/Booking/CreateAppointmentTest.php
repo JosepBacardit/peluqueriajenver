@@ -8,6 +8,7 @@ use App\Enums\AppointmentSource;
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\BookingSetting;
+use App\Models\Hairdresser;
 use App\Models\Service;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -111,6 +112,23 @@ test('the row lock on the booking settings is the first query of the booking tra
     ));
 
     expect($queries[0])->toContain('"booking_settings"')->toContain('for update');
+});
+
+test('a booking for a hairdresser takes the same lock first, and a second one for her at that time is refused', function () {
+    // Review L4: two customers asking for the same hairdresser at once are
+    // serialised by the lock; the one that waited sees the first booking.
+    $hairdresser = Hairdresser::query()->where('name', 'Isabel')->sole();
+    $book = fn (string $email) => app(CreateAppointment::class)->handle(
+        collect([$this->service]), CarbonImmutable::parse('2030-01-08 10:00'),
+        ['customer_name' => 'Rosa', 'customer_phone' => '600123456', 'customer_email' => $email, 'notes' => null],
+        AppointmentSource::Web, applyPublicRules: false, now: CarbonImmutable::parse('2030-01-07 20:00'), hairdresserId: $hairdresser->id,
+    );
+
+    $queries = sqlWithVisibleLocks(fn () => $book('first@example.test'));
+    expect($queries[0])->toContain('booking_settings')->toContain('for update');
+
+    expect(fn () => $book('second@example.test'))->toThrow(SlotUnavailableException::class);
+    expect(Appointment::query()->where('hairdresser_id', $hairdresser->id)->count())->toBe(1);
 });
 
 test('cancelling the same appointment twice at once only cancels it once', function () {

@@ -215,6 +215,20 @@ test('it always agrees with isAvailable for the panel', function (int $seed) {
         fitBlock(sprintf('%02d:%02d', intdiv($start, 60), $start % 60), sprintf('%02d:%02d', intdiv($start + $length, 60), ($start + $length) % 60), mt_rand(0, 1) === 1 ? null : 1, $date);
     }
 
+    // Review L4: appointments and blocks of a hairdresser too, and every
+    // hairdresser (or anybody) as the one asked for.
+    $staff = AvailabilityCalculator::activeStaff();
+    foreach (Appointment::all() as $appointment) {
+        if (mt_rand(0, 1) === 1) {
+            $appointment->update(['hairdresser_id' => $staff[mt_rand(0, count($staff) - 1)]]);
+        }
+    }
+    foreach (ScheduleBlock::query()->whereNotNull('capacity_reduction')->get() as $block) {
+        if (mt_rand(0, 1) === 1) {
+            $block->update(['hairdresser_id' => $staff[mt_rand(0, count($staff) - 1)]]);
+        }
+    }
+
     $context = agendaContext($date);
     $candidates = range(fitMinute('08:00'), fitMinute('19:30'), 15);
 
@@ -225,11 +239,13 @@ test('it always agrees with isAvailable for the panel', function (int $seed) {
     ];
 
     foreach ($lengths as $duration) {
-        $fitting = $calculator->fittingStartMinutes($duration, $candidates, $context['day'], $context['ranges'], $context['appointments'], $context['blocks'], $context['staff']);
-        $expected = array_values(array_filter($candidates, fn (int $minute) => $calculator->isAvailable(
-            $duration, $context['day']->setTime(intdiv($minute, 60), $minute % 60), $now, applyPublicRules: false,
-        )));
+        foreach ([null, ...$staff] as $hairdresserId) {
+            $fitting = $calculator->fittingStartMinutes($duration, $candidates, $context['day'], $context['ranges'], $context['appointments'], $context['blocks'], $context['staff'], $hairdresserId);
+            $expected = array_values(array_filter($candidates, fn (int $minute) => $calculator->isAvailable(
+                $duration, $context['day']->setTime(intdiv($minute, 60), $minute % 60), $now, applyPublicRules: false, hairdresserId: $hairdresserId,
+            )));
 
-        expect($fitting)->toBe($expected, "seed {$seed}, length ".json_encode($duration));
+            expect($fitting)->toBe($expected, "seed {$seed}, length ".json_encode($duration).', hairdresser '.($hairdresserId ?? 'any'));
+        }
     }
 })->with(range(1, 25));
