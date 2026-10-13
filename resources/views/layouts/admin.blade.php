@@ -7,6 +7,7 @@
     $modules = [
         ['label' => 'Agenda', 'route' => 'admin.agenda', 'active' => 'admin.agenda*', 'icon' => 'agenda'],
         ['label' => 'Servicios', 'route' => 'admin.services.index', 'active' => 'admin.services.*', 'icon' => 'services'],
+        ['label' => 'Peluqueras', 'route' => 'admin.hairdressers.index', 'active' => 'admin.hairdressers.*', 'icon' => 'hairdressers'],
         ['label' => 'Horario', 'route' => 'admin.opening-hours.edit', 'active' => 'admin.opening-hours.*', 'icon' => 'hours'],
         ['label' => 'Cierres', 'route' => 'admin.blocks.index', 'active' => 'admin.blocks.*', 'icon' => 'blocks'],
         ['label' => 'Ajustes', 'route' => 'admin.settings.edit', 'active' => 'admin.settings.*', 'icon' => 'settings'],
@@ -85,6 +86,9 @@
                                             @break
                                         @case('services')
                                             <circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+                                            @break
+                                        @case('hairdressers')
+                                            <circle cx="12" cy="8" r="4"></circle><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"></path>
                                             @break
                                         @case('hours')
                                             <circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15.5 14"></polyline>
