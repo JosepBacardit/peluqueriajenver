@@ -5,7 +5,7 @@
      $timeline, $gridStart, $gridEnd and $nowLineTop. --}}
 @foreach ($blocks as $block)
     <p class="mb-4 border border-amber-500/40 bg-amber-500/10 text-amber-200 px-4 py-2 text-sm">
-        {{ $block->isFullClosure() ? 'Cierre total' : 'Capacidad reducida en '.$block->capacity_reduction }}:
+        {{ $block->label() }}:
         {{ $block->starts_at->format('d/m H:i') }} → {{ $block->ends_at->format('d/m H:i') }}@if ($block->reason) · {{ $block->reason }}@endif
     </p>
 @endforeach

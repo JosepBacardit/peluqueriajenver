@@ -211,7 +211,7 @@ class AgendaController extends Controller
             ->orderBy('starts_at')
             ->orderBy('id')
             ->get();
-        $blocks = ScheduleBlock::query()->overlapping($day, $day->addDay())->orderBy('starts_at')->get();
+        $blocks = ScheduleBlock::query()->with('hairdresser')->overlapping($day, $day->addDay())->orderBy('starts_at')->get();
         $allRanges = OpeningHour::query()->get();
         $bounds = DayTimeline::weekBounds($allRanges);
         // Review finding H1: a confirmed appointment forced outside the
@@ -278,7 +278,7 @@ class AgendaController extends Controller
             ->orderBy('id')
             ->get();
 
-        $blocks = ScheduleBlock::query()->overlapping($weekStart, $weekEnd)->orderBy('starts_at')->get();
+        $blocks = ScheduleBlock::query()->with('hairdresser')->overlapping($weekStart, $weekEnd)->orderBy('starts_at')->get();
         $allRanges = OpeningHour::query()->get();
         $openWeekdays = $allRanges->pluck('weekday')->unique()->all();
         $bounds = DayTimeline::weekBounds($allRanges);

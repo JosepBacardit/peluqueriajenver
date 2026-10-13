@@ -95,7 +95,7 @@
 | T069 | [Elegir peluquera: especificación y tareas](T069-peluqueras-spec.md) | FEATURE | PRF-161–173 | T068 | Claude Sonnet 5.5 | `low` | Spec revisada a mano | done |
 | T070 | [Peluqueras: modelo, migración y apartado del panel](T070-peluqueras-modelo-panel.md) | FEATURE | PRF-161, PRF-162 (en parte), PRF-163, PRF-164 (columnas) | T069 | Claude Sonnet 5.5 | `medium` | Pest + Pint | done |
 | T071 | [Peluqueras: motor de disponibilidad](T071-peluqueras-motor.md) | ARCHITECTURAL | PRF-162, PRF-165, PRF-153 y PRF-159 (modificados) | T070 | Claude Opus 5.5 | `high` | Pest (fuerza bruta por minutos) + Pint | done |
-| T072 | [Cierres por peluquera](T072-peluqueras-cierres.md) | FEATURE | PRF-170, PRF-021 (modificado) | T071 | Claude Sonnet 5.5 | `medium` | Pest + Pint | in progress |
+| T072 | [Cierres por peluquera](T072-peluqueras-cierres.md) | FEATURE | PRF-170, PRF-021 (modificado) | T071 | Claude Sonnet 5.5 | `medium` | Pest + Pint | done |
 | T073 | [Elegir peluquera en la web, la página de la cita y los correos](T073-peluqueras-publico.md) | FEATURE | PRF-166, PRF-167 | T071 | Claude Sonnet 5.5 | `medium` | Pest + Pint + build | in progress |
 | T074 | [Peluquera en el alta y la edición de citas del panel](T074-peluqueras-panel-citas.md) | FEATURE | PRF-168, PRF-169 | T071, T073 | Claude Sonnet 5.5 | `medium` | Pest + Pint | in progress |
 | T075 | [Agenda por peluquera y filtro «Peluquera»](T075-peluqueras-agenda.md) | ARCHITECTURAL | PRF-171, PRF-172, PRF-109 y PRF-110 (modificados) | T071, T072 | Claude Opus 5.5 | `medium` | Pest + Pint + navegador | in progress |

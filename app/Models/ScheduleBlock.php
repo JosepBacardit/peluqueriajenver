@@ -49,6 +49,24 @@ class ScheduleBlock extends Model
         return $this->belongsTo(Hairdresser::class);
     }
 
+    /**
+     * How the panel names it: "Cierre total", "No está {peluquera}", or,
+     * for the unnamed reductions saved before hairdressers existed,
+     * "Reduce N citas a la vez". Reads hairdresser(): eager-load it.
+     */
+    public function label(): string
+    {
+        if ($this->isFullClosure()) {
+            return 'Cierre total';
+        }
+
+        if ($this->hairdresser_id !== null) {
+            return 'No está '.$this->hairdresser?->name;
+        }
+
+        return 'Reduce '.$this->capacity_reduction.' '.($this->capacity_reduction === 1 ? 'cita' : 'citas').' a la vez';
+    }
+
     public function isFullClosure(): bool
     {
         return $this->capacity_reduction === null;

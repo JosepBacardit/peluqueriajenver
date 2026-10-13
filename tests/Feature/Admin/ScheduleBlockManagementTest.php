@@ -4,6 +4,7 @@ use App\Booking\AvailabilityCalculator;
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\BookingSetting;
+use App\Models\Hairdresser;
 use App\Models\ScheduleBlock;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -16,26 +17,71 @@ beforeEach(function () {
     $this->travelTo(CarbonImmutable::parse('2030-01-07 10:00'));
 });
 
-test('a salon user can create a full closure and a partial capacity reduction', function () {
+test('a salon user can create a full closure and a closure of one hairdresser', function () {
+    $isabel = Hairdresser::query()->where('name', 'Isabel')->sole();
+
     $this->post(route('admin.blocks.store'), [
         'starts_at' => '2030-01-08T00:00',
         'ends_at' => '2030-01-09T00:00',
-        'capacity_reduction' => '',
+        'scope' => 'total',
         'reason' => 'Festivo local',
     ])->assertRedirect(route('admin.blocks.index'));
 
     $this->post(route('admin.blocks.store'), [
         'starts_at' => '2030-01-10T09:00',
-        'ends_at' => '2030-01-12T19:00',
-        'capacity_reduction' => 1,
-        'reason' => 'Vacaciones de una peluquera',
+        'ends_at' => '2030-01-10T13:30',
+        'scope' => 'hairdressers',
+        'hairdresser_ids' => [$isabel->id],
+        'reason' => 'Médico',
     ])->assertRedirect(route('admin.blocks.index'));
 
     $blocks = ScheduleBlock::query()->orderBy('starts_at')->get();
     expect($blocks)->toHaveCount(2);
     expect($blocks[0]->isFullClosure())->toBeTrue();
+    expect($blocks[0]->hairdresser_id)->toBeNull();
     expect($blocks[0]->reason)->toBe('Festivo local');
     expect($blocks[1]->capacity_reduction)->toBe(1);
+    expect($blocks[1]->hairdresser_id)->toBe($isabel->id);
+    expect($blocks[1]->starts_at->format('Y-m-d H:i'))->toBe('2030-01-10 09:00');
+    expect($blocks[1]->ends_at->format('Y-m-d H:i'))->toBe('2030-01-10 13:30');
+});
+
+test('a closure of several hairdressers at once saves one closure for each', function () {
+    $ids = Hairdresser::query()->ordered()->pluck('id')->all();
+
+    $this->post(route('admin.blocks.store'), [
+        'starts_at' => '2030-01-10T09:00',
+        'ends_at' => '2030-01-11T19:00',
+        'scope' => 'hairdressers',
+        'hairdresser_ids' => $ids,
+        'reason' => 'Formación',
+    ])->assertRedirect(route('admin.blocks.index'));
+
+    expect(ScheduleBlock::query()->orderBy('hairdresser_id')->get(['hairdresser_id', 'capacity_reduction', 'reason'])->toArray())->toBe([
+        ['hairdresser_id' => $ids[0], 'capacity_reduction' => 1, 'reason' => 'Formación'],
+        ['hairdresser_id' => $ids[1], 'capacity_reduction' => 1, 'reason' => 'Formación'],
+    ]);
+});
+
+test('the form offers a full closure or each active hairdresser, and no unnamed reduction', function () {
+    Hairdresser::factory()->inactive()->create(['name' => 'Laura']);
+
+    $this->get(route('admin.blocks.index'))
+        ->assertOk()
+        ->assertSee('Cierre total')
+        ->assertSee('No está Jennifer')
+        ->assertSee('No está Isabel')
+        ->assertDontSee('No está Laura')
+        ->assertDontSee('a la vez</option>', false);
+});
+
+test('the list names the hairdresser of each closure and still shows the old reductions', function () {
+    $jennifer = Hairdresser::query()->where('name', 'Jennifer')->sole();
+    ScheduleBlock::create(['starts_at' => '2030-01-20 09:00', 'ends_at' => '2030-01-20 14:00', 'capacity_reduction' => 1, 'hairdresser_id' => $jennifer->id]);
+    ScheduleBlock::create(['starts_at' => '2030-01-21 09:00', 'ends_at' => '2030-01-21 14:00', 'capacity_reduction' => 1]);
+
+    $this->get(route('admin.blocks.index'))
+        ->assertSeeInOrder(['No está Jennifer', 'Reduce 1 cita a la vez']);
 });
 
 test('invalid closures are rejected without saving', function (array $payload, string $field) {
@@ -43,7 +89,7 @@ test('invalid closures are rejected without saving', function (array $payload, s
         ->post(route('admin.blocks.store'), array_merge([
             'starts_at' => '2030-01-08T09:00',
             'ends_at' => '2030-01-08T13:00',
-            'capacity_reduction' => '',
+            'scope' => 'total',
             'reason' => '',
         ], $payload))
         ->assertSessionHasErrors($field);
@@ -53,8 +99,10 @@ test('invalid closures are rejected without saving', function (array $payload, s
     'end before start' => [['ends_at' => '2030-01-08T08:00'], 'ends_at'],
     'end equal to start' => [['ends_at' => '2030-01-08T09:00'], 'ends_at'],
     'missing start' => [['starts_at' => ''], 'starts_at'],
-    'reduction of zero' => [['capacity_reduction' => 0], 'capacity_reduction'],
-    'reduction over 10' => [['capacity_reduction' => 11], 'capacity_reduction'],
+    'missing type' => [['scope' => ''], 'scope'],
+    'unknown type' => [['scope' => 'reducir'], 'scope'],
+    'hairdressers with none chosen' => [['scope' => 'hairdressers'], 'hairdresser_ids'],
+    'an unknown hairdresser' => [['scope' => 'hairdressers', 'hairdresser_ids' => [999]], 'hairdresser_ids.0'],
     'reason over 150 characters' => [['reason' => str_repeat('a', 151)], 'reason'],
 ]);
 
@@ -68,7 +116,7 @@ test('a closure over confirmed appointments warns and does not cancel them', fun
     $this->post(route('admin.blocks.store'), [
         'starts_at' => '2030-01-08T00:00',
         'ends_at' => '2030-01-09T00:00',
-        'capacity_reduction' => '',
+        'scope' => 'total',
     ])->assertSessionHas('warning', 'Hay 2 citas confirmadas en ese periodo. No se han cancelado: revísalas en la agenda.');
 
     expect($appointments[0]->fresh()->status)->toBe(AppointmentStatus::Confirmed);
@@ -81,8 +129,29 @@ test('the warning uses the singular for a single affected appointment', function
     $this->post(route('admin.blocks.store'), [
         'starts_at' => '2030-01-08T09:00',
         'ends_at' => '2030-01-08T12:00',
-        'capacity_reduction' => 1,
+        'scope' => 'total',
     ])->assertSessionHas('warning', 'Hay 1 cita confirmada en ese periodo. No se ha cancelado: revísala en la agenda.');
+});
+
+test('a closure of a hairdresser only warns about her own appointments', function () {
+    [$jennifer, $isabel] = Hairdresser::query()->ordered()->get()->all();
+    Appointment::factory()->create(['starts_at' => '2030-01-08 10:00', 'ends_at' => '2030-01-08 11:00', 'hairdresser_id' => $isabel->id]);
+    Appointment::factory()->create(['starts_at' => '2030-01-08 10:00', 'ends_at' => '2030-01-08 11:00', 'hairdresser_id' => $jennifer->id]);
+    Appointment::factory()->create(['starts_at' => '2030-01-08 10:00', 'ends_at' => '2030-01-08 11:00']);
+
+    $this->post(route('admin.blocks.store'), [
+        'starts_at' => '2030-01-08T09:00',
+        'ends_at' => '2030-01-08T12:00',
+        'scope' => 'hairdressers',
+        'hairdresser_ids' => [$isabel->id],
+    ])->assertSessionHas('warning', 'Hay 1 cita confirmada en ese periodo. No se ha cancelado: revísala en la agenda.');
+
+    $this->post(route('admin.blocks.store'), [
+        'starts_at' => '2030-01-08T13:00',
+        'ends_at' => '2030-01-08T14:00',
+        'scope' => 'hairdressers',
+        'hairdresser_ids' => [$isabel->id],
+    ])->assertSessionMissing('warning');
 });
 
 test('the list shows only closures that have not ended, ordered by start', function () {
