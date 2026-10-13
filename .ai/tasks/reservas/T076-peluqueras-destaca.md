@@ -6,7 +6,7 @@
 - **Modelo:** Claude Sonnet 5.5 · **Esfuerzo:** `medium`
 - **Motivo:** Dato informativo que no toca la disponibilidad.
 - **Estado:** done
-- **PR / rama:** `feature/hairdresser-choice` (desde `main` `b3e879f`).
+- **PR / rama:** `feature/hairdresser-choice` (desde `main` `b3e879f`), commit `05a7825`.
 
 ## Objetivo
 

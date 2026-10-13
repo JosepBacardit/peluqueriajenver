@@ -6,7 +6,7 @@
 - **Modelo:** Claude Sonnet 5.5 · **Esfuerzo:** `low`
 - **Motivo:** Documentación sin código ejecutable.
 - **Estado:** done
-- **PR / rama:** `feature/hairdresser-choice` (desde `main` `b3e879f`).
+- **PR / rama:** `feature/hairdresser-choice` (desde `main` `b3e879f`), commit `e87c82e`.
 
 ## Objetivo
 

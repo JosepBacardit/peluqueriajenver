@@ -6,7 +6,7 @@
 - **Modelo:** Claude Sonnet 5.5 · **Esfuerzo:** `medium`
 - **Motivo:** CRUD acotado con una migración aditiva.
 - **Estado:** done
-- **PR / rama:** `feature/hairdresser-choice` (desde `main` `b3e879f`).
+- **PR / rama:** `feature/hairdresser-choice` (desde `main` `b3e879f`), commit `e6a4d0c`.
 
 ## Objetivo
 

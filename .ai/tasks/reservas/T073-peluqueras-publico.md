@@ -6,7 +6,7 @@
 - **Modelo:** Claude Sonnet 5.5 · **Esfuerzo:** `medium`
 - **Motivo:** Flujo público acotado sobre el motor ya hecho.
 - **Estado:** done
-- **PR / rama:** `feature/hairdresser-choice` (desde `main` `b3e879f`).
+- **PR / rama:** `feature/hairdresser-choice` (desde `main` `b3e879f`), commit `01c71fa`.
 
 ## Objetivo
 

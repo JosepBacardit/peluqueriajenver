@@ -6,7 +6,7 @@
 - **Modelo:** Claude Sonnet 5.5 · **Esfuerzo:** `medium`
 - **Motivo:** Formulario y validación acotados.
 - **Estado:** done
-- **PR / rama:** `feature/hairdresser-choice` (desde `main` `b3e879f`).
+- **PR / rama:** `feature/hairdresser-choice` (desde `main` `b3e879f`), commit `48ecfa3`.
 
 ## Objetivo
 
