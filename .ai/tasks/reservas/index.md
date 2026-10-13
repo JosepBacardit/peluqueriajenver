@@ -99,7 +99,7 @@
 | T073 | [Elegir peluquera en la web, la página de la cita y los correos](T073-peluqueras-publico.md) | FEATURE | PRF-166, PRF-167 | T071 | Claude Sonnet 5.5 | `medium` | Pest + Pint + build | done |
 | T074 | [Peluquera en el alta y la edición de citas del panel](T074-peluqueras-panel-citas.md) | FEATURE | PRF-168, PRF-169 | T071, T073 | Claude Sonnet 5.5 | `medium` | Pest + Pint | done |
 | T075 | [Agenda por peluquera y filtro «Peluquera»](T075-peluqueras-agenda.md) | ARCHITECTURAL | PRF-171, PRF-172, PRF-109 y PRF-110 (modificados) | T071, T072 | Claude Opus 5.5 | `medium` | Pest + Pint + navegador | done |
-| T076 | [En qué destaca cada peluquera](T076-peluqueras-destaca.md) | FEATURE | PRF-173 | T073, T074, T075 | Claude Sonnet 5.5 | `medium` | Pest + Pint | in progress |
+| T076 | [En qué destaca cada peluquera](T076-peluqueras-destaca.md) | FEATURE | PRF-173 | T073, T074, T075 | Claude Sonnet 5.5 | `medium` | Pest + Pint | done |
 | T077 | [Revisión independiente de «Elegir peluquera»](T077-peluqueras-revision.md) | REVIEW | PRF-161–173 | T069–T076 | Claude Opus 5.5 | `medium` | Registro de revisión | pending |
 
 Nota de ejecución: las tareas T001–T012 las ejecutó una misma instancia del agente `programador` (Claude Opus 5.5), por indicación del agente principal, en lugar de alternar modelos por tarea.

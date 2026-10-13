@@ -29,6 +29,7 @@ return [
         'any' => 'Cualquier peluquera',
         'any_help' => 'Me va bien cualquiera.',
         'with' => 'Con :name',
+        'standout' => 'Destaca en: :services',
     ],
     'view_days' => 'Ver días y horas',
     'change_service' => 'Cambiar',

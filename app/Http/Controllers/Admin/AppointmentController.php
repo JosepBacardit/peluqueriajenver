@@ -18,6 +18,7 @@ use App\Http\Requests\Admin\UpdateAdminAppointmentRequest;
 use App\Models\Appointment;
 use App\Models\Hairdresser;
 use App\Models\Service;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -31,7 +32,8 @@ class AppointmentController extends Controller
     public function create(Request $request): View
     {
         $services = Service::query()->where('is_active', true)->ordered()->get();
-        $hairdressers = Hairdresser::query()->active()->ordered()->get();
+        $hairdressers = Hairdresser::query()->active()->ordered()->with('standoutServices:id')->get();
+        $servicios = AgendaController::serviciosFromQuery($request->query('servicio'), $services)->pluck('id')->all();
 
         return view('admin.appointments.create', [
             'services' => $services,
@@ -52,8 +54,25 @@ class AppointmentController extends Controller
             // validated against the same active list the checkboxes
             // render, so an invalid/inactive id is silently ignored rather
             // than preselecting nothing with an error.
-            'servicios' => AgendaController::serviciosFromQuery($request->query('servicio'), $services)->pluck('id')->all(),
+            'servicios' => $servicios,
+            // PRF-173: those who stand out in the preselected services.
+            'standoutHairdresserIds' => self::standingOutIn($hairdressers, $servicios),
         ]);
+    }
+
+    /**
+     * The ids of the hairdressers who stand out in any of these services
+     * (PRF-173), for the "(destaca)" mark. Expects standoutServices loaded.
+     *
+     * @param  Collection<int, Hairdresser>  $hairdressers
+     * @param  list<int>  $serviceIds
+     * @return list<int>
+     */
+    private static function standingOutIn(Collection $hairdressers, array $serviceIds): array
+    {
+        return $hairdressers
+            ->filter(fn (Hairdresser $hairdresser) => $hairdresser->standoutServices->pluck('id')->intersect($serviceIds)->isNotEmpty())
+            ->pluck('id')->map(fn ($id) => (int) $id)->values()->all();
     }
 
     /**
@@ -93,6 +112,13 @@ class AppointmentController extends Controller
             return self::notMovableResponse($appointment, $request);
         }
 
+        // PRF-168: the active ones, plus hers even if she is not.
+        $hairdressers = Hairdresser::query()
+            ->where(fn ($query) => $query->where('is_active', true)->when($appointment->hairdresser_id !== null, fn ($query) => $query->orWhere('id', $appointment->hairdresser_id)))
+            ->ordered()
+            ->with('standoutServices:id')
+            ->get();
+
         return view('admin.appointments.edit', [
             'appointment' => $appointment,
             'services' => Service::query()
@@ -105,11 +131,9 @@ class AppointmentController extends Controller
             // (the bug T046 flagged: the old single-<select> form only
             // ever sent one).
             'selectedIds' => $appointment->items->pluck('service_id')->all(),
-            // PRF-168: the active ones, plus hers even if she is not.
-            'hairdressers' => Hairdresser::query()
-                ->where(fn ($query) => $query->where('is_active', true)->when($appointment->hairdresser_id !== null, fn ($query) => $query->orWhere('id', $appointment->hairdresser_id)))
-                ->ordered()
-                ->get(),
+            'hairdressers' => $hairdressers,
+            // PRF-173: those who stand out in the appointment's services.
+            'standoutHairdresserIds' => self::standingOutIn($hairdressers, $appointment->items->pluck('service_id')->map(fn ($id) => (int) $id)->all()),
             'volver' => self::volverParam($request->query('volver')),
         ]);
     }

@@ -36,6 +36,9 @@ class HairdresserRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:'.Hairdresser::MAX_NAME_LENGTH, Rule::unique('hairdressers', 'name')->ignore($this->route('hairdresser'))],
             'is_active' => ['boolean'],
+            // PRF-173: the active services she stands out in, if any.
+            'service_ids' => ['nullable', 'array'],
+            'service_ids.*' => ['distinct', 'integer', Rule::exists('services', 'id')->where('is_active', true)],
         ];
     }
 
@@ -48,6 +51,7 @@ class HairdresserRequest extends FormRequest
             'name.required' => 'Escribe el nombre de la peluquera.',
             'name.unique' => 'Ya hay una peluquera con ese nombre.',
             'name.max' => 'Como mucho, '.Hairdresser::MAX_NAME_LENGTH.' caracteres.',
+            'service_ids.*.exists' => 'Elige solo servicios activos.',
         ];
     }
 
@@ -81,6 +85,17 @@ class HairdresserRequest extends FormRequest
                 $first->starts_at->format('H:i'),
             ));
         }];
+    }
+
+    /**
+     * The services she stands out in (PRF-173); none when nothing is
+     * checked.
+     *
+     * @return list<int>
+     */
+    public function standoutServiceIds(): array
+    {
+        return array_values(array_map('intval', $this->validated('service_ids') ?? []));
     }
 
     /**

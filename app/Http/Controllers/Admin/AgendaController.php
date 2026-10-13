@@ -8,6 +8,7 @@ use App\Booking\ServiceList;
 use App\Booking\TimeProfile;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
+use App\Models\AppointmentService;
 use App\Models\BookingSetting;
 use App\Models\Hairdresser;
 use App\Models\OpeningHour;
@@ -68,7 +69,7 @@ class AgendaController extends Controller
         // active ones are the lanes, and "peluquera" must be one of them.
         // It travels in the same $servicioQuery fragment as "servicio", so
         // every link of the three views keeps it too.
-        $allHairdressers = Hairdresser::query()->ordered()->get();
+        $allHairdressers = Hairdresser::query()->ordered()->with('standoutServices:id')->get();
         $hairdressers = $allHairdressers->where('is_active', true)->values();
         $peluquera = $hairdressers->firstWhere('id', self::peluqueraIdFromQuery($request->query('peluquera')));
         $servicioQuery += $peluquera === null ? [] : ['peluquera' => $peluquera->id];
@@ -252,7 +253,7 @@ class AgendaController extends Controller
         $dayRanges = $allRanges->where('weekday', $day->isoWeekday())->sortBy('opens_at')->values();
         $now = CarbonImmutable::now();
 
-        [$timeline, $appointments] = $this->timelineFor($day, $bounds, $dayRanges, $appointments, $blocks, $servicios, $hairdressers, $peluquera, $now);
+        [$timeline, $appointments] = $this->timelineFor($day, $bounds, $dayRanges, $appointments, $blocks, $servicios, $hairdressers, $peluquera, $now, self::preferredLanes($appointments, $hairdressers));
 
         return [
             'appointments' => $appointments,
@@ -278,12 +279,13 @@ class AgendaController extends Controller
      * @param  Collection<int, Appointment>  $appointments
      * @param  Collection<int, ScheduleBlock>  $blocks
      * @param  Collection<int, Hairdresser>  $hairdressers
+     * @param  array<int, list<int>>  $preferredLanes  preferredLanes()
      * @return array{0: array, 1: Collection<int, Appointment>}
      */
-    private function timelineFor(CarbonImmutable $day, array $bounds, Collection $ranges, Collection $appointments, Collection $blocks, Collection $servicios, Collection $hairdressers, ?Hairdresser $peluquera, CarbonImmutable $now): array
+    private function timelineFor(CarbonImmutable $day, array $bounds, Collection $ranges, Collection $appointments, Collection $blocks, Collection $servicios, Collection $hairdressers, ?Hairdresser $peluquera, CarbonImmutable $now, array $preferredLanes): array
     {
         $lanes = $hairdressers->map(fn (Hairdresser $hairdresser) => ['id' => (int) $hairdresser->id, 'name' => $hairdresser->name])->all();
-        $timeline = DayTimeline::build($day, $bounds['start'], $bounds['end'], count($lanes), $ranges, $appointments, $blocks, $now, $lanes);
+        $timeline = DayTimeline::build($day, $bounds['start'], $bounds['end'], count($lanes), $ranges, $appointments, $blocks, $now, $lanes, $preferredLanes);
         $everyAppointment = $appointments;
 
         if ($peluquera !== null) {
@@ -300,6 +302,41 @@ class AgendaController extends Controller
         $timeline = $this->markServiceFit($timeline, $servicios, $day, $ranges, $everyAppointment, $blocks, $hairdressers->pluck('id')->map(fn ($id) => (int) $id)->all(), $peluquera);
 
         return [$timeline, $appointments];
+    }
+
+    /**
+     * For each unassigned confirmed appointment, the lanes of the
+     * hairdressers who stand out in one of its services (PRF-173), so the
+     * grid draws it there when she is free: one query for all of them
+     * (their frozen services), none per appointment.
+     *
+     * @param  Collection<int, Appointment>  $appointments
+     * @param  Collection<int, Hairdresser>  $hairdressers  the lanes, with standoutServices loaded
+     * @return array<int, list<int>> appointment id => lanes
+     */
+    private static function preferredLanes(Collection $appointments, Collection $hairdressers): array
+    {
+        $laneOfService = [];
+
+        foreach ($hairdressers->values() as $lane => $hairdresser) {
+            foreach ($hairdresser->standoutServices as $service) {
+                $laneOfService[$service->id][] = $lane;
+            }
+        }
+
+        $unassigned = $appointments->filter(fn (Appointment $appointment) => $appointment->isConfirmed() && $appointment->hairdresser_id === null);
+
+        if ($laneOfService === [] || $unassigned->isEmpty()) {
+            return [];
+        }
+
+        return AppointmentService::query()
+            ->whereIn('appointment_id', $unassigned->pluck('id'))
+            ->get(['appointment_id', 'service_id'])
+            ->groupBy('appointment_id')
+            ->map(fn (Collection $items) => $items->flatMap(fn (AppointmentService $item) => $laneOfService[$item->service_id] ?? [])->unique()->sort()->values()->all())
+            ->filter()
+            ->all();
     }
 
     /**
@@ -373,6 +410,7 @@ class AgendaController extends Controller
         $bounds = DayTimeline::extendBounds($bounds['start'], $bounds['end'], $appointments);
         $now = CarbonImmutable::now();
         $today = $now->startOfDay();
+        $preferredLanes = self::preferredLanes($appointments, $hairdressers);
 
         $days = [];
         for ($date = $weekStart; $date->lt($weekEnd); $date = $date->addDay()) {
@@ -389,7 +427,7 @@ class AgendaController extends Controller
             $isClosed = ! in_array($date->isoWeekday(), $openWeekdays, true) || $hasFullClosure;
             $partialBlocks = $peluquera === null ? $dayBlocks : self::blocksFor($dayBlocks, $peluquera);
 
-            [$timeline, $dayAppointments] = $this->timelineFor($date, $bounds, $dayRanges, $dayAppointments, $dayBlocks, $servicios, $hairdressers, $peluquera, $now);
+            [$timeline, $dayAppointments] = $this->timelineFor($date, $bounds, $dayRanges, $dayAppointments, $dayBlocks, $servicios, $hairdressers, $peluquera, $now, $preferredLanes);
 
             $days[] = [
                 'date' => $date,

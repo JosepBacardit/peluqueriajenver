@@ -89,6 +89,9 @@
                                     <label class="flex items-center justify-between gap-4 min-h-11 border border-[#2A2A2A] hover:border-gold p-5 transition-colors cursor-pointer">
                                         <span>
                                             <span class="block text-white font-semibold">{{ $hairdresserOption->name }}</span>
+                                            @if ($hairdresserOption->standoutServices->isNotEmpty())
+                                                <span class="block text-sm text-gray-400">{{ __('reservas.hairdresser.standout', ['services' => $hairdresserOption->standoutServices->pluck('name')->implode(', ')]) }}</span>
+                                            @endif
                                         </span>
                                         <input type="radio" name="peluquera" value="{{ $hairdresserOption->id }}" @checked($hairdresser?->id === $hairdresserOption->id) class="w-5 h-5 shrink-0 accent-gold">
                                     </label>

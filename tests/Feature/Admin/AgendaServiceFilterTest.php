@@ -248,7 +248,10 @@ test('selecting a service keeps vista Día at a fixed number of queries', functi
     expect($countOf('schedule_blocks'))->toBe(1);
     expect($countOf('opening_hours'))->toBe(1);
     expect($countOf('booking_settings'))->toBe(1);
-    expect($countOf('services'))->toBe(1);
+    // The active services, plus once for the hairdressers' "destaca en"
+    // (PRF-173), loaded with them; the hairdressers themselves once.
+    expect($countOf('services'))->toBe(2);
+    expect($countOf('hairdressers'))->toBe(1);
 });
 
 test('selecting a service keeps vista Semana at a fixed number of queries, not one per day', function () {
@@ -267,7 +270,10 @@ test('selecting a service keeps vista Semana at a fixed number of queries, not o
     expect($countOf('schedule_blocks'))->toBe(1);
     expect($countOf('opening_hours'))->toBe(1);
     expect($countOf('booking_settings'))->toBe(1);
-    expect($countOf('services'))->toBe(1);
+    // The active services, plus once for the hairdressers' "destaca en"
+    // (PRF-173), loaded with them; the hairdressers themselves once.
+    expect($countOf('services'))->toBe(2);
+    expect($countOf('hairdressers'))->toBe(1);
 });
 
 /**
@@ -359,7 +365,10 @@ test('selecting two services keeps vista Día at a fixed number of queries', fun
     expect($countOf('schedule_blocks'))->toBe(1);
     expect($countOf('opening_hours'))->toBe(1);
     expect($countOf('booking_settings'))->toBe(1);
-    expect($countOf('services'))->toBe(1);
+    // The active services, plus once for the hairdressers' "destaca en"
+    // (PRF-173), loaded with them; the hairdressers themselves once.
+    expect($countOf('services'))->toBe(2);
+    expect($countOf('hairdressers'))->toBe(1);
 });
 
 /**

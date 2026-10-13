@@ -47,7 +47,10 @@ class BookingController extends Controller
         $services = Service::query()->bookableOnline()->ordered()->get();
         ['ids' => $requestedIds, 'adjusted' => $selectionAdjusted] = self::requestedServiceIds($request->query('servicio'));
         $selectedServices = self::selectedServices($requestedIds, $services);
-        $hairdressers = Hairdresser::query()->active()->ordered()->get();
+        // PRF-173: with what each one stands out in, among what can be booked here.
+        $hairdressers = Hairdresser::query()->active()->ordered()
+            ->with(['standoutServices' => fn ($query) => $query->bookableOnline()->ordered()])
+            ->get();
         // PRF-166: anything but an active hairdresser's id means any.
         $hairdresser = $hairdressers->firstWhere('id', self::idParam($request->query('peluquera')));
 
