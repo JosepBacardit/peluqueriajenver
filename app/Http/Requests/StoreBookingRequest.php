@@ -78,6 +78,10 @@ class StoreBookingRequest extends FormRequest
             'customer_email' => ['required', 'email', 'max:150'],
             'notes' => ['nullable', 'string', 'max:500'],
             'privacy' => ['accepted'],
+            // PRF-166: whether it is an active hairdresser is checked by
+            // the controller, which refuses the booking like a time no
+            // longer free (the step it comes from has no field for it).
+            'hairdresser_id' => ['nullable'],
         ];
     }
 
@@ -102,6 +106,18 @@ class StoreBookingRequest extends FormRequest
         }
 
         parent::failedValidation($validator);
+    }
+
+    /**
+     * The hairdresser chosen, or null for any (also for a value that is
+     * not an id: the controller refuses that booking).
+     */
+    public function hairdresserId(): ?int
+    {
+        $value = $this->validated('hairdresser_id');
+        $value = is_int($value) ? (string) $value : $value;
+
+        return is_string($value) && preg_match('/^[1-9]\d{0,9}$/', $value) === 1 ? (int) $value : null;
     }
 
     public function startsAt(): CarbonImmutable

@@ -25,7 +25,8 @@ uses(RefreshDatabase::class);
  * schedule; capacity 1 unless a test says otherwise.
  */
 beforeEach(function () {
-    BookingSetting::current()->update(['capacity' => 1, 'slot_interval_minutes' => 30, 'min_notice_minutes' => 600, 'max_advance_days' => 1]);
+    setStaffCount(1);
+    BookingSetting::current()->update(['slot_interval_minutes' => 30, 'min_notice_minutes' => 600, 'max_advance_days' => 1]);
     $this->calculator = app(AvailabilityCalculator::class);
     $this->service = Service::factory()->create();
 });
@@ -55,9 +56,9 @@ function fitBlock(string $from, string $to, ?int $reduction, string $date = '203
 /**
  * The context exactly as AgendaController loads it for DayTimeline::build():
  * the day's opening ranges, its appointments of any status and the blocks
- * overlapping it, plus the capacity.
+ * overlapping it, plus the active hairdressers (the capacity).
  *
- * @return array{day: CarbonImmutable, ranges: Collection, appointments: Collection, blocks: Collection, capacity: int}
+ * @return array{day: CarbonImmutable, ranges: Collection, appointments: Collection, blocks: Collection, staff: list<int>}
  */
 function agendaContext(string $date): array
 {
@@ -68,7 +69,7 @@ function agendaContext(string $date): array
         'ranges' => OpeningHour::query()->get()->where('weekday', $day->isoWeekday())->sortBy('opens_at')->values(),
         'appointments' => Appointment::query()->where('starts_at', '>=', $day)->where('starts_at', '<', $day->addDay())->orderBy('starts_at')->get(),
         'blocks' => ScheduleBlock::query()->overlapping($day, $day->addDay())->orderBy('starts_at')->get(),
-        'capacity' => BookingSetting::current()->capacity,
+        'staff' => AvailabilityCalculator::activeStaff(),
     ];
 }
 
@@ -87,7 +88,7 @@ function fittingTimes(int $durationMinutes, array $candidates, string $date = '2
         $context['ranges'],
         $context['appointments'],
         $context['blocks'],
-        $context['capacity'],
+        $context['staff'],
     );
 
     return array_map(fn (int $minute) => sprintf('%02d:%02d', intdiv($minute, 60), $minute % 60), $minutes);
@@ -100,7 +101,7 @@ test('an appointment leaves no room for a service that would overlap it, but one
 });
 
 test('a second place lets a service overlap one appointment but not two', function () {
-    BookingSetting::current()->update(['capacity' => 2]);
+    setStaffCount(2);
     fitBook('10:00', '11:00');
 
     expect(fittingTimes(60, ['09:30', '10:00', '10:30']))->toBe(['09:30', '10:00', '10:30']);
@@ -112,7 +113,7 @@ test('a second place lets a service overlap one appointment but not two', functi
 });
 
 test('a capacity reduction starting halfway through the service counts from that moment', function () {
-    BookingSetting::current()->update(['capacity' => 2]);
+    setStaffCount(2);
     fitBook('10:00', '12:00');
     fitBlock('11:00', '12:00', 1);
 
@@ -121,7 +122,7 @@ test('a capacity reduction starting halfway through the service counts from that
 });
 
 test('a full closure leaves no room while it lasts', function () {
-    BookingSetting::current()->update(['capacity' => 2]);
+    setStaffCount(2);
     fitBlock('14:00', '15:00', null);
 
     expect(fittingTimes(60, ['13:00', '13:30', '14:00', '14:30', '15:00']))->toBe(['13:00', '15:00']);
@@ -164,14 +165,14 @@ test('times stay on the local clock on the days the clocks change', function (st
 ]);
 
 test('it runs no query', function () {
-    BookingSetting::current()->update(['capacity' => 2]);
+    setStaffCount(2);
     fitBook('10:00', '11:00');
     fitBlock('15:00', '16:00', 1);
     $context = agendaContext('2030-01-08');
 
     DB::flushQueryLog();
     DB::enableQueryLog();
-    $this->calculator->fittingStartMinutes(90, range(fitMinute('08:00'), fitMinute('19:30'), 30), $context['day'], $context['ranges'], $context['appointments'], $context['blocks'], $context['capacity']);
+    $this->calculator->fittingStartMinutes(90, range(fitMinute('08:00'), fitMinute('19:30'), 30), $context['day'], $context['ranges'], $context['appointments'], $context['blocks'], $context['staff']);
     $queries = DB::getQueryLog();
     DB::disableQueryLog();
 
@@ -192,7 +193,7 @@ test('it always agrees with isAvailable for the panel', function (int $seed) {
     $calculator = $this->calculator;
     $now = CarbonImmutable::parse('2030-01-07 20:00');
 
-    BookingSetting::current()->update(['capacity' => mt_rand(1, 3)]);
+    setStaffCount(mt_rand(1, 3));
 
     if (mt_rand(0, 1) === 1) {
         OpeningHour::query()->where('weekday', 2)->delete();
@@ -214,6 +215,20 @@ test('it always agrees with isAvailable for the panel', function (int $seed) {
         fitBlock(sprintf('%02d:%02d', intdiv($start, 60), $start % 60), sprintf('%02d:%02d', intdiv($start + $length, 60), ($start + $length) % 60), mt_rand(0, 1) === 1 ? null : 1, $date);
     }
 
+    // Review L4: appointments and blocks of a hairdresser too, and every
+    // hairdresser (or anybody) as the one asked for.
+    $staff = AvailabilityCalculator::activeStaff();
+    foreach (Appointment::all() as $appointment) {
+        if (mt_rand(0, 1) === 1) {
+            $appointment->update(['hairdresser_id' => $staff[mt_rand(0, count($staff) - 1)]]);
+        }
+    }
+    foreach (ScheduleBlock::query()->whereNotNull('capacity_reduction')->get() as $block) {
+        if (mt_rand(0, 1) === 1) {
+            $block->update(['hairdresser_id' => $staff[mt_rand(0, count($staff) - 1)]]);
+        }
+    }
+
     $context = agendaContext($date);
     $candidates = range(fitMinute('08:00'), fitMinute('19:30'), 15);
 
@@ -224,11 +239,13 @@ test('it always agrees with isAvailable for the panel', function (int $seed) {
     ];
 
     foreach ($lengths as $duration) {
-        $fitting = $calculator->fittingStartMinutes($duration, $candidates, $context['day'], $context['ranges'], $context['appointments'], $context['blocks'], $context['capacity']);
-        $expected = array_values(array_filter($candidates, fn (int $minute) => $calculator->isAvailable(
-            $duration, $context['day']->setTime(intdiv($minute, 60), $minute % 60), $now, applyPublicRules: false,
-        )));
+        foreach ([null, ...$staff] as $hairdresserId) {
+            $fitting = $calculator->fittingStartMinutes($duration, $candidates, $context['day'], $context['ranges'], $context['appointments'], $context['blocks'], $context['staff'], $hairdresserId);
+            $expected = array_values(array_filter($candidates, fn (int $minute) => $calculator->isAvailable(
+                $duration, $context['day']->setTime(intdiv($minute, 60), $minute % 60), $now, applyPublicRules: false, hairdresserId: $hairdresserId,
+            )));
 
-        expect($fitting)->toBe($expected, "seed {$seed}, length ".json_encode($duration));
+            expect($fitting)->toBe($expected, "seed {$seed}, length ".json_encode($duration).', hairdresser '.($hairdresserId ?? 'any'));
+        }
     }
 })->with(range(1, 25));

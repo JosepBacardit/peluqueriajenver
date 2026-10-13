@@ -17,7 +17,8 @@ uses(RefreshDatabase::class);
  * schedule. "Now" is the evening before unless a test says otherwise.
  */
 beforeEach(function () {
-    BookingSetting::current()->update(['capacity' => 2, 'slot_interval_minutes' => 15, 'min_notice_minutes' => 0, 'max_advance_days' => 60]);
+    setStaffCount(2);
+    BookingSetting::current()->update(['slot_interval_minutes' => 15, 'min_notice_minutes' => 0, 'max_advance_days' => 60]);
     $this->calculator = app(AvailabilityCalculator::class);
     $this->now = CarbonImmutable::parse('2030-01-07 20:00');
 });
@@ -108,7 +109,7 @@ test('an appointment ending when another starts does not overlap it', function (
 });
 
 test('the capacity setting is respected', function () {
-    BookingSetting::current()->update(['capacity' => 1]);
+    setStaffCount(1);
     bookAppointment('10:00', '11:00');
 
     expect($this->calculator->isAvailable(30, at('10:30'), $this->now, applyPublicRules: true))->toBeFalse();
@@ -147,7 +148,7 @@ test('admin rules ignore the interval and the notice but not the past, the sched
 });
 
 test('an appointment being moved does not take capacity from its own new time', function () {
-    BookingSetting::current()->update(['capacity' => 1]);
+    setStaffCount(1);
     $moved = bookAppointment('10:00', '11:00');
 
     // Moving it 15 minutes earlier overlaps only its own current place.
@@ -160,7 +161,8 @@ test('an appointment being moved does not take capacity from its own new time', 
 });
 
 test('it says why a time cannot be booked', function () {
-    BookingSetting::current()->update(['capacity' => 1, 'min_notice_minutes' => 120]);
+    setStaffCount(1);
+    BookingSetting::current()->update(['min_notice_minutes' => 120]);
     bookAppointment('10:00', '11:00');
     ScheduleBlock::create(['starts_at' => at('15:00'), 'ends_at' => at('16:00'), 'capacity_reduction' => null]);
     $now = at('08:00');

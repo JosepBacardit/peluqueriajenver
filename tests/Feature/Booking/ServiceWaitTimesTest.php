@@ -27,7 +27,8 @@ uses(RefreshDatabase::class);
  * 120 minutes: 30 active, 45 waiting (from minute 30), 45 active.
  */
 beforeEach(function () {
-    BookingSetting::current()->update(['capacity' => 2, 'slot_interval_minutes' => 15, 'min_notice_minutes' => 0, 'max_advance_days' => 60]);
+    setStaffCount(2);
+    BookingSetting::current()->update(['slot_interval_minutes' => 15, 'min_notice_minutes' => 0, 'max_advance_days' => 60]);
     $this->calculator = app(AvailabilityCalculator::class);
     $this->now = CarbonImmutable::parse('2030-01-07 20:00');
     $this->coloracion = Service::factory()->create(['name' => 'Coloración', 'duration_minutes' => 120, 'waits' => [['start' => 30, 'minutes' => 45]], 'sort_order' => 1]);
@@ -125,7 +126,7 @@ test('the waits still count towards the opening hours: the whole appointment mus
 });
 
 test('a day is offered on the calendar when only a wait leaves room', function () {
-    BookingSetting::current()->update(['capacity' => 1]);
+    setStaffCount(1);
     // The only place is taken all day except during this appointment's wait.
     waitBook('09:00', '19:00', [['start' => 90, 'minutes' => 60]]);
 
@@ -242,7 +243,7 @@ test('the agenda fit check counts only the active stretches', function () {
 test('it agrees minute by minute with a brute-force count', function (int $seed) {
     mt_srand($seed);
     $capacity = mt_rand(1, 3);
-    BookingSetting::current()->update(['capacity' => $capacity]);
+    setStaffCount($capacity);
     $busyMinutes = []; // minute of the day => appointments active then
     $reduction = [];
 

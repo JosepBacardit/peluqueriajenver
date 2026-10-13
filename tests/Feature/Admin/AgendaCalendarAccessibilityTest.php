@@ -136,18 +136,18 @@ test('the agenda nav lays out in a single row from md up', function () {
  * T040, revisited for review finding L4: the grid's DOM order is now
  * globally chronological across lanes (not grouped lane-by-lane), so a
  * lane's segments can no longer share one contiguous role="group"
- * wrapper. Each hueco libre's own aria-label says its "Plaza N" instead —
- * lanes never name a hairdresser (PRF-109) — and review finding N6 adds a
- * visible "Plaza 1 · Plaza 2" header above the grid for anyone who can see
+ * wrapper. Each hueco libre's own aria-label says its lane instead — since
+ * PRF-171 each lane is a hairdresser's column — and review finding N6 adds
+ * a visible header with their names above the grid for anyone who can see
  * it.
  */
-test('each hueco libre in the Día timeline says its "Plaza N", not a hairdresser', function () {
+test('each hueco libre in the Día timeline says whose column it is in', function () {
     $html = $this->get(route('admin.agenda'))->assertOk()->getContent();
 
-    expect($html)->toContain('aria-label="Hueco libre a las 09:00, plaza 1"');
-    expect($html)->toContain('aria-label="Hueco libre a las 09:00, plaza 2"');
-    expect($html)->toContain('>Plaza 1<');
-    expect($html)->toContain('>Plaza 2<');
+    expect($html)->toContain('aria-label="Hueco libre a las 09:00, columna de Jennifer"');
+    expect($html)->toContain('aria-label="Hueco libre a las 09:00, columna de Isabel"');
+    expect($html)->toContain('>Jennifer<');
+    expect($html)->toContain('>Isabel<');
 });
 
 /**

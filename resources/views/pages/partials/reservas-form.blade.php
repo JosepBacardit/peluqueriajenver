@@ -12,6 +12,9 @@
             <input type="hidden" name="service_ids[]" value="{{ $selectedService->id }}">
         @endforeach
         <input type="hidden" name="date" value="{{ $day->toDateString() }}">
+        @if ($hairdresser !== null)
+            <input type="hidden" name="hairdresser_id" value="{{ $hairdresser->id }}">
+        @endif
 
         <fieldset>
             <legend class="text-sm mb-2">{{ __('reservas.form.times_legend') }}</legend>

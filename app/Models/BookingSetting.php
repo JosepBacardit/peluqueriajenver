@@ -7,9 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * The salon's booking rules. The table always holds exactly one row,
- * created by its migration.
+ * created by its migration. Its `capacity` column is no longer read: the
+ * capacity is the number of active hairdressers (PRF-162, 2026-10-13).
  */
-#[Fillable(['capacity', 'slot_interval_minutes', 'min_notice_minutes', 'max_advance_days', 'cancellation_limit_hours', 'online_booking_enabled'])]
+#[Fillable(['slot_interval_minutes', 'min_notice_minutes', 'max_advance_days', 'cancellation_limit_hours', 'online_booking_enabled'])]
 class BookingSetting extends Model
 {
     /**
@@ -55,11 +56,15 @@ class BookingSetting extends Model
      * after a fresh deploy) or one where every service is inactive or
      * phone-only must make the public site behave exactly as if the
      * switch itself were off, instead of still announcing an online
-     * booking nobody can actually complete. Short-circuits on the switch
-     * first, so the extra `Service` read never happens while it is off.
+     * booking nobody can actually complete. With no active hairdresser
+     * (PRF-162) the capacity is 0, so it behaves the same way.
+     * Short-circuits on the switch first, so the extra reads never happen
+     * while it is off.
      */
     public static function onlineBookingAvailable(): bool
     {
-        return self::onlineBookingEnabled() && Service::query()->bookableOnline()->exists();
+        return self::onlineBookingEnabled()
+            && Service::query()->bookableOnline()->exists()
+            && Hairdresser::query()->active()->exists();
     }
 }

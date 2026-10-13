@@ -24,6 +24,13 @@ return [
         'contact_link' => 'Ver más formas de contactar →',
     ],
     'max_services' => 'Hasta :max servicios por cita.',
+    'hairdresser' => [
+        'legend' => '¿Con qué peluquera?',
+        'any' => 'Cualquier peluquera',
+        'any_help' => 'Me va bien cualquiera.',
+        'with' => 'Con :name',
+        'standout' => 'Destaca en: :services',
+    ],
     'view_days' => 'Ver días y horas',
     'change_service' => 'Cambiar',
     'calendar' => [
@@ -77,6 +84,7 @@ return [
         'meta_title' => 'Tu cita | Peluquería Jenver',
         'title' => 'Tu cita',
         'service' => 'Servicio',
+        'hairdresser' => 'Peluquera',
         'when' => 'Día y hora',
         'name' => 'Nombre',
         'status' => 'Estado',

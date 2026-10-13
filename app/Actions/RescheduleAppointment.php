@@ -95,6 +95,16 @@ class RescheduleAppointment
      * lock, so each one reads and replaces the services the previous one
      * left.
      *
+     * $hairdresserId is the hairdresser the appointment will have (null:
+     * any hairdresser, unassigned), or false to keep the one it has. A
+     * different hairdresser is a change of slot: availability is checked
+     * for her (PRF-168), and "save anyway" skips it like the rest. Whether
+     * the customer chose her (hairdresser_requested, PRF-164) stays while
+     * the appointment keeps a hairdresser, is never set by the salon
+     * assigning an unassigned appointment, and goes with the hairdresser.
+     * When the customer had chosen one and the salon changes it, that
+     * counts as rescheduled, so she gets the change notice (PRF-169).
+     *
      * A different email address gets a new token: whoever received the
      * old personal link (e.g. at a mistyped address) can no longer see or
      * cancel the appointment. Its confirmation is left pending
@@ -118,11 +128,12 @@ class RescheduleAppointment
         bool $ignoreHoursAndCapacity,
         ?CarbonImmutable $now = null,
         ?int $expectedVersion = null,
+        int|false|null $hairdresserId = false,
     ): RescheduleOutcome {
         $now ??= CarbonImmutable::now();
         $services = ServiceList::ordered($services);
 
-        return DB::transaction(function () use ($appointment, $services, $startsAt, $customer, $ignoreHoursAndCapacity, $now, $expectedVersion): RescheduleOutcome {
+        return DB::transaction(function () use ($appointment, $services, $startsAt, $customer, $ignoreHoursAndCapacity, $now, $expectedVersion, $hairdresserId): RescheduleOutcome {
             BookingSetting::query()->lockForUpdate()->orderBy('id')->firstOrFail();
 
             $current = Appointment::query()->find($appointment->getKey());
@@ -156,10 +167,12 @@ class RescheduleAppointment
             })->all();
             $currentProfile = TimeProfile::fromAppointment($current);
             $profile = $keepsServices ? $currentProfile : TimeProfile::fromServices($items);
-            $keepsSlot = $startsAt->eq($current->starts_at) && $profile->equals($currentProfile);
+            $hairdresser = $hairdresserId === false ? $current->hairdresser_id : $hairdresserId;
+            $hairdresserChanged = $hairdresser !== $current->hairdresser_id;
+            $keepsSlot = $startsAt->eq($current->starts_at) && $profile->equals($currentProfile) && ! $hairdresserChanged;
 
             if (! $ignoreHoursAndCapacity && ! $keepsSlot) {
-                $reason = $this->calculator->unavailabilityReason($profile, $startsAt, $now, applyPublicRules: false, excludeAppointmentId: $current->id);
+                $reason = $this->calculator->unavailabilityReason($profile, $startsAt, $now, applyPublicRules: false, excludeAppointmentId: $current->id, hairdresserId: $hairdresser);
 
                 if ($reason !== null) {
                     throw new SlotUnavailableException($reason);
@@ -174,6 +187,8 @@ class RescheduleAppointment
                 'starts_at' => $startsAt,
                 'ends_at' => $startsAt->addMinutes($profile->durationMinutes),
                 'waits' => $profile->waitsForStorage(),
+                'hairdresser_id' => $hairdresser,
+                'hairdresser_requested' => $hairdresser !== null && $current->hairdresser_id !== null && $current->hairdresser_requested,
                 'customer_name' => trim($customer['customer_name']),
                 'customer_phone' => trim($customer['customer_phone']),
                 'customer_email' => $email,
@@ -200,11 +215,11 @@ class RescheduleAppointment
                 $current->items()->createMany($items);
             }
 
-            $appointment->unsetRelation('items')->unsetRelation('services');
+            $appointment->unsetRelation('items')->unsetRelation('services')->unsetRelation('hairdresser');
 
             return new RescheduleOutcome(
                 appointment: $appointment->forceFill($attributes + ['status' => AppointmentStatus::Confirmed])->syncOriginal(),
-                rescheduled: ! $startsAt->eq($current->starts_at) || ! $keepsServices,
+                rescheduled: ! $startsAt->eq($current->starts_at) || ! $keepsServices || ($hairdresserChanged && $current->hairdresser_requested),
                 emailChanged: $emailChanged,
             );
         });

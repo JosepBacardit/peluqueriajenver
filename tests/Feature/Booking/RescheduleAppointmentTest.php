@@ -23,7 +23,8 @@ uses(RefreshDatabase::class);
  * schedule. "Now" is the evening before.
  */
 beforeEach(function () {
-    BookingSetting::current()->update(['capacity' => 1, 'min_notice_minutes' => 0]);
+    setStaffCount(1);
+    BookingSetting::current()->update(['min_notice_minutes' => 0]);
     $this->now = CarbonImmutable::parse('2030-01-07 20:00');
     $this->service = Service::factory()->create(['name' => 'Corte', 'duration_minutes' => 60]);
     $this->appointment = Appointment::factory()->withServices($this->service)->create([

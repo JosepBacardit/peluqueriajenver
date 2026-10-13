@@ -8,7 +8,9 @@ use App\Booking\ServiceList;
 use App\Booking\TimeProfile;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
+use App\Models\AppointmentService;
 use App\Models\BookingSetting;
+use App\Models\Hairdresser;
 use App\Models\OpeningHour;
 use App\Models\ScheduleBlock;
 use App\Models\Service;
@@ -62,10 +64,19 @@ class AgendaController extends Controller
             default => ['servicio' => $servicioIds],
         };
 
-        // One fetch reused for the capacity (Día/Semana) and for the
-        // "Reserva online desactivada" banner, instead of a second,
-        // separate query for the banner on top of dayData()/weekData()'s
-        // own (both already fixed-query-count, PRF-109/PRF-118).
+        // Hairdresser filter (PRF-171, PRF-172): every hairdresser is
+        // loaded once (the inactive ones only name past appointments), the
+        // active ones are the lanes, and "peluquera" must be one of them.
+        // It travels in the same $servicioQuery fragment as "servicio", so
+        // every link of the three views keeps it too.
+        $allHairdressers = Hairdresser::query()->ordered()->with('standoutServices:id')->get();
+        $hairdressers = $allHairdressers->where('is_active', true)->values();
+        $peluquera = $hairdressers->firstWhere('id', self::peluqueraIdFromQuery($request->query('peluquera')));
+        $servicioQuery += $peluquera === null ? [] : ['peluquera' => $peluquera->id];
+
+        // The "Reserva online desactivada" banner (the capacity, which this
+        // read also used to give Día/Semana, is now the active
+        // hairdressers loaded above, PRF-162).
         //
         // Review finding L3: this does add one query to vista Mes, which
         // never read BookingSetting before — not trivial to remove, since
@@ -91,19 +102,24 @@ class AgendaController extends Controller
             // (coordinator's decision 1): it stays its own query parameter
             // everywhere, same as "hora" already is, so volver's
             // "vista:fecha" format and its whitelist parsing never change.
-            'volver' => "$vista:{$day->toDateString()}",
+            // The hairdresser filter does come back (PRF-172), as an
+            // optional third part: "vista:fecha:peluquera".
+            'volver' => "$vista:{$day->toDateString()}".($peluquera === null ? '' : ":{$peluquera->id}"),
             'services' => $services,
             'servicios' => $servicios,
             'servicioQuery' => $servicioQuery,
+            'hairdressers' => $hairdressers,
+            'peluquera' => $peluquera,
+            'hairdresserNames' => $allHairdressers->pluck('name', 'id'),
             'onlineBookingEnabled' => $settings->online_booking_enabled,
             // PRF-148: reuses $services (already loaded for the filter
             // above, PRF-120) instead of a second query — it already
             // carries is_bookable_online on every active service.
             'hasBookableOnlineService' => $services->contains('is_bookable_online', true),
             ...match ($vista) {
-                'semana' => $this->weekData($weekStart, $servicios, $settings->capacity),
-                'mes' => $this->monthData($month),
-                default => $this->dayData($day, $servicios, $settings->capacity),
+                'semana' => $this->weekData($weekStart, $servicios, $hairdressers, $peluquera),
+                'mes' => $this->monthData($month, $peluquera),
+                default => $this->dayData($day, $servicios, $hairdressers, $peluquera),
             },
         ]);
     }
@@ -136,6 +152,16 @@ class AgendaController extends Controller
     }
 
     /**
+     * The "peluquera" query value as a hairdresser id (PRF-172), or null
+     * when missing or not a positive integer. Whether she exists and is
+     * active is for the caller to check against the hairdressers it loads.
+     */
+    public static function peluqueraIdFromQuery(mixed $value): ?int
+    {
+        return is_string($value) && preg_match('/^[1-9]\d{0,9}$/', $value) === 1 ? (int) $value : null;
+    }
+
+    /**
      * The requested view (dia|semana|mes), or "dia" when missing or invalid.
      */
     public static function viewFromQuery(mixed $value): string
@@ -165,7 +191,11 @@ class AgendaController extends Controller
      * route() call to admin.agenda — never as a raw redirect URL, so this
      * can't become an open redirect.
      *
-     * @return array{vista: string, fecha: string}|null null when missing or invalid.
+     * An optional third part is the hairdresser filter (PRF-172),
+     * "vista:fecha:peluquera", kept only when it looks like an id (the
+     * agenda itself ignores one that is not an active hairdresser).
+     *
+     * @return array{vista: string, fecha: string, peluquera?: int}|null null when missing or invalid.
      */
     public static function volverFromQuery(mixed $value): ?array
     {
@@ -173,13 +203,15 @@ class AgendaController extends Controller
             return null;
         }
 
-        [$vista, $fecha] = explode(':', $value, 2);
+        $parts = explode(':', $value, 3);
+        [$vista, $fecha] = $parts;
+        $peluquera = self::peluqueraIdFromQuery($parts[2] ?? null);
 
-        if (! in_array($vista, self::VIEWS, true) || ! self::isValidDateString($fecha)) {
+        if (! in_array($vista, self::VIEWS, true) || ! self::isValidDateString($fecha) || (isset($parts[2]) && $peluquera === null)) {
             return null;
         }
 
-        return ['vista' => $vista, 'fecha' => $fecha];
+        return ['vista' => $vista, 'fecha' => $fecha] + ($peluquera === null ? [] : ['peluquera' => $peluquera]);
     }
 
     private static function isValidDateString(mixed $value): bool
@@ -196,14 +228,14 @@ class AgendaController extends Controller
     /**
      * Besides the appointments/blocks the cards below the grid already
      * needed, this loads every opening-hours row once (for the shared
-     * week-wide grid bounds, PRF-108, and this weekday's own ranges) and
-     * the capacity (for the fixed lane count, PRF-109) to build the
-     * timeline grid — 4 queries total, none repeated per block or per
-     * lane.
+     * week-wide grid bounds, PRF-108, and this weekday's own ranges); the
+     * hairdressers (the lanes, PRF-171) come already loaded from index() —
+     * none of it repeated per block or per lane.
      *
+     * @param  Collection<int, Hairdresser>  $hairdressers  the active ones, in lane order
      * @return array{appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>, gridStart: int, gridEnd: int, timeline: array, nowLineTop: int|null}
      */
-    private function dayData(CarbonImmutable $day, Collection $servicios, int $capacity): array
+    private function dayData(CarbonImmutable $day, Collection $servicios, Collection $hairdressers, ?Hairdresser $peluquera): array
     {
         $appointments = Appointment::query()
             ->where('starts_at', '>=', $day)
@@ -211,7 +243,7 @@ class AgendaController extends Controller
             ->orderBy('starts_at')
             ->orderBy('id')
             ->get();
-        $blocks = ScheduleBlock::query()->overlapping($day, $day->addDay())->orderBy('starts_at')->get();
+        $blocks = ScheduleBlock::query()->with('hairdresser')->overlapping($day, $day->addDay())->orderBy('starts_at')->get();
         $allRanges = OpeningHour::query()->get();
         $bounds = DayTimeline::weekBounds($allRanges);
         // Review finding H1: a confirmed appointment forced outside the
@@ -221,12 +253,11 @@ class AgendaController extends Controller
         $dayRanges = $allRanges->where('weekday', $day->isoWeekday())->sortBy('opens_at')->values();
         $now = CarbonImmutable::now();
 
-        $timeline = DayTimeline::build($day, $bounds['start'], $bounds['end'], $capacity, $dayRanges, $appointments, $blocks, $now);
-        $timeline = $this->markServiceFit($timeline, $servicios, $day, $dayRanges, $appointments, $blocks, $capacity);
+        [$timeline, $appointments] = $this->timelineFor($day, $bounds, $dayRanges, $appointments, $blocks, $servicios, $hairdressers, $peluquera, $now, self::preferredLanes($appointments, $hairdressers));
 
         return [
             'appointments' => $appointments,
-            'blocks' => $blocks,
+            'blocks' => $peluquera === null ? $blocks : self::blocksFor($blocks, $peluquera),
             'gridStart' => $bounds['start'],
             'gridEnd' => $bounds['end'],
             'timeline' => $timeline,
@@ -235,17 +266,105 @@ class AgendaController extends Controller
     }
 
     /**
+     * One day's timeline (Día, or one column of Semana) and the
+     * appointments whose cards go with it.
+     *
+     * The lanes are the active hairdressers (PRF-171). With the
+     * hairdresser filter (PRF-172), only her lane is kept (and any extra
+     * "Sobre capacidad" lane holding one of hers), "Cabe" is worked out
+     * for her, and the cards are those of the appointments drawn there
+     * plus any other of hers (a cancelled one, which is never drawn).
+     *
+     * @param  array{start: int, end: int}  $bounds
+     * @param  Collection<int, Appointment>  $appointments
+     * @param  Collection<int, ScheduleBlock>  $blocks
+     * @param  Collection<int, Hairdresser>  $hairdressers
+     * @param  array<int, list<int>>  $preferredLanes  preferredLanes()
+     * @return array{0: array, 1: Collection<int, Appointment>}
+     */
+    private function timelineFor(CarbonImmutable $day, array $bounds, Collection $ranges, Collection $appointments, Collection $blocks, Collection $servicios, Collection $hairdressers, ?Hairdresser $peluquera, CarbonImmutable $now, array $preferredLanes): array
+    {
+        $lanes = $hairdressers->map(fn (Hairdresser $hairdresser) => ['id' => (int) $hairdresser->id, 'name' => $hairdresser->name])->all();
+        $timeline = DayTimeline::build($day, $bounds['start'], $bounds['end'], count($lanes), $ranges, $appointments, $blocks, $now, $lanes, $preferredLanes);
+        $everyAppointment = $appointments;
+
+        if ($peluquera !== null) {
+            $lane = (int) $hairdressers->search(fn (Hairdresser $hairdresser) => $hairdresser->is($peluquera));
+            $hers = $appointments->where('hairdresser_id', $peluquera->id);
+            $timeline = DayTimeline::onlyLane($timeline, $lane, $hers->pluck('id')->all());
+            $drawn = collect($timeline['pieces'])->flatMap(fn (array $piece) => $piece['segments'] ?? [])
+                ->where('type', 'appointment')
+                ->map(fn (array $segment) => $segment['appointment']->id)
+                ->flip();
+            $appointments = $appointments->filter(fn (Appointment $appointment) => $drawn->has($appointment->id) || $appointment->hairdresser_id === $peluquera->id)->values();
+        }
+
+        $timeline = $this->markServiceFit($timeline, $servicios, $day, $ranges, $everyAppointment, $blocks, $hairdressers->pluck('id')->map(fn ($id) => (int) $id)->all(), $peluquera);
+
+        return [$timeline, $appointments];
+    }
+
+    /**
+     * For each unassigned confirmed appointment, the lanes of the
+     * hairdressers who stand out in one of its services (PRF-173), so the
+     * grid draws it there when she is free: one query for all of them
+     * (their frozen services), none per appointment.
+     *
+     * @param  Collection<int, Appointment>  $appointments
+     * @param  Collection<int, Hairdresser>  $hairdressers  the lanes, with standoutServices loaded
+     * @return array<int, list<int>> appointment id => lanes
+     */
+    private static function preferredLanes(Collection $appointments, Collection $hairdressers): array
+    {
+        $laneOfService = [];
+
+        foreach ($hairdressers->values() as $lane => $hairdresser) {
+            foreach ($hairdresser->standoutServices as $service) {
+                $laneOfService[$service->id][] = $lane;
+            }
+        }
+
+        $unassigned = $appointments->filter(fn (Appointment $appointment) => $appointment->isConfirmed() && $appointment->hairdresser_id === null);
+
+        if ($laneOfService === [] || $unassigned->isEmpty()) {
+            return [];
+        }
+
+        return AppointmentService::query()
+            ->whereIn('appointment_id', $unassigned->pluck('id'))
+            ->get(['appointment_id', 'service_id'])
+            ->groupBy('appointment_id')
+            ->map(fn (Collection $items) => $items->flatMap(fn (AppointmentService $item) => $laneOfService[$item->service_id] ?? [])->unique()->sort()->values()->all())
+            ->filter()
+            ->all();
+    }
+
+    /**
+     * With the hairdresser filter, the closures that concern her: those of
+     * the whole salon (or an unnamed reduction) and her own.
+     *
+     * @param  Collection<int, ScheduleBlock>  $blocks
+     * @return Collection<int, ScheduleBlock>
+     */
+    private static function blocksFor(Collection $blocks, Hairdresser $peluquera): Collection
+    {
+        return $blocks->filter(fn (ScheduleBlock $block) => $block->hairdresser_id === null || $block->hairdresser_id === $peluquera->id)->values();
+    }
+
+    /**
      * PRF-120/123/124/132: with no service selected, returns $timeline
      * untouched (no extra work at all). With 1 to MAX_SERVICES, finds
      * which of its already-tappable free half hours the sum of their
-     * durations fits into — no query, since
+     * durations fits into — for the filtered hairdresser, if any
+     * (PRF-172) — with no query, since
      * AvailabilityCalculator::fittingStartMinutes() works entirely off the
      * $ranges/$appointments/$blocks the caller already loaded — and flags
      * them for the view (DayTimeline::markServiceFit()).
      *
      * @param  Collection<int, Service>  $servicios
+     * @param  list<int>  $staff  the active hairdressers' ids
      */
-    private function markServiceFit(array $timeline, Collection $servicios, CarbonImmutable $day, Collection $ranges, Collection $appointments, Collection $blocks, int $capacity): array
+    private function markServiceFit(array $timeline, Collection $servicios, CarbonImmutable $day, Collection $ranges, Collection $appointments, Collection $blocks, array $staff, ?Hairdresser $peluquera): array
     {
         if ($servicios->isEmpty()) {
             return $timeline;
@@ -253,7 +372,7 @@ class AgendaController extends Controller
 
         $profile = TimeProfile::fromServices($servicios);
         $candidates = DayTimeline::tappableFreeMinutes($timeline);
-        $fitting = $this->calculator->fittingStartMinutes($profile, $candidates, $day, $ranges, $appointments, $blocks, $capacity);
+        $fitting = $this->calculator->fittingStartMinutes($profile, $candidates, $day, $ranges, $appointments, $blocks, $staff, $peluquera?->id);
 
         return DayTimeline::markServiceFit($timeline, $fitting, $profile);
     }
@@ -261,13 +380,15 @@ class AgendaController extends Controller
     /**
      * One query for the week's appointments and one for its blocks
      * (PRF-100, PRF-101): both grouped in PHP per day, never queried once
-     * per day of the week. The timeline grid (T036) adds two more fixed
-     * queries (every opening-hours row, and the capacity) reused for all
-     * 7 days and for the shared grid bounds — still none repeated per day.
+     * per day of the week. The timeline grid (T036) adds one more fixed
+     * query (every opening-hours row) reused for all 7 days and for the
+     * shared grid bounds, and the hairdressers come from index() — still
+     * none repeated per day.
      *
+     * @param  Collection<int, Hairdresser>  $hairdressers  the active ones, in lane order
      * @return array{days: list<array{date: CarbonImmutable, appointments: Collection<int, Appointment>, blocks: Collection<int, ScheduleBlock>, isClosed: bool, hasPartialClosure: bool, isToday: bool, timeline: array}>, gridStart: int, gridEnd: int}
      */
-    private function weekData(CarbonImmutable $weekStart, Collection $servicios, int $capacity): array
+    private function weekData(CarbonImmutable $weekStart, Collection $servicios, Collection $hairdressers, ?Hairdresser $peluquera): array
     {
         $weekEnd = $weekStart->addWeek();
 
@@ -278,7 +399,7 @@ class AgendaController extends Controller
             ->orderBy('id')
             ->get();
 
-        $blocks = ScheduleBlock::query()->overlapping($weekStart, $weekEnd)->orderBy('starts_at')->get();
+        $blocks = ScheduleBlock::query()->with('hairdresser')->overlapping($weekStart, $weekEnd)->orderBy('starts_at')->get();
         $allRanges = OpeningHour::query()->get();
         $openWeekdays = $allRanges->pluck('weekday')->unique()->all();
         $bounds = DayTimeline::weekBounds($allRanges);
@@ -289,6 +410,7 @@ class AgendaController extends Controller
         $bounds = DayTimeline::extendBounds($bounds['start'], $bounds['end'], $appointments);
         $now = CarbonImmutable::now();
         $today = $now->startOfDay();
+        $preferredLanes = self::preferredLanes($appointments, $hairdressers);
 
         $days = [];
         for ($date = $weekStart; $date->lt($weekEnd); $date = $date->addDay()) {
@@ -298,20 +420,21 @@ class AgendaController extends Controller
             $dayRanges = $allRanges->where('weekday', $date->isoWeekday())->sortBy('opens_at')->values();
             // A full closure (review finding H1, PRF-105) closes the day
             // the same as having no opening-hours range; a partial one
-            // (capacity reduction) does not, but is still worth flagging,
-            // same as vista Día's amber banner.
+            // (a hairdresser's, or an old capacity reduction) does not,
+            // but is still worth flagging, same as vista Día's amber
+            // banner — with the hairdresser filter, only hers.
             $hasFullClosure = $dayBlocks->contains(fn (ScheduleBlock $b) => $b->capacity_reduction === null);
             $isClosed = ! in_array($date->isoWeekday(), $openWeekdays, true) || $hasFullClosure;
+            $partialBlocks = $peluquera === null ? $dayBlocks : self::blocksFor($dayBlocks, $peluquera);
 
-            $timeline = DayTimeline::build($date, $bounds['start'], $bounds['end'], $capacity, $dayRanges, $dayAppointments, $dayBlocks, $now);
-            $timeline = $this->markServiceFit($timeline, $servicios, $date, $dayRanges, $dayAppointments, $dayBlocks, $capacity);
+            [$timeline, $dayAppointments] = $this->timelineFor($date, $bounds, $dayRanges, $dayAppointments, $dayBlocks, $servicios, $hairdressers, $peluquera, $now, $preferredLanes);
 
             $days[] = [
                 'date' => $date,
                 'appointments' => $dayAppointments,
-                'blocks' => $dayBlocks,
+                'blocks' => $partialBlocks,
                 'isClosed' => $isClosed,
-                'hasPartialClosure' => ! $isClosed && $dayBlocks->contains(fn (ScheduleBlock $b) => $b->capacity_reduction !== null),
+                'hasPartialClosure' => ! $isClosed && $partialBlocks->contains(fn (ScheduleBlock $b) => $b->capacity_reduction !== null),
                 'isToday' => $date->isSameDay($today),
                 'timeline' => $timeline,
                 'nowLineTop' => DayTimeline::nowLineTop($date, $bounds['start'], $bounds['end'], $now),
@@ -324,16 +447,18 @@ class AgendaController extends Controller
     /**
      * One aggregate query for the month's occupancy (PRF-102): never one
      * query per day, and never loading every appointment of the month.
+     * With the hairdresser filter (PRF-172), only her appointments count.
      *
      * @return array{occupancy: Collection<string, int>, openWeekdays: list<int>, fullClosures: Collection<int, ScheduleBlock>}
      */
-    private function monthData(CarbonImmutable $month): array
+    private function monthData(CarbonImmutable $month, ?Hairdresser $peluquera): array
     {
         $monthEnd = $month->addMonth();
 
         $occupancy = Appointment::query()->confirmed()
             ->where('starts_at', '>=', $month)
             ->where('starts_at', '<', $monthEnd)
+            ->when($peluquera !== null, fn ($query) => $query->where('hairdresser_id', $peluquera->id))
             ->selectRaw('DATE(starts_at) as date, COUNT(*) as total')
             ->groupBy('date')
             ->pluck('total', 'date');

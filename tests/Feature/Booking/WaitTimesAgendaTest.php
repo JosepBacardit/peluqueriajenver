@@ -161,9 +161,9 @@ test('the agenda shows the numbered stretches, the wait mark and the wait in the
         // Review L2: before the name, the part a narrow lane never cuts.
         ->toContain('(1/2) Ana')
         ->toContain('(2/2) Ana')
-        ->toContain('aria-label="10:00 Coloración, Ana, tramo 1 de 2, de 10:00 a 10:30, espera hasta 11:15, plaza 1"')
-        ->toContain('aria-label="11:15 Coloración, Ana, tramo 2 de 2, de 11:15 a 12:00, plaza 2"')
-        ->toContain('title="10:00–12:00 (2 h, incl. 45 min de espera) Coloración, Ana · tramo 1 de 2: 10:00–10:30, espera hasta 11:15"')
+        ->toContain('aria-label="10:00 Coloración, Ana, tramo 1 de 2, de 10:00 a 10:30, espera hasta 11:15, cualquier peluquera, columna de Jennifer"')
+        ->toContain('aria-label="11:15 Coloración, Ana, tramo 2 de 2, de 11:15 a 12:00, cualquier peluquera, columna de Isabel"')
+        ->toContain('title="10:00–12:00 (2 h, incl. 45 min de espera) Coloración, Ana · Cualquiera · tramo 1 de 2: 10:00–10:30, espera hasta 11:15"')
         ->toContain('Espera · Ana hasta 11:15')
         ->toContain('(2 h, incl. 45 min de espera)')
         ->toContain('Espera: 10:30–11:15');
@@ -177,7 +177,7 @@ test('an appointment without waits looks exactly as before', function () {
     $html = $this->get(route('admin.agenda', ['fecha' => '2030-01-08']))->assertOk()->getContent();
 
     expect($html)
-        ->toContain('aria-label="10:00 Corte, duración 45 min, Berta, plaza 1"')
+        ->toContain('aria-label="10:00 Corte, duración 45 min, Berta, cualquier peluquera, columna de Jennifer"')
         ->not->toContain('(1/1)')
         ->not->toContain('tramo')
         ->not->toContain('Espera');
@@ -227,6 +227,6 @@ test('the agenda shows the visible wait mark once per run, and every tappable sl
     expect(substr_count($html, '>Espera · Ana hasta 11:15</span>'))->toBe(1);
     expect(substr_count($html, '>Espera · Dora hasta 16:30</span>'))->toBe(1);
     expect($html)
-        ->toContain('aria-label="Hueco libre a las 15:30, plaza 1, espera de Dora hasta 16:30"')
-        ->toContain('aria-label="Hueco libre a las 16:00, plaza 1, espera de Dora hasta 16:30"');
+        ->toContain('aria-label="Hueco libre a las 15:30, columna de Jennifer, espera de Dora hasta 16:30"')
+        ->toContain('aria-label="Hueco libre a las 16:00, columna de Jennifer, espera de Dora hasta 16:30"');
 });

@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\AgendaController;
 use App\Http\Controllers\Admin\AppointmentController;
 use App\Http\Controllers\Admin\BookingSettingsController;
+use App\Http\Controllers\Admin\HairdresserController;
 use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Admin\OpeningHoursController;
 use App\Http\Controllers\Admin\ScheduleBlockController;
@@ -97,6 +98,11 @@ Route::prefix('admin')->group(function () {
             ->only(['index', 'create', 'store', 'edit', 'update'])
             ->names('services')
             ->parameters(['servicios' => 'service']);
+
+        Route::resource('peluqueras', HairdresserController::class)
+            ->only(['index', 'create', 'store', 'edit', 'update'])
+            ->names('hairdressers')
+            ->parameters(['peluqueras' => 'hairdresser']);
 
         Route::get('/horario', [OpeningHoursController::class, 'edit'])->name('opening-hours.edit');
         Route::put('/horario', [OpeningHoursController::class, 'update'])->name('opening-hours.update');

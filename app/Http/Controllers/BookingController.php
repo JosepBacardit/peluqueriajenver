@@ -14,6 +14,7 @@ use App\Enums\AppointmentSource;
 use App\Http\Requests\StoreBookingRequest;
 use App\Models\Appointment;
 use App\Models\BookingSetting;
+use App\Models\Hairdresser;
 use App\Models\Service;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -24,8 +25,9 @@ use Illuminate\View\View;
 /**
  * Public booking page, rendered entirely on the server: choose 1 to
  * Appointment::MAX_SERVICES services (?servicio[]=, or the legacy scalar
- * ?servicio=, PRF-127), a day in the month calendar
- * (?mes=Y-m&fecha=Y-m-d), then a free time and the customer's details.
+ * ?servicio=, PRF-127) and a hairdresser or any (?peluquera=, PRF-166), a
+ * day in the month calendar (?mes=Y-m&fecha=Y-m-d), then a free time and
+ * the customer's details.
  */
 class BookingController extends Controller
 {
@@ -38,19 +40,30 @@ class BookingController extends Controller
         // 200 either way, so it never breaks a link or a bookmark — it
         // just shows a phone/WhatsApp page instead of the form while
         // either is missing.
-        if (! BookingSetting::onlineBookingAvailable()) {
-            return view('pages.reservas-disabled');
+        $available = BookingSetting::onlineBookingAvailable();
+        if (! $available) {
+            return view('pages.reservas-disabled', ['onlineBookingAvailable' => false]);
         }
 
         $services = Service::query()->bookableOnline()->ordered()->get();
         ['ids' => $requestedIds, 'adjusted' => $selectionAdjusted] = self::requestedServiceIds($request->query('servicio'));
         $selectedServices = self::selectedServices($requestedIds, $services);
+        // PRF-173: with what each one stands out in, among what can be booked here.
+        $hairdressers = Hairdresser::query()->active()->ordered()
+            ->with(['standoutServices' => fn ($query) => $query->bookableOnline()->ordered()])
+            ->get();
+        // PRF-166: anything but an active hairdresser's id means any.
+        $hairdresser = $hairdressers->firstWhere('id', self::idParam($request->query('peluquera')));
 
         // Step 1 also when "Cambiar" was pressed on step 2 (cambiar=1,
         // review finding L6): the choice comes back already checked.
         if ($selectedServices->isEmpty() || $request->boolean('cambiar')) {
             return view('pages.reservas', [
+                // Review L1: the header's links reuse it instead of asking again.
+                'onlineBookingAvailable' => true,
                 'services' => $services,
+                'hairdressers' => $hairdressers,
+                'hairdresser' => $hairdresser,
                 'selectedServices' => collect(),
                 // A notice only once something was actually tried and
                 // failed (too many, none matching) — not on a first,
@@ -78,6 +91,7 @@ class BookingController extends Controller
             $month->lt($now->startOfDay()) ? $now->startOfDay() : $month,
             $month->endOfMonth()->lt($lastDay) ? $month->endOfMonth()->startOfDay() : $lastDay,
             $now,
+            $hairdresser?->id,
         );
 
         $day = $requestedDay !== null && $requestedDay->isSameMonth($month) && in_array($requestedDay->toDateString(), $availableDays, true)
@@ -85,7 +99,10 @@ class BookingController extends Controller
             : null;
 
         return view('pages.reservas', [
+            'onlineBookingAvailable' => true,
             'services' => $services,
+            'hairdressers' => $hairdressers,
+            'hairdresser' => $hairdresser,
             'selectedServices' => $selectedServices,
             'checkedIds' => $selectedServices->pluck('id')->all(),
             'invalidSelection' => false,
@@ -95,15 +112,36 @@ class BookingController extends Controller
             // when there is only one (keeping that link exactly as short
             // as the legacy single-service one, PRF-127), the full array
             // otherwise.
-            'servicioQuery' => ['servicio' => self::servicioRouteParam($selectedServices->pluck('id')->all())],
+            // ... and "peluquera" too, when one was chosen (PRF-166).
+            'servicioQuery' => self::choiceQuery($selectedServices->pluck('id')->all(), $hairdresser?->id),
             'month' => $month,
             'previousMonth' => $month->gt($firstMonth) ? $month->subMonth() : null,
             'nextMonth' => $month->lt($lastMonth) ? $month->addMonth() : null,
             'availableDays' => $availableDays,
             'requestedDay' => $requestedDay,
             'day' => $day,
-            'times' => $day === null ? [] : $this->calculator->availableStartTimes($profile, $day, $now),
+            'times' => $day === null ? [] : $this->calculator->availableStartTimes($profile, $day, $now, $hairdresser?->id),
         ]);
+    }
+
+    /**
+     * A positive integer id from a query or form value, or null.
+     */
+    private static function idParam(mixed $value): ?int
+    {
+        return is_string($value) && preg_match('/^[1-9]\d{0,9}$/', $value) === 1 ? (int) $value : null;
+    }
+
+    /**
+     * The "servicio" (and, with a hairdresser, "peluquera") query fragment
+     * of every link on step 2 and after.
+     *
+     * @param  list<int>  $serviceIds
+     * @return array<string, int|list<int>>
+     */
+    private static function choiceQuery(array $serviceIds, ?int $hairdresserId): array
+    {
+        return ['servicio' => self::servicioRouteParam($serviceIds)] + ($hairdresserId === null ? [] : ['peluquera' => $hairdresserId]);
     }
 
     /**
@@ -170,8 +208,9 @@ class BookingController extends Controller
         $startsAt = $request->startsAt();
         $serviceIds = array_values($request->validated('service_ids'));
         $services = Service::query()->bookableOnline()->whereIn('id', $serviceIds)->get();
+        $hairdresserId = $request->hairdresserId();
         $backToDay = route('reservas', [
-            'servicio' => self::servicioRouteParam($serviceIds),
+            ...self::choiceQuery($serviceIds, $hairdresserId),
             'mes' => $startsAt->format('Y-m'),
             'fecha' => $startsAt->toDateString(),
         ]).'#horas';
@@ -179,12 +218,14 @@ class BookingController extends Controller
         try {
             // PRF-128: any id that does not exist or is not reservable
             // online rejects the whole booking, exactly as a single
-            // invalid service already did.
-            if ($services->count() !== count($serviceIds)) {
+            // invalid service already did. PRF-166: the same for a
+            // hairdresser who is not active (or not an id at all).
+            if ($services->count() !== count($serviceIds)
+                || ($request->filled('hairdresser_id') && ($hairdresserId === null || ! Hairdresser::query()->active()->whereKey($hairdresserId)->exists()))) {
                 throw new SlotUnavailableException;
             }
 
-            $appointment = $createAppointment->handle($services, $startsAt, $request->customer(), AppointmentSource::Web, applyPublicRules: true);
+            $appointment = $createAppointment->handle($services, $startsAt, $request->customer(), AppointmentSource::Web, applyPublicRules: true, hairdresserId: $hairdresserId);
         } catch (SlotUnavailableException) {
             return redirect()->to($backToDay)->withInput()->withErrors(['time' => __('reservas.messages.slot_unavailable')]);
         } catch (DuplicateAppointmentException) {

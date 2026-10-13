@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -21,9 +22,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property AppointmentStatus $status
  * @property AppointmentSource $source
  * @property string $services_label
+ * @property int|null $hairdresser_id null: any hairdresser, not assigned yet
+ * @property bool $hairdresser_requested whether the customer chose that hairdresser herself
  */
 #[Fillable([
-    'services_label', 'starts_at', 'ends_at', 'waits',
+    'services_label', 'starts_at', 'ends_at', 'waits', 'hairdresser_id', 'hairdresser_requested',
     'customer_name', 'customer_phone', 'customer_email', 'notes',
     'status', 'source', 'token', 'cancelled_at', 'privacy_accepted_at',
     'customer_notified_at', 'salon_notified_at',
@@ -59,7 +62,28 @@ class Appointment extends Model
             'privacy_accepted_at' => 'immutable_datetime',
             'customer_notified_at' => 'immutable_datetime',
             'salon_notified_at' => 'immutable_datetime',
+            'hairdresser_id' => 'integer',
+            'hairdresser_requested' => 'boolean',
         ];
+    }
+
+    /**
+     * The hairdresser assigned to it, or none ("any hairdresser").
+     *
+     * @return BelongsTo<Hairdresser, $this>
+     */
+    public function hairdresser(): BelongsTo
+    {
+        return $this->belongsTo(Hairdresser::class);
+    }
+
+    /**
+     * The hairdresser the customer chose herself, the only one she is ever
+     * shown or told about.
+     */
+    public function requestedHairdresser(): ?Hairdresser
+    {
+        return $this->hairdresser_requested ? $this->hairdresser : null;
     }
 
     /**

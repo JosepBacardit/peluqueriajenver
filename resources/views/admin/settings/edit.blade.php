@@ -11,12 +11,9 @@
     @csrf
     @method('PUT')
 
-    <div>
-        <label for="capacity" class="block text-sm mb-1">Capacidad (citas a la vez, de 1 a 10)</label>
-        <input id="capacity" name="capacity" type="number" min="1" max="10" required value="{{ old('capacity', $settings->capacity) }}" class="{{ $inputClass }}">
-        <p class="text-xs text-gray-400 mt-1">Normalmente, el número de peluqueras que atienden a la vez.</p>
-        @error('capacity') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
-    </div>
+    {{-- PRF-162: the capacity is no longer a setting, it is the number
+         of active hairdressers. --}}
+    <p class="text-sm text-gray-300">Citas a la vez: {{ $activeHairdressers }}, tantas como peluqueras activas. Se cambia en <a href="{{ route('admin.hairdressers.index') }}" class="underline hover:text-gold">Peluqueras</a>.</p>
 
     <div>
         <label for="slot_interval_minutes" class="block text-sm mb-1">Intervalo entre horas ofrecidas</label>

@@ -105,10 +105,13 @@ pre-filled message per page); the salon records those in the admin agenda.
   `auth` group in `routes/web.php`. Admin UI strings are written directly
   in Spanish in the admin views (internal tool, not SEO content), unlike
   public copy, which lives in `lang/es/`.
-- **Booking rules** (capacity, slot interval, min/max notice, cancellation
-  limit, and the "Reserva online activa" switch) live in the single-row
+- **Booking rules** (slot interval, min/max notice, cancellation limit,
+  and the "Reserva online activa" switch) live in the single-row
   `booking_settings` table and the weekly schedule in `opening_hours`; both
-  are created with their default values by their migrations. Services are
+  are created with their default values by their migrations. The capacity
+  (appointments at a time) is **not** a setting any more: it is the number
+  of active hairdressers (PRF-162, 2026-10-13); `booking_settings.capacity`
+  is kept but never read, and Ajustes only shows the count. Services are
   not entered by hand: `ServiceCatalogSeeder` (2026-10-06, wired into
   `DatabaseSeeder` so it runs in every environment `db:seed` is called in,
   including production) seeds the salon's real 24-service catalogue,
@@ -181,6 +184,34 @@ pre-filled message per page); the salon records those in the admin agenda.
   null `customer_notified_at`/`salon_notified_at` and are retried by
   `php artisan appointments:notify-pending` (cron, see "Production
   deploys").
+
+- **Hairdressers** (2026-10-13, PRF-161 to PRF-173, `.ai/specs/reservas.md`
+  "Elegir peluquera"): `/admin/peluqueras` creates, renames and
+  (de)activates them — never deletes; one with upcoming confirmed
+  appointments assigned cannot be deactivated until the salon reassigns or
+  cancels them. The migration created Jennifer and Isabel (customers only
+  ever see the first name). An appointment has a hairdresser
+  (`appointments.hairdresser_id`) or none ("cualquier peluquera": the salon
+  assigns it whenever it can, or never); `hairdresser_requested` says
+  whether the customer chose her, which decides what she is shown
+  (`/cita/{token}` and her 3 emails name only a hairdresser she chose) and
+  whether changing it emails her. `AvailabilityCalculator` counts every
+  appointment against the hairdressers available at each moment (active,
+  without a block of their own), a hairdresser can only have one
+  appointment at a time, and an unassigned one needs somebody free for the
+  whole of each of its active stretches (see its `capacityProblem()`); with
+  nothing assigned and no hairdresser blocks it gives exactly what the old
+  capacity count gave. A closure is either the whole salon or "No está
+  {peluquera}" (one `schedule_blocks` row per hairdresser, with
+  `capacity_reduction = 1` and her `hairdresser_id`); the old unnamed
+  "Reducir N" rows are still honoured but can no longer be created. The
+  agenda draws one column per active hairdresser (unassigned appointments
+  in a free column, dashed, "Cualquiera"), and `?peluquera=` filters Día,
+  Semana and Mes (kept by every link and by `volver`, now
+  `vista:fecha[:peluquera]`). "Destaca en" (`hairdresser_service`) is shown
+  on `/reservas` and as "(destaca)" in the panel, and only ever changes
+  which column the agenda prefers for an unassigned appointment — never
+  availability.
 
 ## Note on README.md
 
@@ -514,6 +545,29 @@ services) or require turning it off by hand with `tinker` before any
 account exists — an undocumented workaround this project avoids. Steps 3
 and 4 only use `admin:create-user` and the panel, both already documented
 elsewhere.
+
+### Deploying the hairdressers (2026-10-13)
+
+The two migrations of `feature/hairdresser-choice` are additive (a new
+`hairdressers` table with Jennifer and Isabel, `hairdresser_service`, and
+nullable columns on `appointments` and `schedule_blocks`); existing
+appointments and closures are left unassigned. Nothing has to be changed
+in production beforehand, but one value must be read first (review L3 —
+it has not been read yet: do it on the VPS before this deploy):
+
+1. As `deploy`, before `./deploy.sh`, read the capacity production uses
+   today:
+   `php artisan tinker --execute 'echo App\Models\BookingSetting::current()->capacity;'`
+   (read-only).
+2. If it prints **2**: deploy as usual; availability does not change.
+3. If it prints anything else: the capacity becomes 2 (Jennifer and
+   Isabel) the moment `./deploy.sh` runs. Tell the salon first; right
+   after the deploy, add hairdressers (if it was more) or deactivate one
+   (if it was 1) in `/admin/peluqueras`. Turning "Reserva online activa"
+   off in `/admin/ajustes` for those few minutes avoids offering a wrong
+   time meanwhile. Future
+"Reducir N" closures saved before this keep working; the salon can
+replace them with "No está {peluquera}" ones. Never `migrate:rollback`.
 
 ### Before the first real deploy
 

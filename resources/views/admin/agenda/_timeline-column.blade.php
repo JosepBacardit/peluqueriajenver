@@ -34,6 +34,9 @@
     $servicioQuery = $servicioQuery ?? [];
     $servicios = $servicios ?? collect();
     $serviciosLabel = $servicios->pluck('name')->implode(' + ');
+    // PRF-171: how each segment's aria-label names its lane — "columna de
+    // Jennifer", or "columna extra" over capacity.
+    $laneLabel = fn (int $lane) => $timeline['laneLabels'][$lane] ?? 'plaza '.($lane + 1);
 @endphp
 <div class="relative flex-1 min-w-0">
     @foreach ($timeline['pieces'] as $piece)
@@ -83,18 +86,18 @@
                              only shows this one line — its full detail stays
                              a tap away, on its card below. --}}
                         <a href="#cita-{{ $appointment->id }}"
-                           class="flex items-center overflow-hidden px-1 text-[11px] leading-tight bg-[#1c1c1c] border {{ $segment['overCapacity'] ? 'border-amber-400' : 'border-gold/40' }} hover:border-gold"
+                           class="flex items-center overflow-hidden px-1 text-[11px] leading-tight bg-[#1c1c1c] border {{ $segment['overCapacity'] ? 'border-amber-400' : 'border-gold/40' }} {{ ($segment['unassigned'] ?? false) ? 'border-dashed' : '' }} hover:border-gold"
                            style="{{ $gridArea }}"
                            {{-- PRF-130: the full detail, including the
                                 total duration (durationMinutes(): just
                                 starts_at/ends_at, no items() — no N+1),
                                 for whoever can't read the truncated text
                                 below or the grid at all. --}}
-                           title="{{ $appointment->starts_at->format('H:i') }}–{{ $appointment->ends_at->format('H:i') }} ({{ \App\Models\Service::formatDurationWithWait($appointment->durationMinutes(), $appointment->waitMinutes()) }}) {{ $appointment->services_label }}, {{ $appointment->customer_name }}{{ $isSplit ? ' · tramo '.$segment['part'].' de '.$segment['parts'].': '.$blockTime.'–'.$atMinute($segment['stretchEnd']).($segment['waitUntil'] !== null ? ', espera hasta '.$atMinute($segment['waitUntil']) : '') : '' }}"
+                           title="{{ $appointment->starts_at->format('H:i') }}–{{ $appointment->ends_at->format('H:i') }} ({{ \App\Models\Service::formatDurationWithWait($appointment->durationMinutes(), $appointment->waitMinutes()) }}) {{ $appointment->services_label }}, {{ $appointment->customer_name }}{{ ($segment['unassigned'] ?? false) ? ' · Cualquiera' : '' }}{{ $isSplit ? ' · tramo '.$segment['part'].' de '.$segment['parts'].': '.$blockTime.'–'.$atMinute($segment['stretchEnd']).($segment['waitUntil'] !== null ? ', espera hasta '.$atMinute($segment['waitUntil']) : '') : '' }}"
                            @if ($isSplit)
-                               aria-label="{{ $datePrefix }}{{ $blockTime }} {{ $appointment->services_label }}, {{ $appointment->customer_name }}, {{ $stretchLabel }}{{ $segment['overCapacity'] ? ', sobre capacidad' : '' }}, plaza {{ $segment['lane'] + 1 }}"
+                               aria-label="{{ $datePrefix }}{{ $blockTime }} {{ $appointment->services_label }}, {{ $appointment->customer_name }}, {{ $stretchLabel }}{{ ($segment['unassigned'] ?? false) ? ', cualquier peluquera' : '' }}{{ $segment['overCapacity'] ? ', sobre capacidad' : '' }}, {{ $laneLabel($segment['lane']) }}"
                            @else
-                               aria-label="{{ $datePrefix }}{{ $blockTime }} {{ $appointment->services_label }}, duración {{ $durationLabel }}, {{ $appointment->customer_name }}{{ $segment['overCapacity'] ? ', sobre capacidad' : '' }}, plaza {{ $segment['lane'] + 1 }}"
+                               aria-label="{{ $datePrefix }}{{ $blockTime }} {{ $appointment->services_label }}, duración {{ $durationLabel }}, {{ $appointment->customer_name }}{{ ($segment['unassigned'] ?? false) ? ', cualquier peluquera' : '' }}{{ $segment['overCapacity'] ? ', sobre capacidad' : '' }}, {{ $laneLabel($segment['lane']) }}"
                            @endif>
                             <span class="block truncate w-full">
                                 <span class="font-semibold text-gold">{{ $blockTime }}</span>
@@ -109,7 +112,7 @@
                              silent to anyone not seeing its stripe pattern. --}}
                         <div class="flex items-center justify-center text-[9px] leading-none text-amber-200"
                              style="{{ $gridArea }}; background-image: repeating-linear-gradient(45deg, rgba(217,180,80,.12) 0 6px, transparent 6px 12px);"
-                             aria-label="{{ $datePrefix }}Cierre parcial, plaza {{ $segment['lane'] + 1 }}"
+                             aria-label="{{ $datePrefix }}Cierre parcial, {{ $laneLabel($segment['lane']) }}"
                              title="Cierre parcial">
                             @if ($segment['height'] >= 20)
                                 Cierre
@@ -144,7 +147,7 @@
                            class="flex items-center justify-center overflow-hidden text-[9px] leading-none {{ $fits ? 'border-l-4 border-gold bg-gold/10 text-gold font-semibold' : 'hover:bg-gold/10' }} {{ $waitLabel !== null && ! $fits ? 'border-l-2 border-dashed border-gold/40 text-gray-400' : '' }}"
                            style="{{ $gridArea }}"
                            @if ($waitLabel !== null) title="{{ $waitLabel }}" @endif
-                           aria-label="{{ $datePrefix }}Hueco libre a las {{ $slotTime }}, plaza {{ $segment['lane'] + 1 }}{{ $waitLabel !== null ? ', espera de '.$segment['wait']['customer'].' hasta '.$segment['wait']['until'] : '' }}{{ $fits ? ', cabe '.$serviciosLabel : '' }}">
+                           aria-label="{{ $datePrefix }}Hueco libre a las {{ $slotTime }}, {{ $laneLabel($segment['lane']) }}{{ $waitLabel !== null ? ', espera de '.$segment['wait']['customer'].' hasta '.$segment['wait']['until'] : '' }}{{ $fits ? ', cabe '.$serviciosLabel : '' }}">
                             @if ($fits && ! $compact)
                                 Cabe
                             @elseif ($waitLabel !== null && $segment['waitLabel'] && ! $compact)

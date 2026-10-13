@@ -92,3 +92,19 @@ function sqlWithVisibleLocks(Closure $callback): array
 
     return $queries;
 }
+
+/**
+ * Leaves exactly $count active hairdressers (PRF-162: the capacity is how
+ * many there are), deactivating the last ones or adding "Peluquera N".
+ * The migration starts every test with two, Jennifer and Isabel.
+ */
+function setStaffCount(int $count): void
+{
+    $active = App\Models\Hairdresser::query()->active()->ordered()->get();
+
+    $active->slice($count)->each(fn (App\Models\Hairdresser $hairdresser) => $hairdresser->update(['is_active' => false]));
+
+    for ($number = $active->count() + 1; $number <= $count; $number++) {
+        App\Models\Hairdresser::factory()->create(['name' => "Peluquera {$number}"]);
+    }
+}

@@ -11,7 +11,7 @@ use Illuminate\Validation\Rule;
 /**
  * An appointment recorded by the salon (usually a phone or WhatsApp
  * booking). Email is optional here. 1 to Appointment::MAX_SERVICES active
- * services (PRF-129).
+ * services (PRF-129), and an active hairdresser or none (PRF-168).
  */
 class StoreAdminAppointmentRequest extends FormRequest
 {
@@ -34,6 +34,8 @@ class StoreAdminAppointmentRequest extends FormRequest
             'customer_phone' => ['required', 'string', 'max:20', new PhoneNumber],
             'customer_email' => ['nullable', 'email', 'max:150'],
             'notes' => ['nullable', 'string', 'max:500'],
+            // PRF-168: empty means any hairdresser.
+            'hairdresser_id' => ['nullable', 'integer', Rule::exists('hairdressers', 'id')->where('is_active', true)],
         ];
     }
 
@@ -48,7 +50,18 @@ class StoreAdminAppointmentRequest extends FormRequest
             'service_ids.max' => 'Como mucho '.Appointment::MAX_SERVICES.' servicios.',
             'service_ids.*.distinct' => 'No puedes elegir el mismo servicio dos veces.',
             'service_ids.*.exists' => 'Elige solo servicios activos.',
+            'hairdresser_id.exists' => 'Elige una peluquera activa o «Cualquiera».',
         ];
+    }
+
+    /**
+     * The hairdresser chosen, or null for any.
+     */
+    public function hairdresserId(): ?int
+    {
+        $id = $this->validated('hairdresser_id');
+
+        return $id === null ? null : (int) $id;
     }
 
     public function startsAt(): CarbonImmutable

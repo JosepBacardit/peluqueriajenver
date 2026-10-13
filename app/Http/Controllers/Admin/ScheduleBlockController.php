@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Booking\AvailabilityCalculator;
+use App\Booking\TimeProfile;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ScheduleBlockRequest;
 use App\Models\Appointment;
+use App\Models\Hairdresser;
 use App\Models\ScheduleBlock;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class ScheduleBlockController extends Controller
@@ -15,27 +19,48 @@ class ScheduleBlockController extends Controller
     public function index(): View
     {
         return view('admin.blocks.index', [
-            'blocks' => ScheduleBlock::query()->where('ends_at', '>', now())->orderBy('starts_at')->get(),
+            'blocks' => ScheduleBlock::query()->with('hairdresser')->where('ends_at', '>', now())->orderBy('starts_at')->get(),
+            'hairdressers' => Hairdresser::query()->active()->ordered()->get(),
         ]);
     }
 
     /**
+     * A closure of several hairdressers is saved as one closure for each
+     * (PRF-170), stored as a reduction of 1 with her id, so anything that
+     * only reads the reduction stays right.
+     *
      * Existing appointments inside the new block are deliberately left
-     * alone: the salon decides what to do with them.
+     * alone: the salon decides what to do with them. A hairdresser's
+     * closure warns about her own appointments and, review M2, about the
+     * unassigned ones of the period that no hairdresser can do any more
+     * (each checked as if it were booked again, without itself).
      */
-    public function store(ScheduleBlockRequest $request): RedirectResponse
+    public function store(ScheduleBlockRequest $request, AvailabilityCalculator $calculator): RedirectResponse
     {
         $startsAt = CarbonImmutable::parse($request->validated('starts_at'));
         $endsAt = CarbonImmutable::parse($request->validated('ends_at'));
+        $hairdresserIds = $request->hairdresserIds();
+        $common = ['starts_at' => $startsAt, 'ends_at' => $endsAt, 'reason' => $request->validated('reason')];
 
-        ScheduleBlock::create([
-            'starts_at' => $startsAt,
-            'ends_at' => $endsAt,
-            'capacity_reduction' => $request->validated('capacity_reduction'),
-            'reason' => $request->validated('reason'),
-        ]);
+        DB::transaction(function () use ($hairdresserIds, $common) {
+            if ($hairdresserIds === []) {
+                ScheduleBlock::create($common + ['capacity_reduction' => null]);
 
-        $affected = Appointment::query()->confirmed()->overlapping($startsAt, $endsAt)->count();
+                return;
+            }
+
+            foreach ($hairdresserIds as $hairdresserId) {
+                ScheduleBlock::create($common + ['capacity_reduction' => 1, 'hairdresser_id' => $hairdresserId]);
+            }
+        });
+
+        $inPeriod = Appointment::query()->confirmed()->overlapping($startsAt, $endsAt)->get();
+        $affected = $hairdresserIds === []
+            ? $inPeriod->count()
+            : $inPeriod->filter(fn (Appointment $appointment) => in_array($appointment->hairdresser_id, $hairdresserIds, true)
+                || ($appointment->hairdresser_id === null && $appointment->starts_at->isFuture()
+                    && $calculator->unavailabilityReason(TimeProfile::fromAppointment($appointment), $appointment->starts_at, CarbonImmutable::now(), false, excludeAppointmentId: $appointment->id) !== null))
+                ->count();
         $redirect = redirect()->route('admin.blocks.index')->with('status', 'Cierre guardado.');
 
         if ($affected === 1) {

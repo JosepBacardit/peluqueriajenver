@@ -12,7 +12,8 @@ use Illuminate\Support\Collection;
 /**
  * Builds the Google-Calendar-style admin agenda grid (Día, and each column
  * of Semana): a shared hour axis across every day, fixed lanes (one per
- * unit of capacity, more if a day is over capacity), appointment blocks
+ * active hairdresser, PRF-171 — or per unit of capacity when the caller
+ * names none — and more if a day is over capacity), appointment blocks
  * assigned to lanes, and bands for closed/out-of-hours/closure periods.
  *
  * All positions are computed in plain integer minutes-since-midnight and
@@ -331,10 +332,20 @@ class DayTimeline
      * which case it survives in its lane exactly like a real ScheduleBlock
      * closure does (PRF-022), with the rest of the stretch still banded.
      *
+     * With $hairdressers (the active ones, in lane order, PRF-171) each
+     * lane is one hairdresser: her appointments go in it, her own blocks
+     * shade only it and keep the unassigned appointments out of it, and
+     * 'laneNames' has her name; a block of a hairdresser not among them
+     * takes nobody away (as in AvailabilityCalculator). Without them, the
+     * lanes are anonymous places ("Plaza N") and every block counts as an
+     * unnamed reduction, as before hairdressers existed.
+     *
      * @param  Collection<int, OpeningHour>  $ranges  this weekday's ranges
      * @param  Collection<int, Appointment>  $appointments  this day's, any status
      * @param  Collection<int, ScheduleBlock>  $blocks  overlapping this day, any capacity_reduction
-     * @return array{lanes: int, pieces: list<array>}
+     * @param  list<array{id: int, name: string}>  $hairdressers  the lanes' hairdressers, in order; $capacity is how many
+     * @param  array<int, list<int>>  $preferredLanes  appointment id => lanes to prefer for it when unassigned (PRF-173)
+     * @return array{lanes: int, laneNames: list<string>, laneLabels: list<string>, pieces: list<array>}
      */
     public static function build(
         CarbonImmutable $day,
@@ -345,9 +356,25 @@ class DayTimeline
         Collection $appointments,
         Collection $blocks,
         CarbonImmutable $now,
+        array $hairdressers = [],
+        array $preferredLanes = [],
     ): array {
         $dayStart = $day->startOfDay();
         $nowMinute = self::minutesSinceDayStart($dayStart, $now);
+        $laneOfHairdresser = array_flip(array_column($hairdressers, 'id'));
+
+        if ($hairdressers !== []) {
+            // A block of a hairdresser who is not active takes nobody away.
+            $blocks = $blocks->filter(fn (ScheduleBlock $block) => $block->hairdresser_id === null || isset($laneOfHairdresser[$block->hairdresser_id]))->values();
+        }
+
+        $laneBusy = [];
+
+        foreach ($blocks as $block) {
+            if ($block->hairdresser_id !== null && isset($laneOfHairdresser[$block->hairdresser_id])) {
+                $laneBusy[$laneOfHairdresser[$block->hairdresser_id]][] = [$block->starts_at, $block->ends_at];
+            }
+        }
 
         $confirmed = $appointments->filter(fn (Appointment $a) => $a->isConfirmed())->values();
         $appointmentIntervals = $confirmed->map(fn (Appointment $a) => [
@@ -358,19 +385,30 @@ class DayTimeline
         // Lane assignment is global for the day: each active stretch of an
         // appointment (the whole appointment when it has no waits) has the
         // same lane wherever it is rendered.
-        $laneAssignment = AppointmentLaneAssigner::assign($confirmed, $capacity);
+        $laneAssignment = AppointmentLaneAssigner::assign($confirmed, $capacity, $laneOfHairdresser, $laneBusy, $preferredLanes);
         $maxLanes = $laneAssignment['maxLanes'];
-        [$stretches, $waits] = self::stretchesAndWaits($laneAssignment, $dayStart);
+        [$stretches, $waits] = self::stretchesAndWaits($laneAssignment, $dayStart, $laneOfHairdresser);
+        // The header of each lane, and how its segments' aria-labels name
+        // it: "columna de Jennifer", "columna extra" (over capacity), or
+        // the old "plaza N" when no hairdresser is named.
+        $laneNames = array_map(
+            fn (int $lane) => $lane >= $capacity ? 'Sobre capacidad' : ($hairdressers[$lane]['name'] ?? 'Plaza '.($lane + 1)),
+            $maxLanes > 0 ? range(0, $maxLanes - 1) : [],
+        );
+        $laneLabels = array_map(
+            fn (int $lane) => $lane >= $capacity ? 'columna extra' : (isset($hairdressers[$lane]) ? 'columna de '.$hairdressers[$lane]['name'] : 'plaza '.($lane + 1)),
+            $maxLanes > 0 ? range(0, $maxLanes - 1) : [],
+        );
 
         $pieces = [];
 
         if ($ranges->isEmpty()) {
             array_push($pieces, ...self::closedGap($gridStart, $gridEnd, 'cerrado', $appointmentIntervals, $maxLanes, $capacity, $stretches, $waits, $gridStart, $nowMinute));
 
-            return ['lanes' => $maxLanes, 'pieces' => $pieces];
+            return ['lanes' => $maxLanes, 'laneNames' => $laneNames, 'laneLabels' => $laneLabels, 'pieces' => $pieces];
         }
 
-        $blockIntervals = self::blockIntervals($dayStart, $blocks, $gridStart, $gridEnd);
+        $blockIntervals = self::blockIntervals($dayStart, $blocks, $gridStart, $gridEnd, $laneOfHairdresser);
         $openRanges = self::clippedRanges($ranges, $gridStart, $gridEnd);
         $cursor = $gridStart;
 
@@ -392,7 +430,55 @@ class DayTimeline
             array_push($pieces, ...self::closedGap($cursor, $gridEnd, 'fuera-horario', $appointmentIntervals, $maxLanes, $capacity, $stretches, $waits, $gridStart, $nowMinute));
         }
 
-        return ['lanes' => $maxLanes, 'pieces' => $pieces];
+        return ['lanes' => $maxLanes, 'laneNames' => $laneNames, 'laneLabels' => $laneLabels, 'pieces' => $pieces];
+    }
+
+    /**
+     * Only lane $lane of a build() result (the agenda's hairdresser filter,
+     * PRF-172), plus any extra "Sobre capacidad" lane holding one of the
+     * appointments of $appointmentIds (hers), renumbered from 0. Every
+     * open piece keeps its rows; segments of the other lanes are dropped.
+     *
+     * @param  array{lanes: int, laneNames: list<string>, laneLabels: list<string>, pieces: list<array>}  $timeline
+     * @param  list<int>  $appointmentIds
+     * @return array{lanes: int, laneNames: list<string>, laneLabels: list<string>, pieces: list<array>}
+     */
+    public static function onlyLane(array $timeline, int $lane, array $appointmentIds): array
+    {
+        $theirs = array_flip($appointmentIds);
+        $kept = [$lane];
+
+        foreach ($timeline['pieces'] as $piece) {
+            foreach ($piece['segments'] ?? [] as $segment) {
+                if ($segment['type'] === 'appointment' && $segment['overCapacity'] && isset($theirs[$segment['appointment']->id])) {
+                    $kept[] = $segment['lane'];
+                }
+            }
+        }
+
+        $kept = array_values(array_unique($kept));
+        sort($kept);
+        $renumber = array_flip($kept);
+
+        foreach ($timeline['pieces'] as &$piece) {
+            if ($piece['kind'] !== 'open') {
+                continue;
+            }
+
+            $piece['segments'] = array_values(array_map(
+                fn (array $segment) => ['lane' => $renumber[$segment['lane']]] + $segment,
+                array_filter($piece['segments'], fn (array $segment) => isset($renumber[$segment['lane']])),
+            ));
+            $piece['maxLanes'] = count($kept);
+        }
+        unset($piece);
+
+        return [
+            'lanes' => count($kept),
+            'laneNames' => array_map(fn (int $kept) => $timeline['laneNames'][$kept], $kept),
+            'laneLabels' => array_map(fn (int $kept) => $timeline['laneLabels'][$kept], $kept),
+            'pieces' => $timeline['pieces'],
+        ];
     }
 
     /**
@@ -440,14 +526,18 @@ class DayTimeline
     }
 
     /**
-     * @return list<array{start: int, end: int, reduction: int|null}> minute-of-day intervals relative to $dayStart, clipped to the grid
+     * 'lane' is the lane of the block's hairdresser, or null for a block of
+     * the whole salon or an unnamed reduction.
+     *
+     * @param  array<int, int>  $laneOfHairdresser
+     * @return list<array{start: int, end: int, reduction: int|null, lane: int|null}> minute-of-day intervals relative to $dayStart, clipped to the grid
      */
-    private static function blockIntervals(CarbonImmutable $dayStart, Collection $blocks, int $gridStart, int $gridEnd): array
+    private static function blockIntervals(CarbonImmutable $dayStart, Collection $blocks, int $gridStart, int $gridEnd, array $laneOfHairdresser = []): array
     {
         $dayEnd = $dayStart->addDay();
 
         return $blocks
-            ->map(function (ScheduleBlock $block) use ($dayStart, $dayEnd, $gridStart, $gridEnd) {
+            ->map(function (ScheduleBlock $block) use ($dayStart, $dayEnd, $gridStart, $gridEnd, $laneOfHairdresser) {
                 $start = max($block->starts_at, $dayStart);
                 $end = min($block->ends_at, $dayEnd);
 
@@ -455,6 +545,7 @@ class DayTimeline
                     'start' => max(self::minutesSinceDayStart($dayStart, $start), $gridStart),
                     'end' => min(self::minutesSinceDayStart($dayStart, $end), $gridEnd),
                     'reduction' => $block->capacity_reduction,
+                    'lane' => $block->hairdresser_id === null ? null : ($laneOfHairdresser[$block->hairdresser_id] ?? null),
                 ];
             })
             ->filter(fn (array $block) => $block['start'] < $block['end'])
@@ -480,6 +571,34 @@ class DayTimeline
         }
 
         return $capacity - $reduction;
+    }
+
+    /**
+     * Whether a lane is shaded as closed at $minute: its own hairdresser
+     * has a block then, or it is one of the last lanes taken away by the
+     * blocks of the whole salon and the unnamed reductions.
+     *
+     * @param  list<array{start: int, end: int, reduction: int|null, lane: int|null}>  $blockIntervals
+     */
+    private static function isLaneClosedAt(int $lane, int $minute, array $blockIntervals, int $capacity): bool
+    {
+        $unnamedReduction = 0;
+
+        foreach ($blockIntervals as $block) {
+            if ($block['start'] > $minute || $minute >= $block['end']) {
+                continue;
+            }
+
+            if (($block['lane'] ?? null) === $lane) {
+                return true;
+            }
+
+            if (($block['lane'] ?? null) === null) {
+                $unnamedReduction += $block['reduction'] ?? $capacity;
+            }
+        }
+
+        return $lane >= $capacity - $unnamedReduction;
     }
 
     /**
@@ -615,7 +734,7 @@ class DayTimeline
      * @param  array{lanes: array<string, int>, overCapacity: array<string, bool>, stretches: list<array>}  $laneAssignment  AppointmentLaneAssigner::assign()
      * @return array{0: list<array{appointment: Appointment, lane: int, overCapacity: bool, start: int, end: int, part: int, parts: int, waitUntil: int|null}>, 1: list<array{lanes: list<int>, start: int, end: int, customer: string, until: string}>}
      */
-    private static function stretchesAndWaits(array $laneAssignment, CarbonImmutable $dayStart): array
+    private static function stretchesAndWaits(array $laneAssignment, CarbonImmutable $dayStart, array $laneOfHairdresser = []): array
     {
         $byKey = [];
 
@@ -635,6 +754,9 @@ class DayTimeline
                 'appointment' => $stretch['appointment'],
                 'lane' => $laneAssignment['lanes'][$stretch['key']],
                 'overCapacity' => $laneAssignment['overCapacity'][$stretch['key']],
+                // PRF-171: an appointment no hairdresser has (or one of a
+                // hairdresser not among the lanes) — "Cualquiera".
+                'unassigned' => ! isset($laneOfHairdresser[$stretch['appointment']->hairdresser_id ?? 0]),
                 'start' => self::minutesSinceDayStart($dayStart, $stretch['start']),
                 'end' => $end,
                 'part' => $stretch['index'] + 1,
@@ -698,6 +820,7 @@ class DayTimeline
                 'height' => self::pxFromMinutes($aEnd - $gridStart) - self::pxFromMinutes($aStart - $gridStart),
                 'appointment' => $stretch['appointment'],
                 'overCapacity' => $stretch['overCapacity'],
+                'unassigned' => $stretch['unassigned'],
                 'part' => $stretch['part'],
                 'parts' => $stretch['parts'],
                 'stretchStart' => $stretch['start'],
@@ -783,7 +906,7 @@ class DayTimeline
 
         for ($i = 0; $i < count($boundaries) - 1; $i++) {
             [$segStart, $segEnd] = [$boundaries[$i], $boundaries[$i + 1]];
-            $type = $lane >= self::effectiveCapacityAt($segStart, $blockIntervals, $capacity) ? 'cierre-parcial' : 'free';
+            $type = self::isLaneClosedAt($lane, $segStart, $blockIntervals, $capacity) ? 'cierre-parcial' : 'free';
 
             if ($raw !== [] && $type === 'cierre-parcial' && end($raw)['type'] === 'cierre-parcial') {
                 $raw[array_key_last($raw)]['end'] = $segEnd;

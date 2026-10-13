@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Appointment;
-use App\Models\BookingSetting;
 use App\Models\Service;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -69,14 +68,14 @@ test('selecting a service highlights "Cabe" only where it fits, in every free la
     $html = $this->get(route('admin.agenda', ['servicio' => $service->id]))->assertOk()->getContent();
 
     // 09:00 + 2h = 11:00, well inside 09:00-19:00: fits, both lanes.
-    expect($html)->toContain('aria-label="Hueco libre a las 09:00, plaza 1, cabe Balayage"');
-    expect($html)->toContain('aria-label="Hueco libre a las 09:00, plaza 2, cabe Balayage"');
+    expect($html)->toContain('aria-label="Hueco libre a las 09:00, columna de Jennifer, cabe Balayage"');
+    expect($html)->toContain('aria-label="Hueco libre a las 09:00, columna de Isabel, cabe Balayage"');
     // 17:00 + 2h = 19:00, exactly closing: still fits.
-    expect($html)->toContain('aria-label="Hueco libre a las 17:00, plaza 1, cabe Balayage"');
+    expect($html)->toContain('aria-label="Hueco libre a las 17:00, columna de Jennifer, cabe Balayage"');
     // 17:30 + 2h = 19:30, past closing: does not fit — stays exactly as a
     // normal hueco libre, no "cabe" suffix, no visible "Cabe" text.
-    expect($html)->toContain('aria-label="Hueco libre a las 17:30, plaza 1"');
-    expect($html)->not->toContain('aria-label="Hueco libre a las 17:30, plaza 1, cabe Balayage"');
+    expect($html)->toContain('aria-label="Hueco libre a las 17:30, columna de Jennifer"');
+    expect($html)->not->toContain('aria-label="Hueco libre a las 17:30, columna de Jennifer, cabe Balayage"');
 
     // Día: 09:00 to 17:00 fits (17 half hours) in both lanes = 34 visible
     // "Cabe" labels; 17:30/18:00/18:30 do not.
@@ -104,7 +103,7 @@ test('a fitting hueco gets a subtle left stripe, not a full border', function ()
  * to overlap it no longer fits there, in any lane.
  */
 test('a service that would exceed capacity does not fit, regardless of lane', function () {
-    BookingSetting::current()->update(['capacity' => 1]);
+    setStaffCount(1);
     Appointment::factory()->create(['starts_at' => '2030-01-08 10:00', 'ends_at' => '2030-01-08 10:30']);
     $service = Service::factory()->create(['name' => 'Corte', 'duration_minutes' => 60]);
 
@@ -112,13 +111,13 @@ test('a service that would exceed capacity does not fit, regardless of lane', fu
 
     // 09:00-10:00 and 10:30-11:30 do not overlap the 10:00-10:30
     // appointment: they fit (capacity 1 is free throughout).
-    expect($html)->toContain('aria-label="Hueco libre a las 09:00, plaza 1, cabe Corte"');
-    expect($html)->toContain('aria-label="Hueco libre a las 10:30, plaza 1, cabe Corte"');
+    expect($html)->toContain('aria-label="Hueco libre a las 09:00, columna de Jennifer, cabe Corte"');
+    expect($html)->toContain('aria-label="Hueco libre a las 10:30, columna de Jennifer, cabe Corte"');
     // 09:30-10:30 overlaps the real appointment (even though 09:30 itself
     // is still free, DayTimeline renders it as a plain hueco libre), and
     // capacity 1 leaves no room for a second, simultaneous service there.
-    expect($html)->toContain('aria-label="Hueco libre a las 09:30, plaza 1"');
-    expect($html)->not->toContain('aria-label="Hueco libre a las 09:30, plaza 1, cabe Corte"');
+    expect($html)->toContain('aria-label="Hueco libre a las 09:30, columna de Jennifer"');
+    expect($html)->not->toContain('aria-label="Hueco libre a las 09:30, columna de Jennifer, cabe Corte"');
 });
 
 /**
@@ -142,9 +141,9 @@ test('"Cabe" only highlights the lane that is actually free for the whole servic
     // Plaza 1 holds the 11:40 appointment: an hour from 11:00 would reach
     // 12:00, colliding with it — not highlighted there, even though the
     // half hour fits by capacity (plaza 2 is free the whole hour).
-    expect($html)->toContain('aria-label="Hueco libre a las 11:00, plaza 1"');
-    expect($html)->not->toContain('aria-label="Hueco libre a las 11:00, plaza 1, cabe Corte"');
-    expect($html)->toContain('aria-label="Hueco libre a las 11:00, plaza 2, cabe Corte"');
+    expect($html)->toContain('aria-label="Hueco libre a las 11:00, columna de Jennifer"');
+    expect($html)->not->toContain('aria-label="Hueco libre a las 11:00, columna de Jennifer, cabe Corte"');
+    expect($html)->toContain('aria-label="Hueco libre a las 11:00, columna de Isabel, cabe Corte"');
 });
 
 /**
@@ -179,7 +178,7 @@ test('semana\'s desktop columns carry the aria-label but never the visible "Cabe
 
     // Desktop column aria-label, date-prefixed (review finding M2's format).
     expect($html)->toContain(', cabe Balayage');
-    expect($html)->toContain('martes 8, Hueco libre a las 09:00, plaza 1, cabe Balayage');
+    expect($html)->toContain('martes 8, Hueco libre a las 09:00, columna de Jennifer, cabe Balayage');
     // Only the mobile strip's selected-day grid (Tuesday, compact: false)
     // can show visible text: 17 half hours x 2 lanes = 34, same as vista
     // Día alone — so the 5 open desktop columns contributed zero.
@@ -249,7 +248,10 @@ test('selecting a service keeps vista Día at a fixed number of queries', functi
     expect($countOf('schedule_blocks'))->toBe(1);
     expect($countOf('opening_hours'))->toBe(1);
     expect($countOf('booking_settings'))->toBe(1);
-    expect($countOf('services'))->toBe(1);
+    // The active services, plus once for the hairdressers' "destaca en"
+    // (PRF-173), loaded with them; the hairdressers themselves once.
+    expect($countOf('services'))->toBe(2);
+    expect($countOf('hairdressers'))->toBe(1);
 });
 
 test('selecting a service keeps vista Semana at a fixed number of queries, not one per day', function () {
@@ -268,7 +270,10 @@ test('selecting a service keeps vista Semana at a fixed number of queries, not o
     expect($countOf('schedule_blocks'))->toBe(1);
     expect($countOf('opening_hours'))->toBe(1);
     expect($countOf('booking_settings'))->toBe(1);
-    expect($countOf('services'))->toBe(1);
+    // The active services, plus once for the hairdressers' "destaca en"
+    // (PRF-173), loaded with them; the hairdressers themselves once.
+    expect($countOf('services'))->toBe(2);
+    expect($countOf('hairdressers'))->toBe(1);
 });
 
 /**
@@ -320,8 +325,8 @@ test('choosing two services in the agenda filter marks "Cabe" only where the sum
 
     // 45 minutes: 18:30 + 45 = 19:15, past closing — does not fit; 18:00
     // does (18:00 + 45 = 18:45).
-    expect($html)->toContain('aria-label="Hueco libre a las 18:00, plaza 1, cabe Corte + Barba"');
-    expect($html)->not->toContain('aria-label="Hueco libre a las 18:30, plaza 1, cabe Corte + Barba"');
+    expect($html)->toContain('aria-label="Hueco libre a las 18:00, columna de Jennifer, cabe Corte + Barba"');
+    expect($html)->not->toContain('aria-label="Hueco libre a las 18:30, columna de Jennifer, cabe Corte + Barba"');
 });
 
 /**
@@ -360,7 +365,10 @@ test('selecting two services keeps vista Día at a fixed number of queries', fun
     expect($countOf('schedule_blocks'))->toBe(1);
     expect($countOf('opening_hours'))->toBe(1);
     expect($countOf('booking_settings'))->toBe(1);
-    expect($countOf('services'))->toBe(1);
+    // The active services, plus once for the hairdressers' "destaca en"
+    // (PRF-173), loaded with them; the hairdressers themselves once.
+    expect($countOf('services'))->toBe(2);
+    expect($countOf('hairdressers'))->toBe(1);
 });
 
 /**
@@ -374,6 +382,6 @@ test('semana with two services marks only where their sum fits, naming both', fu
     $html = $this->get(route('admin.agenda', ['vista' => 'semana', 'servicio' => [$haircut->id, $beard->id]]))->assertOk()->getContent();
 
     // 45 minutes: 18:00 fits (until 18:45), 18:30 does not (19:15).
-    expect($html)->toContain('martes 8, Hueco libre a las 18:00, plaza 1, cabe Corte + Barba');
-    expect($html)->not->toContain('martes 8, Hueco libre a las 18:30, plaza 1, cabe Corte + Barba');
+    expect($html)->toContain('martes 8, Hueco libre a las 18:00, columna de Jennifer, cabe Corte + Barba');
+    expect($html)->not->toContain('martes 8, Hueco libre a las 18:30, columna de Jennifer, cabe Corte + Barba');
 });

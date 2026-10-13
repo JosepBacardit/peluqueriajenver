@@ -38,6 +38,13 @@
                     </ul>
                 </dd>
             </div>
+            {{-- PRF-167: only the hairdresser she chose herself. --}}
+            @if ($appointment->requestedHairdresser() !== null)
+                <div class="grid grid-cols-3 gap-4 p-4">
+                    <dt class="text-gray-400">{{ __('reservas.appointment.hairdresser') }}</dt>
+                    <dd class="col-span-2 text-white">{{ $appointment->requestedHairdresser()->name }}</dd>
+                </div>
+            @endif
             <div class="grid grid-cols-3 gap-4 p-4">
                 <dt class="text-gray-400">{{ __('reservas.appointment.when') }}</dt>
                 <dd class="col-span-2 text-white first-letter:uppercase">{{ $appointment->dayLabel() }}, {{ $appointment->starts_at->format('H:i') }}</dd>

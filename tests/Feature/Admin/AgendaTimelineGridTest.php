@@ -26,8 +26,8 @@ test('tapping a free slot in the timeline opens Nueva cita with the date and tim
     $html = $this->get(route('admin.agenda'))->assertOk()->getContent();
 
     expect($html)->toContain('href="'.e(route('admin.appointments.create', ['fecha' => '2030-01-08', 'hora' => '09:00', 'volver' => 'dia:2030-01-08'])).'"');
-    expect($html)->toContain('aria-label="Hueco libre a las 09:00, plaza 1"');
-    expect($html)->toContain('aria-label="Hueco libre a las 09:00, plaza 2"');
+    expect($html)->toContain('aria-label="Hueco libre a las 09:00, columna de Jennifer"');
+    expect($html)->toContain('aria-label="Hueco libre a las 09:00, columna de Isabel"');
 });
 
 /**
@@ -45,7 +45,7 @@ test('a free run that does not start on a half hour gets a filler up to the next
     $html = $this->get(route('admin.agenda'))->assertOk()->getContent();
 
     expect($html)->not->toContain('Hueco libre a las 09:35');
-    expect($html)->toContain('aria-label="Hueco libre a las 10:00, plaza 1"');
+    expect($html)->toContain('aria-label="Hueco libre a las 10:00, columna de Jennifer"');
 });
 
 /**
@@ -61,8 +61,8 @@ test('a free gap shorter than 30 minutes is not a link', function () {
 
     $html = $this->get(route('admin.agenda'))->assertOk()->getContent();
 
-    expect($html)->not->toContain('Hueco libre a las 09:30, plaza 1');
-    expect($html)->toContain('Hueco libre a las 09:30, plaza 2');
+    expect($html)->not->toContain('Hueco libre a las 09:30, columna de Jennifer');
+    expect($html)->toContain('Hueco libre a las 09:30, columna de Isabel');
 });
 
 /**
@@ -76,8 +76,8 @@ test('there is exactly one link per free half hour of each lane, with its own ho
     // 09:00-19:00 is 20 half hours, times 2 lanes (capacity 2, no appointments).
     expect(substr_count($html, 'Hueco libre a las'))->toBe(40);
     foreach (['09:00', '09:30', '12:00', '18:30'] as $time) {
-        expect($html)->toContain("aria-label=\"Hueco libre a las {$time}, plaza 1\"");
-        expect($html)->toContain("aria-label=\"Hueco libre a las {$time}, plaza 2\"");
+        expect($html)->toContain("aria-label=\"Hueco libre a las {$time}, columna de Jennifer\"");
+        expect($html)->toContain("aria-label=\"Hueco libre a las {$time}, columna de Isabel\"");
     }
     expect($html)->not->toContain('Hueco libre a las 19:00');
 });
@@ -173,7 +173,7 @@ test('a short partial closure still has an aria-label, even with no visible text
 
     $html = $this->get(route('admin.agenda'))->assertOk()->getContent();
 
-    expect($html)->toContain('aria-label="Cierre parcial, plaza 2"');
+    expect($html)->toContain('aria-label="Cierre parcial, columna de Isabel"');
 });
 
 /**
