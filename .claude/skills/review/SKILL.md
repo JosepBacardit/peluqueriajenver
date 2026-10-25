@@ -14,6 +14,8 @@ Durante la revisión, no edites código de aplicación, tests, configuración, m
 Además de revisar el diff, comprueba siempre estos puntos, que son los fallos que más se repiten en las revisiones ([[syntheses/lecciones-revisiones|lecciones]]):
 
 - **Reproduce la evidencia, no la leas.** Si una tarea o un informe cita un test, un comando, una captura o una tabla, ábrelo o ejecútalo. Un punto marcado como cubierto con una frase genérica o con un recuento global de tests («172 tests en verde») no está cubierto.
+- **Tests que pueden fallar.** En la lógica de reglas (umbrales, ventanas, cálculos, permisos, estados), aplica en una copia temporal mutaciones pequeñas en los bordes: `>=` por `>`, ventanas de un periodo más o de uno menos, o un día de desfase en fechas. Comprueba que algún test falla con cada una. Una mutación que sobrevive es un hallazgo, y debe citar la mutación concreta. No dejes la mutación aplicada en el código.
+- **Periodos pendientes.** En todo proceso periódico que decide sobre un estado (señales, vencimientos, avisos, cron), comprueba que recorre en orden los periodos pendientes desde el último procesado. Si solo mira el periodo actual, es un hallazgo. Busca también un test que omita un periodo y compruebe que el efecto llega igualmente.
 - **Contrato cliente-servidor.** Para cada campo validado en los dos lados, compara la regla del frontend con la del backend (valores, obligatoriedad, formato) y comprueba que el campo realmente se envía.
 - **Comentarios.** Los comentarios y docblocks del diff y de su entorno describen el comportamiento actual, no el anterior. Si el cambio elimina o renombra algo, busca las menciones que queden.
 - **Multi-tenant.** En aplicaciones multi-tenant, toda clave de `updateOrCreate`/`firstOrCreate`, consulta o archivo guardado queda acotada al tenant.
@@ -21,7 +23,8 @@ Además de revisar el diff, comprueba siempre estos puntos, que son los fallos q
 - **Accesibilidad de los componentes interactivos.** En menús, diálogos, desplegables y formularios del frontend, comprueba con el teclado (Tab, Shift+Tab, Enter, Espacio, Escape) que:
   - el foco queda atrapado mientras un menú o diálogo está abierto, el fondo queda `inert`, y al cerrar el foco vuelve al disparador;
   - los disparadores son `<button>` con `aria-expanded` y `aria-controls`, y los conmutadores llevan `aria-pressed`;
-  - los errores de validación están enlazados con `aria-describedby` y `aria-invalid`.
+  - los errores de validación están enlazados con `aria-describedby` y `aria-invalid`;
+  - el foco se comprueba en el navegador real, en desarrollo (con `StrictMode`) y en el build; jsdom no basta. Después de dar de alta, de baja, guardar o borrar, el foco no cae en `body`. Si el disparador ya no existe, el foco va a un destino que sigue en el DOM (por ejemplo, el título de la página). Un e2e lo afirma con `toBeFocused()`. Si no tienes navegador, escribe «Foco sin comprobar en el navegador» ([[syntheses/lecciones-revisiones|patrón G]]).
 
   Comprueba también que los tests e2e lo verifican, no solo el comportamiento visual.
 - **Imágenes (proyectos propios, no micasino).** Toda imagen que se sirve en la web es WebP optimizada: redimensionada al uso con `srcSet`, con `width`/`height` (sin CLS), `alt` y `loading="lazy"` fuera de la primera pantalla. Comprueba en el HTML o en la red que no se sirve ningún PNG ni JPG, salvo las excepciones aprobadas por el usuario (favicon e iconos de app, emails, PDFs y `og:image`) ([[knowledge/coding-style|coding-style]]).
